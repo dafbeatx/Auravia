@@ -974,35 +974,45 @@ export async function updateInvitationGalleryItem(
 }
 
 /**
+ * Menghapus objek berkas fisik dari Supabase Storage bucket 'invitation-gallery'.
+ */
+export async function deleteGalleryImageFile(storagePath: string): Promise<void> {
+  if (
+    !storagePath ||
+    storagePath.startsWith('http://') ||
+    storagePath.startsWith('https://') ||
+    storagePath.startsWith('blob:') ||
+    storagePath.startsWith('data:')
+  ) {
+    return;
+  }
+
+  const { error } = await supabase.storage
+    .from(INVITATION_GALLERY_BUCKET)
+    .remove([storagePath]);
+
+  if (error) {
+    throw new StorageError(
+      'Gagal menghapus berkas foto dari penyimpanan. Silakan periksa koneksi internet Anda.',
+      error
+    );
+  }
+}
+
+/**
  * Menghapus foto galeri secara menyeluruh:
- * 1. Menghapus objek fisik di Supabase Storage (jika berupa path storage Aurovia).
- * 2. Menghapus record metadata di tabel public.gallery_items.
- * Jika penghapusan storage gagal, batalkan atau laporkan kegagalan secara transparan.
+ * 1. Ambil storage_path.
+ * 2. Hapus database record gallery_items secara aman.
+ * 3. Hapus berkas fisik di Supabase Storage.
+ * 4. Tangani kegagalan storage secara eksplisit jika penghapusan berkas gagal.
  */
 export async function deleteInvitationGalleryPhoto(
   item: InvitationGalleryItem,
   invitationId: string
 ): Promise<void> {
-  const isStoragePath =
-    item.storage_path &&
-    !item.storage_path.startsWith('http://') &&
-    !item.storage_path.startsWith('https://') &&
-    !item.storage_path.startsWith('blob:') &&
-    !item.storage_path.startsWith('data:');
+  const storagePath = item.storage_path;
 
-  if (isStoragePath) {
-    const { error: storageError } = await supabase.storage
-      .from(INVITATION_GALLERY_BUCKET)
-      .remove([item.storage_path]);
-
-    if (storageError) {
-      throw new StorageError(
-        'Gagal menghapus berkas foto dari penyimpanan. Operasi dibatalkan demi keamanan data.',
-        storageError
-      );
-    }
-  }
-
+  // 1. Hapus record metadata dari database terlebih dahulu
   const { error: dbError } = await supabase
     .from('gallery_items')
     .delete()
@@ -1012,7 +1022,22 @@ export async function deleteInvitationGalleryPhoto(
   if (dbError) {
     throw new DatabaseError('Gagal menghapus data foto dari galeri.', dbError);
   }
+
+  // 2. Hapus berkas fisik dari Supabase Storage
+  try {
+    await deleteGalleryImageFile(storagePath);
+  } catch (storageError) {
+    throw new StorageError(
+      'Foto telah dihapus dari galeri, namun berkas di penyimpanan belum berhasil dibersihkan.',
+      storageError
+    );
+  }
 }
+
+/**
+ * Alias domain function untuk mengunggah gambar galeri.
+ */
+export const uploadGalleryImage = uploadInvitationGalleryPhoto;
 
 /**
  * Menghapus foto dari galeri undangan (kompatibilitas mundur dengan opsi hapus berkas storage).

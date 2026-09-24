@@ -2462,24 +2462,17 @@ export function InvitationDetail() {
               </div>
             )}
 
-            {/* Indikator Status Pengunggahan */}
+            {/* Status Pengunggahan (Loading State Jujur Tanpa Fake Progress) */}
             {isUploading && uploadProgress && (
-              <div className="p-3 bg-surface-elevated border border-border rounded-lg space-y-2 text-xs">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-text-primary font-medium">
-                    Mengunggah {uploadProgress.current} dari {uploadProgress.total} foto...
-                  </span>
-                  <span className="text-text-muted truncate max-w-[160px]">
+              <div className="p-3 bg-surface-elevated border border-border rounded-lg flex items-center gap-3 text-xs">
+                <span className="inline-block w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-primary font-medium">
+                    Mengunggah foto {uploadProgress.current} dari {uploadProgress.total}...
+                  </p>
+                  <p className="text-[11px] text-text-subtle truncate">
                     {uploadProgress.fileName}
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{
-                      width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
-                    }}
-                  />
+                  </p>
                 </div>
               </div>
             )}
