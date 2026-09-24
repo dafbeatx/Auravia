@@ -21,6 +21,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- A. INSERT: Pengguna terautentikasi hanya dapat mengunggah ke folder miliknya sendiri:
 --    {user_id}/{invitation_id}/* dengan syarat invitation_id dimiliki oleh pengguna tersebut.
+DROP POLICY IF EXISTS "Users can upload gallery images to own invitation" ON storage.objects;
 CREATE POLICY "Users can upload gallery images to own invitation"
   ON storage.objects FOR INSERT
   TO authenticated
@@ -37,6 +38,7 @@ CREATE POLICY "Users can upload gallery images to own invitation"
 
 -- B. SELECT: Pemilik dapat melihat berkasnya sendiri, dan publik/anonim hanya dapat melihat
 --    berkas dari undangan yang berstatus 'published'.
+DROP POLICY IF EXISTS "Public and owners can view gallery images" ON storage.objects;
 CREATE POLICY "Public and owners can view gallery images"
   ON storage.objects FOR SELECT
   TO anon, authenticated
@@ -53,6 +55,7 @@ CREATE POLICY "Public and owners can view gallery images"
   );
 
 -- C. UPDATE: Pengguna terautentikasi hanya dapat memperbarui berkas di folder undangannya sendiri.
+DROP POLICY IF EXISTS "Owners can update own gallery images" ON storage.objects;
 CREATE POLICY "Owners can update own gallery images"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -76,6 +79,7 @@ CREATE POLICY "Owners can update own gallery images"
   );
 
 -- D. DELETE: Pengguna terautentikasi hanya dapat menghapus berkas di folder undangannya sendiri.
+DROP POLICY IF EXISTS "Owners can delete own gallery images" ON storage.objects;
 CREATE POLICY "Owners can delete own gallery images"
   ON storage.objects FOR DELETE
   TO authenticated
