@@ -1,12 +1,15 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/components/layout/RootLayout';
 import { FoundationStatus } from '@/app/FoundationStatus';
+import { Login } from '@/app/routes/Login';
+import { Register } from '@/app/routes/Register';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Dashboard } from '@/app/routes/Dashboard';
 
 /**
- * Konfigurasi rute awal Aurovia.
- * Pada tahap Foundation, hanya rute dasar yang didaftarkan.
- * Halaman produk penuh (storefront, dashboard, editor, public invitation)
- * akan diimplementasikan pada fase berikutnya sesuai roadmap.
+ * Konfigurasi rute Aurovia.
+ * Mendaftarkan rute publik (landing, login, register) dan
+ * rute terproteksi (dashboard) melalui ProtectedRoute.
  */
 export const router = createBrowserRouter([
   {
@@ -16,6 +19,23 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <FoundationStatus />,
+      },
+      {
+        path: 'login',
+        element: <Login />,
+      },
+      {
+        path: 'register',
+        element: <Register />,
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: 'dashboard',
+            element: <Dashboard />,
+          },
+        ],
       },
     ],
   },
