@@ -175,6 +175,7 @@ export async function getMyInvitationById(id: string): Promise<InvitationDetail 
 export interface UpdateInvitationCoreInput {
   title?: string;
   slug?: string;
+  event_type?: string;
   allow_rsvp?: boolean;
   show_wishes?: boolean;
   theme_override?: import('@/types/database').Json;
@@ -210,6 +211,13 @@ export async function updateInvitationCore(
       throw new ValidationError('Judul undangan maksimal 120 karakter.');
     }
     payload.title = cleanTitle;
+  }
+
+  if (updates.event_type !== undefined) {
+    const cleanEventType = updates.event_type.trim();
+    if (cleanEventType) {
+      payload.event_type = cleanEventType;
+    }
   }
 
   if (updates.allow_rsvp !== undefined) {
@@ -353,19 +361,66 @@ export async function toggleInvitationSection(
 }
 
 /**
+ * Memperbarui urutan display_order dan status is_enabled beberapa seksi undangan sekaligus.
+ */
+export async function updateInvitationSections(
+  invitationId: string,
+  sections: Array<{ id: string; display_order: number; is_enabled: boolean }>
+): Promise<void> {
+  const updates = sections.map((s) =>
+    supabase
+      .from('invitation_sections')
+      .update({
+        display_order: s.display_order,
+        is_enabled: s.is_enabled,
+      })
+      .eq('id', s.id)
+      .eq('invitation_id', invitationId)
+  );
+
+  const results = await Promise.all(updates);
+  const failure = results.find((r) => r.error);
+  if (failure?.error) {
+    throw new DatabaseError('Gagal memperbarui urutan seksi undangan.', failure.error);
+  }
+}
+
+/**
  * Menginisialisasi seksi undangan dari default_sections template master jika belum ada entri di database.
+ * Memastikan ke-9 tipe seksi kanonikal (hero, couple/hosts, event/events, story, gallery, rsvp, wishes, gift, closing) tersedia.
  */
 export async function initializeInvitationSectionsFromTemplate(
   invitationId: string,
   defaultSectionsRaw: unknown
 ): Promise<InvitationSectionItem[]> {
-  if (!Array.isArray(defaultSectionsRaw) || defaultSectionsRaw.length === 0) {
-    return [];
-  }
-
   const existing = await getInvitationSections(invitationId);
   if (existing.length > 0) {
+    // Periksa apakah seksi 'wishes' sudah ada, jika belum tambahkan ke database
+    const hasWishes = existing.some((s) => s.section_type === 'wishes');
+    if (!hasWishes) {
+      const maxOrder = existing.reduce((max, s) => Math.max(max, s.display_order), 0);
+      const { data: newWishes } = await supabase
+        .from('invitation_sections')
+        .insert({
+          invitation_id: invitationId,
+          section_type: 'wishes',
+          variant: 'default',
+          display_order: maxOrder + 1,
+          is_enabled: true,
+          custom_config: {},
+        })
+        .select('id, invitation_id, section_type, variant, display_order, is_enabled, custom_config')
+        .single();
+
+      if (newWishes) {
+        return [...existing, newWishes].sort((a, b) => a.display_order - b.display_order);
+      }
+    }
     return existing;
+  }
+
+  if (!Array.isArray(defaultSectionsRaw) || defaultSectionsRaw.length === 0) {
+    return [];
   }
 
   interface RawSection {
@@ -375,7 +430,7 @@ export async function initializeInvitationSectionsFromTemplate(
     variant?: string;
   }
 
-  const rowsToInsert = (defaultSectionsRaw as RawSection[])
+  const baseRows = (defaultSectionsRaw as RawSection[])
     .filter((s) => typeof s?.type === 'string' && s.type.length > 0)
     .map((s, index) => ({
       invitation_id: invitationId,
@@ -386,9 +441,21 @@ export async function initializeInvitationSectionsFromTemplate(
       custom_config: {},
     }));
 
+  // Jika seksi 'wishes' belum ada dalam default template, tambahkan
+  if (!baseRows.some((s) => s.section_type === 'wishes')) {
+    baseRows.push({
+      invitation_id: invitationId,
+      section_type: 'wishes',
+      variant: 'default',
+      display_order: baseRows.length,
+      is_enabled: true,
+      custom_config: {},
+    });
+  }
+
   const { data, error } = await supabase
     .from('invitation_sections')
-    .insert(rowsToInsert)
+    .insert(baseRows)
     .select('id, invitation_id, section_type, variant, display_order, is_enabled, custom_config')
     .order('display_order', { ascending: true });
 
@@ -560,6 +627,7 @@ export type PublishResult = Pick<Tables<'invitations'>, 'id' | 'status' | 'publi
 
 /**
  * Mempublikasikan undangan (mengubah status menjadi 'published' dan mencatat timestamp published_at).
+ * Memvalidasi kepemilikan, template aktif, serta data minimum (judul, slug, mempelai/host).
  * Hanya dapat dilakukan oleh pemilik sah yang terautentikasi (ditegakkan via auth session & RLS).
  */
 export async function publishInvitation(id: string): Promise<PublishResult> {
@@ -572,6 +640,69 @@ export async function publishInvitation(id: string): Promise<PublishResult> {
     throw new AuthenticationError('Sesi pengguna tidak valid. Silakan masuk kembali.');
   }
 
+  // 1. Ambil data undangan beserta template dan konten untuk validasi prasyarat publikasi
+  const { data: inv, error: fetchError } = await supabase
+    .from('invitations')
+    .select(`
+      id,
+      user_id,
+      title,
+      slug,
+      template_id,
+      template:templates (
+        id,
+        is_active
+      ),
+      data:invitation_data (
+        content
+      )
+    `)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (fetchError || !inv) {
+    throw new AuthorizationError('Undangan tidak ditemukan atau Anda tidak memiliki hak akses.');
+  }
+
+  if (inv.user_id !== user.id) {
+    throw new AuthorizationError('Anda tidak memiliki izin untuk mempublikasikan undangan ini.');
+  }
+
+  // 2. Validasi kelayakan data minimum
+  const validationErrors: string[] = [];
+
+  const cleanTitle = (inv.title || '').trim();
+  if (cleanTitle.length === 0) {
+    validationErrors.push('Judul undangan belum diisi.');
+  }
+
+  const cleanSlug = (inv.slug || '').trim().toLowerCase();
+  const slugRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  if (cleanSlug.length < 3 || cleanSlug.length > 60 || !slugRegex.test(cleanSlug)) {
+    validationErrors.push('Format tautan (slug) tidak valid (3 sampai 60 karakter, alfanumerik dan tanda hubung).');
+  }
+
+  interface TemplateCheck {
+    id?: string;
+    is_active?: boolean;
+  }
+  const tmpl = (Array.isArray(inv.template) ? inv.template[0] : inv.template) as TemplateCheck | null;
+  if (!tmpl || tmpl.is_active !== true) {
+    validationErrors.push('Template master yang dipilih tidak aktif atau tidak ditemukan.');
+  }
+
+  const content = extractInvitationContent(inv.data as { content: import('@/types/database').Json } | Array<{ content: import('@/types/database').Json }>);
+  const hosts = Array.isArray(content?.hosts) ? content.hosts : [];
+  const hasHost = hosts.some((h) => typeof h?.name === 'string' && h.name.trim().length > 0);
+  if (!hasHost) {
+    validationErrors.push('Setidaknya satu nama mempelai atau tuan rumah harus diisi sebelum mempublikasikan undangan.');
+  }
+
+  if (validationErrors.length > 0) {
+    throw new ValidationError(validationErrors.join('\n'));
+  }
+
+  // 3. Eksekusi pembaruan status ke 'published'
   const { data, error } = await supabase
     .from('invitations')
     .update({
@@ -579,6 +710,7 @@ export async function publishInvitation(id: string): Promise<PublishResult> {
       published_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('user_id', user.id)
     .select('id, status, published_at')
     .maybeSingle();
 
@@ -614,6 +746,7 @@ export async function unpublishInvitation(id: string): Promise<PublishResult> {
       published_at: null,
     })
     .eq('id', id)
+    .eq('user_id', user.id)
     .select('id, status, published_at')
     .maybeSingle();
 
