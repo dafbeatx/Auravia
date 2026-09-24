@@ -504,6 +504,337 @@ export interface InvitationGalleryItem {
 }
 
 /**
+ * Mengambil daftar agenda acara untuk sebuah undangan terurut waktu.
+ */
+export async function getInvitationEvents(invitationId: string): Promise<InvitationEventItem[]> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, title, start_time, end_time, timezone, venue_name, address, maps_url, is_primary')
+    .eq('invitation_id', invitationId)
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    throw new DatabaseError('Gagal memuat agenda acara.', error);
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Menambahkan agenda acara baru untuk sebuah undangan.
+ */
+export async function createInvitationEvent(
+  invitationId: string,
+  event: {
+    title: string;
+    start_time: string;
+    end_time?: string | null;
+    timezone?: string;
+    venue_name: string;
+    address?: string | null;
+    maps_url?: string | null;
+    is_primary?: boolean;
+  }
+): Promise<InvitationEventItem> {
+  const cleanTitle = event.title.trim();
+  if (!cleanTitle) {
+    throw new ValidationError('Nama acara wajib diisi.');
+  }
+  if (cleanTitle.length > 100) {
+    throw new ValidationError('Nama acara maksimal 100 karakter.');
+  }
+
+  const cleanVenue = event.venue_name.trim();
+  if (!cleanVenue) {
+    throw new ValidationError('Nama tempat atau lokasi acara wajib diisi.');
+  }
+
+  if (event.maps_url && event.maps_url.trim()) {
+    const cleanUrl = event.maps_url.trim();
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      throw new ValidationError('Tautan Google Maps harus diawali dengan http:// atau https://');
+    }
+  }
+
+  if (event.end_time && event.start_time) {
+    const start = new Date(event.start_time).getTime();
+    const end = new Date(event.end_time).getTime();
+    if (end < start) {
+      throw new ValidationError('Waktu selesai tidak boleh lebih awal dari waktu mulai acara.');
+    }
+  }
+
+  // Jika dijadikan primary, nonaktifkan is_primary pada event lain terlebih dahulu
+  if (event.is_primary) {
+    await supabase
+      .from('events')
+      .update({ is_primary: false })
+      .eq('invitation_id', invitationId);
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .insert({
+      invitation_id: invitationId,
+      title: cleanTitle,
+      start_time: event.start_time,
+      end_time: event.end_time || null,
+      timezone: event.timezone || 'Asia/Jakarta',
+      venue_name: cleanVenue,
+      address: event.address?.trim() || null,
+      maps_url: event.maps_url?.trim() || null,
+      is_primary: Boolean(event.is_primary),
+    })
+    .select('id, title, start_time, end_time, timezone, venue_name, address, maps_url, is_primary')
+    .single();
+
+  if (error) {
+    throw new DatabaseError('Gagal menambahkan acara.', error);
+  }
+
+  return data;
+}
+
+/**
+ * Memperbarui agenda acara yang ada.
+ */
+export async function updateInvitationEvent(
+  eventId: string,
+  invitationId: string,
+  updates: {
+    title?: string;
+    start_time?: string;
+    end_time?: string | null;
+    timezone?: string;
+    venue_name?: string;
+    address?: string | null;
+    maps_url?: string | null;
+    is_primary?: boolean;
+  }
+): Promise<InvitationEventItem> {
+  const payload: import('@/types/database').TablesUpdate<'events'> = {};
+
+  if (updates.title !== undefined) {
+    const cleanTitle = updates.title.trim();
+    if (!cleanTitle) throw new ValidationError('Nama acara wajib diisi.');
+    if (cleanTitle.length > 100) throw new ValidationError('Nama acara maksimal 100 karakter.');
+    payload.title = cleanTitle;
+  }
+
+  if (updates.venue_name !== undefined) {
+    const cleanVenue = updates.venue_name.trim();
+    if (!cleanVenue) throw new ValidationError('Nama tempat atau lokasi acara wajib diisi.');
+    payload.venue_name = cleanVenue;
+  }
+
+  if (updates.maps_url !== undefined) {
+    if (updates.maps_url && updates.maps_url.trim()) {
+      const cleanUrl = updates.maps_url.trim();
+      if (!/^https?:\/\//i.test(cleanUrl)) {
+        throw new ValidationError('Tautan Google Maps harus diawali dengan http:// atau https://');
+      }
+      payload.maps_url = cleanUrl;
+    } else {
+      payload.maps_url = null;
+    }
+  }
+
+  if (updates.start_time !== undefined) {
+    payload.start_time = updates.start_time;
+  }
+
+  if (updates.end_time !== undefined) {
+    payload.end_time = updates.end_time || null;
+  }
+
+  if (updates.timezone !== undefined) {
+    payload.timezone = updates.timezone;
+  }
+
+  if (updates.address !== undefined) {
+    payload.address = updates.address?.trim() || null;
+  }
+
+  if (updates.is_primary !== undefined) {
+    if (updates.is_primary) {
+      await supabase
+        .from('events')
+        .update({ is_primary: false })
+        .eq('invitation_id', invitationId);
+    }
+    payload.is_primary = updates.is_primary;
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .update(payload)
+    .eq('id', eventId)
+    .eq('invitation_id', invitationId)
+    .select('id, title, start_time, end_time, timezone, venue_name, address, maps_url, is_primary')
+    .single();
+
+  if (error) {
+    throw new DatabaseError('Gagal memperbarui acara.', error);
+  }
+
+  return data;
+}
+
+/**
+ * Menghapus agenda acara dari undangan.
+ */
+export async function deleteInvitationEvent(eventId: string, invitationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', eventId)
+    .eq('invitation_id', invitationId);
+
+  if (error) {
+    throw new DatabaseError('Gagal menghapus acara.', error);
+  }
+}
+
+/**
+ * Mengambil daftar item galeri untuk sebuah undangan terurut berdasarkan display_order.
+ */
+export async function getInvitationGalleryItems(invitationId: string): Promise<InvitationGalleryItem[]> {
+  const { data, error } = await supabase
+    .from('gallery_items')
+    .select('id, storage_path, thumbnail_path, caption, display_order, width, height')
+    .eq('invitation_id', invitationId)
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    throw new DatabaseError('Gagal memuat galeri foto.', error);
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Menambahkan item foto baru ke galeri undangan.
+ */
+export async function createInvitationGalleryItem(
+  invitationId: string,
+  item: {
+    storage_path: string;
+    thumbnail_path?: string | null;
+    caption?: string | null;
+    display_order?: number;
+    width?: number | null;
+    height?: number | null;
+  }
+): Promise<InvitationGalleryItem> {
+  const cleanPath = item.storage_path.trim();
+  if (!cleanPath) {
+    throw new ValidationError('Tautan atau jalur berkas foto wajib diisi.');
+  }
+
+  const cleanCaption = item.caption?.trim() || null;
+  if (cleanCaption && cleanCaption.length > 200) {
+    throw new ValidationError('Keterangan foto (caption) maksimal 200 karakter.');
+  }
+
+  const { data, error } = await supabase
+    .from('gallery_items')
+    .insert({
+      invitation_id: invitationId,
+      storage_path: cleanPath,
+      thumbnail_path: item.thumbnail_path?.trim() || cleanPath,
+      caption: cleanCaption,
+      display_order: typeof item.display_order === 'number' ? item.display_order : 0,
+      width: item.width || null,
+      height: item.height || null,
+    })
+    .select('id, storage_path, thumbnail_path, caption, display_order, width, height')
+    .single();
+
+  if (error) {
+    throw new DatabaseError('Gagal menambahkan foto ke galeri.', error);
+  }
+
+  return data;
+}
+
+/**
+ * Memperbarui keterangan atau data item galeri.
+ */
+export async function updateInvitationGalleryItem(
+  itemId: string,
+  invitationId: string,
+  updates: {
+    caption?: string | null;
+    display_order?: number;
+  }
+): Promise<InvitationGalleryItem> {
+  const payload: import('@/types/database').TablesUpdate<'gallery_items'> = {};
+
+  if (updates.caption !== undefined) {
+    const cleanCaption = updates.caption?.trim() || null;
+    if (cleanCaption && cleanCaption.length > 200) {
+      throw new ValidationError('Keterangan foto (caption) maksimal 200 karakter.');
+    }
+    payload.caption = cleanCaption;
+  }
+
+  if (updates.display_order !== undefined) {
+    payload.display_order = updates.display_order;
+  }
+
+  const { data, error } = await supabase
+    .from('gallery_items')
+    .update(payload)
+    .eq('id', itemId)
+    .eq('invitation_id', invitationId)
+    .select('id, storage_path, thumbnail_path, caption, display_order, width, height')
+    .single();
+
+  if (error) {
+    throw new DatabaseError('Gagal memperbarui foto galeri.', error);
+  }
+
+  return data;
+}
+
+/**
+ * Menghapus foto dari galeri undangan.
+ */
+export async function deleteInvitationGalleryItem(itemId: string, invitationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('gallery_items')
+    .delete()
+    .eq('id', itemId)
+    .eq('invitation_id', invitationId);
+
+  if (error) {
+    throw new DatabaseError('Gagal menghapus foto dari galeri.', error);
+  }
+}
+
+/**
+ * Memperbarui urutan beberapa foto galeri sekaligus.
+ */
+export async function updateGalleryItemsOrder(
+  invitationId: string,
+  items: Array<{ id: string; display_order: number }>
+): Promise<void> {
+  const updates = items.map((i) =>
+    supabase
+      .from('gallery_items')
+      .update({ display_order: i.display_order })
+      .eq('id', i.id)
+      .eq('invitation_id', invitationId)
+  );
+
+  const results = await Promise.all(updates);
+  const failure = results.find((r) => r.error);
+  if (failure?.error) {
+    throw new DatabaseError('Gagal memperbarui urutan foto galeri.', failure.error);
+  }
+}
+
+/**
  * Menormalisasi kontainer invitation_data (mendukung single object atau array 1-to-1).
  */
 export function extractInvitationContent(

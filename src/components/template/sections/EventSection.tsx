@@ -16,7 +16,7 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
 
       {eventList.length === 0 ? (
         <div className="p-6 border border-[var(--theme-color-border)] rounded bg-[var(--theme-color-surface)] text-center text-xs text-[var(--theme-color-primary)]/70">
-          Jadwal dan rincian lokasi acara belum diatur.
+          Belum ada rangkaian acara.
         </div>
       ) : (
         <div className="space-y-6">
@@ -33,6 +33,12 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
               : null;
             const timeStr = isDateValid
               ? startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              : null;
+
+            const endDate = evt.end_time ? new Date(evt.end_time) : null;
+            const isEndDateValid = endDate && !isNaN(endDate.getTime());
+            const endTimeStr = isEndDateValid
+              ? endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
               : null;
 
             return (
@@ -55,8 +61,7 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
                   {dateStr && <p className="font-medium text-sm text-[var(--theme-color-primary)]">{dateStr}</p>}
                   {timeStr && (
                     <p>
-                      Waktu: {timeStr} {evt.timezone}
-                      {evt.end_time && ` s.d. selesai`}
+                      Waktu: {endTimeStr ? `${timeStr} - ${endTimeStr}` : `${timeStr} s.d. selesai`} {evt.timezone}
                     </p>
                   )}
                   <p className="font-semibold pt-1">{evt.venue_name}</p>

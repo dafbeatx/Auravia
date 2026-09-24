@@ -11,10 +11,21 @@ import {
   upsertInvitationData,
   initializeInvitationSectionsFromTemplate,
   updateInvitationSections,
+  getInvitationEvents,
+  createInvitationEvent,
+  updateInvitationEvent,
+  deleteInvitationEvent,
+  getInvitationGalleryItems,
+  createInvitationGalleryItem,
+  updateInvitationGalleryItem,
+  deleteInvitationGalleryItem,
+  updateGalleryItemsOrder,
   extractInvitationContent,
   type InvitationDetail as IInvitationDetail,
   type InvitationTemplateConfig,
   type InvitationSectionItem,
+  type InvitationEventItem,
+  type InvitationGalleryItem,
 } from '@/lib/invitations';
 import { InvitationRenderer } from '@/components/template';
 import { ValidationError, DatabaseError, AuthorizationError } from '@/lib/errors';
@@ -35,6 +46,22 @@ const SECTION_METADATA: Record<string, { label: string; description: string }> =
   gift: { label: 'Tanda Kasih (Gift)', description: 'Nomor rekening atau amplop digital' },
   closing: { label: 'Penutup & Salam (Closing)', description: 'Kutipan ayat dan ucapan terima kasih' },
 };
+
+/**
+ * Konversi ISO timestamp ke format input datetime-local (YYYY-MM-DDTHH:mm)
+ */
+function toDatetimeLocal(isoString?: string | null): string {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
 
 export function InvitationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -80,8 +107,14 @@ export function InvitationDetail() {
   // State Seksi Undangan (invitation_sections)
   const [draftSections, setDraftSections] = useState<InvitationSectionItem[]>([]);
 
+  // State Agenda Acara (events)
+  const [draftEvents, setDraftEvents] = useState<InvitationEventItem[]>([]);
+
+  // State Galeri Foto (gallery_items)
+  const [draftGallery, setDraftGallery] = useState<InvitationGalleryItem[]>([]);
+
   // Tampilan antarmuka
-  const [activeTab, setActiveTab] = useState<'settings' | 'content' | 'sections'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'content' | 'events' | 'gallery' | 'sections'>('settings');
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('desktop');
   const [showPreviewDesktop, setShowPreviewDesktop] = useState(true);
@@ -90,6 +123,42 @@ export function InvitationDetail() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+
+  // Modal Agenda Acara (Event Modal)
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    start_time: '',
+    end_time: '',
+    timezone: 'Asia/Jakarta',
+    venue_name: '',
+    address: '',
+    maps_url: '',
+    is_primary: false,
+  });
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [eventErrorMessage, setEventErrorMessage] = useState<string | null>(null);
+
+  // Modal Konfirmasi Hapus Acara
+  const [deleteEventModalOpen, setDeleteEventModalOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<InvitationEventItem | null>(null);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+
+  // Modal Galeri Foto (Gallery Modal)
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null);
+  const [galleryForm, setGalleryForm] = useState({
+    storage_path: '',
+    caption: '',
+  });
+  const [isSavingGallery, setIsSavingGallery] = useState(false);
+  const [galleryErrorMessage, setGalleryErrorMessage] = useState<string | null>(null);
+
+  // Modal Konfirmasi Hapus Foto Galeri
+  const [deleteGalleryModalOpen, setDeleteGalleryModalOpen] = useState(false);
+  const [galleryToDelete, setGalleryToDelete] = useState<InvitationGalleryItem | null>(null);
+  const [isDeletingGallery, setIsDeletingGallery] = useState(false);
 
   // Status publikasi
   const [isPublishing, setIsPublishing] = useState(false);
@@ -107,7 +176,7 @@ export function InvitationDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  // Muat data undangan, konten, dan konfigurasi seksi
+  // Muat data undangan, konten, seksi, acara, dan galeri
   const loadData = useCallback(async () => {
     if (!id) {
       setPageError('ID undangan tidak ditemukan.');
@@ -184,6 +253,14 @@ export function InvitationDetail() {
         initialSections = resolvedSections;
         setDraftSections(resolvedSections);
       }
+
+      // Muat data agenda acara (events)
+      const eventsData = await getInvitationEvents(id);
+      setDraftEvents(eventsData);
+
+      // Muat data galeri foto (gallery_items)
+      const galleryData = await getInvitationGalleryItems(id);
+      setDraftGallery(galleryData);
 
       // Simpan snapshot untuk melacak perubahan yang belum disimpan
       const initialSectionsJson = JSON.stringify(
@@ -293,7 +370,7 @@ export function InvitationDetail() {
     };
   }, [draftGroomName, draftGroomBio, draftBrideName, draftBrideBio, draftClosingNotes, previewConfig?.data]);
 
-  // Handler simpan satu tombol untuk seluruh form
+  // Handler simpan satu tombol untuk form pengaturan & konten mempelai
   const handleSaveAll = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     if (!id || !invitation) return;
@@ -480,6 +557,305 @@ export function InvitationDetail() {
       copy[index] = next;
       return copy.map((item, idx) => ({ ...item, display_order: idx }));
     });
+  };
+
+  // ==========================================
+  // EVENT HANDLERS
+  // ==========================================
+
+  const handleOpenCreateEventModal = () => {
+    setEditingEventId(null);
+    setEventForm({
+      title: '',
+      start_time: '',
+      end_time: '',
+      timezone: 'Asia/Jakarta',
+      venue_name: '',
+      address: '',
+      maps_url: '',
+      is_primary: draftEvents.length === 0, // Event pertama otomatis menjadi primary
+    });
+    setEventErrorMessage(null);
+    setEventModalOpen(true);
+  };
+
+  const handleOpenEditEventModal = (evt: InvitationEventItem) => {
+    setEditingEventId(evt.id);
+    setEventForm({
+      title: evt.title,
+      start_time: toDatetimeLocal(evt.start_time),
+      end_time: toDatetimeLocal(evt.end_time),
+      timezone: evt.timezone || 'Asia/Jakarta',
+      venue_name: evt.venue_name || '',
+      address: evt.address || '',
+      maps_url: evt.maps_url || '',
+      is_primary: evt.is_primary,
+    });
+    setEventErrorMessage(null);
+    setEventModalOpen(true);
+  };
+
+  const handleSaveEvent = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+
+    setEventErrorMessage(null);
+
+    const cleanTitle = eventForm.title.trim();
+    if (!cleanTitle) {
+      setEventErrorMessage('Nama acara wajib diisi.');
+      return;
+    }
+
+    if (!eventForm.start_time) {
+      setEventErrorMessage('Waktu mulai acara wajib diisi.');
+      return;
+    }
+
+    const cleanVenue = eventForm.venue_name.trim();
+    if (!cleanVenue) {
+      setEventErrorMessage('Nama tempat atau lokasi acara wajib diisi.');
+      return;
+    }
+
+    if (eventForm.end_time) {
+      const start = new Date(eventForm.start_time).getTime();
+      const end = new Date(eventForm.end_time).getTime();
+      if (end < start) {
+        setEventErrorMessage('Waktu selesai tidak boleh lebih awal dari waktu mulai acara.');
+        return;
+      }
+    }
+
+    if (eventForm.maps_url && eventForm.maps_url.trim()) {
+      if (!/^https?:\/\//i.test(eventForm.maps_url.trim())) {
+        setEventErrorMessage('Tautan Google Maps harus diawali dengan http:// atau https://');
+        return;
+      }
+    }
+
+    setIsSavingEvent(true);
+
+    try {
+      const startIso = new Date(eventForm.start_time).toISOString();
+      const endIso = eventForm.end_time ? new Date(eventForm.end_time).toISOString() : null;
+
+      if (editingEventId) {
+        // Mode Perbarui Acara
+        const updated = await updateInvitationEvent(editingEventId, id, {
+          title: cleanTitle,
+          start_time: startIso,
+          end_time: endIso,
+          timezone: eventForm.timezone,
+          venue_name: cleanVenue,
+          address: eventForm.address.trim() || null,
+          maps_url: eventForm.maps_url.trim() || null,
+          is_primary: eventForm.is_primary,
+        });
+
+        setDraftEvents((prev) =>
+          prev.map((e) => {
+            if (e.id === editingEventId) return updated;
+            if (eventForm.is_primary) return { ...e, is_primary: false };
+            return e;
+          })
+        );
+      } else {
+        // Mode Buat Acara Baru
+        const created = await createInvitationEvent(id, {
+          title: cleanTitle,
+          start_time: startIso,
+          end_time: endIso,
+          timezone: eventForm.timezone,
+          venue_name: cleanVenue,
+          address: eventForm.address.trim() || null,
+          maps_url: eventForm.maps_url.trim() || null,
+          is_primary: eventForm.is_primary,
+        });
+
+        setDraftEvents((prev) => {
+          const list = eventForm.is_primary
+            ? prev.map((e) => ({ ...e, is_primary: false }))
+            : [...prev];
+          return [...list, created].sort(
+            (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+          );
+        });
+      }
+
+      setEventModalOpen(false);
+      setSaveSuccessMessage('Agenda acara berhasil disimpan.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setEventErrorMessage(err.message);
+      } else {
+        setEventErrorMessage('Gagal menyimpan agenda acara.');
+      }
+    } finally {
+      setIsSavingEvent(false);
+    }
+  };
+
+  const handleSetPrimaryEvent = async (evt: InvitationEventItem) => {
+    if (!id || evt.is_primary) return;
+    try {
+      await updateInvitationEvent(evt.id, id, { is_primary: true });
+      setDraftEvents((prev) =>
+        prev.map((e) => ({ ...e, is_primary: e.id === evt.id }))
+      );
+      setSaveSuccessMessage(`"${evt.title}" telah dijadikan acara utama.`);
+    } catch {
+      alert('Gagal menetapkan acara utama. Silakan coba kembali.');
+    }
+  };
+
+  const handleConfirmDeleteEvent = async () => {
+    if (!id || !eventToDelete) return;
+    setIsDeletingEvent(true);
+    try {
+      await deleteInvitationEvent(eventToDelete.id, id);
+      setDraftEvents((prev) => prev.filter((e) => e.id !== eventToDelete.id));
+      setDeleteEventModalOpen(false);
+      setEventToDelete(null);
+      setSaveSuccessMessage('Agenda acara berhasil dihapus.');
+    } catch {
+      alert('Gagal menghapus acara. Silakan periksa koneksi Anda dan coba lagi.');
+    } finally {
+      setIsDeletingEvent(false);
+    }
+  };
+
+  // ==========================================
+  // GALLERY HANDLERS
+  // ==========================================
+
+  const handleOpenAddGalleryModal = () => {
+    setEditingGalleryId(null);
+    setGalleryForm({
+      storage_path: '',
+      caption: '',
+    });
+    setGalleryErrorMessage(null);
+    setGalleryModalOpen(true);
+  };
+
+  const handleOpenEditGalleryModal = (item: InvitationGalleryItem) => {
+    setEditingGalleryId(item.id);
+    setGalleryForm({
+      storage_path: item.storage_path,
+      caption: item.caption || '',
+    });
+    setGalleryErrorMessage(null);
+    setGalleryModalOpen(true);
+  };
+
+  const handleSaveGalleryItem = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+
+    setGalleryErrorMessage(null);
+
+    const cleanPath = galleryForm.storage_path.trim();
+    if (!cleanPath) {
+      setGalleryErrorMessage('Tautan atau jalur berkas foto wajib diisi.');
+      return;
+    }
+
+    const cleanCaption = galleryForm.caption.trim() || null;
+    if (cleanCaption && cleanCaption.length > 200) {
+      setGalleryErrorMessage('Keterangan foto maksimal 200 karakter.');
+      return;
+    }
+
+    setIsSavingGallery(true);
+
+    try {
+      if (editingGalleryId) {
+        const updated = await updateInvitationGalleryItem(editingGalleryId, id, {
+          caption: cleanCaption,
+        });
+        setDraftGallery((prev) =>
+          prev.map((g) => (g.id === editingGalleryId ? updated : g))
+        );
+      } else {
+        const created = await createInvitationGalleryItem(id, {
+          storage_path: cleanPath,
+          thumbnail_path: cleanPath,
+          caption: cleanCaption,
+          display_order: draftGallery.length,
+        });
+        setDraftGallery((prev) => [...prev, created]);
+      }
+
+      setGalleryModalOpen(false);
+      setSaveSuccessMessage('Foto galeri berhasil disimpan.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setGalleryErrorMessage(err.message);
+      } else {
+        setGalleryErrorMessage('Gagal menyimpan foto galeri.');
+      }
+    } finally {
+      setIsSavingGallery(false);
+    }
+  };
+
+  const handleMoveGalleryUp = async (index: number) => {
+    if (!id || index <= 0) return;
+    const copy = [...draftGallery];
+    const target = copy[index];
+    const previous = copy[index - 1];
+    if (!target || !previous) return;
+    copy[index - 1] = target;
+    copy[index] = previous;
+    const reordered = copy.map((item, idx) => ({ ...item, display_order: idx }));
+    setDraftGallery(reordered);
+
+    try {
+      await updateGalleryItemsOrder(
+        id,
+        reordered.map((g) => ({ id: g.id, display_order: g.display_order }))
+      );
+    } catch {
+      // Abaikan jika sinkronisasi urutan tertunda
+    }
+  };
+
+  const handleMoveGalleryDown = async (index: number) => {
+    if (!id || index >= draftGallery.length - 1) return;
+    const copy = [...draftGallery];
+    const target = copy[index];
+    const next = copy[index + 1];
+    if (!target || !next) return;
+    copy[index + 1] = target;
+    copy[index] = next;
+    const reordered = copy.map((item, idx) => ({ ...item, display_order: idx }));
+    setDraftGallery(reordered);
+
+    try {
+      await updateGalleryItemsOrder(
+        id,
+        reordered.map((g) => ({ id: g.id, display_order: g.display_order }))
+      );
+    } catch {
+      // Abaikan jika sinkronisasi urutan tertunda
+    }
+  };
+
+  const handleConfirmDeleteGallery = async () => {
+    if (!id || !galleryToDelete) return;
+    setIsDeletingGallery(true);
+    try {
+      await deleteInvitationGalleryItem(galleryToDelete.id, id);
+      setDraftGallery((prev) => prev.filter((g) => g.id !== galleryToDelete.id));
+      setDeleteGalleryModalOpen(false);
+      setGalleryToDelete(null);
+      setSaveSuccessMessage('Foto berhasil dihapus dari galeri.');
+    } catch {
+      alert('Gagal menghapus foto. Silakan periksa koneksi Anda dan coba lagi.');
+    } finally {
+      setIsDeletingGallery(false);
+    }
   };
 
   // Validasi sebelum membuka modal publikasi
@@ -836,40 +1212,62 @@ export function InvitationDetail() {
           } ${mobileView === 'preview' ? 'hidden lg:block' : 'block'} space-y-4`}
         >
           <div className="bg-surface border border-border rounded shadow-sm overflow-hidden">
-            {/* Navigasi Sub-Tab Editor */}
-            <div className="flex border-b border-border bg-surface-elevated text-xs font-semibold">
+            {/* Navigasi Sub-Tab Editor (5 Tab) */}
+            <div className="flex border-b border-border bg-surface-elevated text-xs font-semibold overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab('settings')}
-                className={`flex-1 py-3 px-3 text-center border-b-2 transition-colors cursor-pointer ${
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === 'settings'
                     ? 'border-primary text-primary bg-surface'
                     : 'border-transparent text-text-muted hover:text-text-primary'
                 }`}
               >
-                Pengaturan Umum
+                Pengaturan
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('content')}
-                className={`flex-1 py-3 px-3 text-center border-b-2 transition-colors cursor-pointer ${
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === 'content'
                     ? 'border-primary text-primary bg-surface'
                     : 'border-transparent text-text-muted hover:text-text-primary'
                 }`}
               >
-                Mempelai &amp; Tuan Rumah
+                Mempelai
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('events')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'events'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Acara ({draftEvents.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('gallery')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'gallery'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Galeri ({draftGallery.length})
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('sections')}
-                className={`flex-1 py-3 px-3 text-center border-b-2 transition-colors cursor-pointer ${
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === 'sections'
                     ? 'border-primary text-primary bg-surface'
                     : 'border-transparent text-text-muted hover:text-text-primary'
                 }`}
               >
-                Kelola Seksi
+                Seksi
               </button>
             </div>
 
@@ -1089,7 +1487,262 @@ export function InvitationDetail() {
               </div>
             )}
 
-            {/* TAB 3: KELOLA SEKSI */}
+            {/* TAB 3: AGENDA ACARA (EVENTS) */}
+            {activeTab === 'events' && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-text-primary">
+                      Rangkaian Acara
+                    </h3>
+                    <p className="text-text-muted leading-relaxed">
+                      Kelola jadwal akad, pemberkatan, resepsi, atau perayaan.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateEventModal}
+                    className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    + Tambah Acara
+                  </button>
+                </div>
+
+                {draftEvents.length === 0 ? (
+                  <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                    <p className="text-text-muted">
+                      Belum ada rangkaian acara yang ditambahkan.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateEventModal}
+                      className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      + Tambah Acara Pertama
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {draftEvents.map((evt) => {
+                      const startDate = new Date(evt.start_time);
+                      const isDateValid = !isNaN(startDate.getTime());
+                      const dateStr = isDateValid
+                        ? startDate.toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : evt.start_time;
+
+                      const timeStr = isDateValid
+                        ? startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                        : '';
+
+                      let timeDisplay = timeStr;
+                      if (evt.end_time) {
+                        const endDate = new Date(evt.end_time);
+                        if (!isNaN(endDate.getTime())) {
+                          timeDisplay = `${timeStr} - ${endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={evt.id}
+                          className="p-3.5 border border-border rounded bg-surface hover:bg-surface-elevated/40 transition-colors space-y-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-sm text-text-primary">
+                                  {evt.title}
+                                </h4>
+                                {evt.is_primary ? (
+                                  <span className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.2 rounded border border-success/30 bg-success/10 text-success">
+                                    Acara Utama
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetPrimaryEvent(evt)}
+                                    className="text-[10px] text-text-muted hover:text-text-primary underline cursor-pointer"
+                                  >
+                                    Jadikan Utama
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-text-muted pt-0.5">
+                                {dateStr} {timeDisplay && `• ${timeDisplay} ${evt.timezone}`}
+                              </p>
+                              <p className="text-[11px] text-text-primary font-medium pt-0.5">
+                                {evt.venue_name}
+                              </p>
+                              {evt.address && (
+                                <p className="text-[11px] text-text-subtle">
+                                  {evt.address}
+                                </p>
+                              )}
+                              {evt.maps_url && (
+                                <a
+                                  href={evt.maps_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5 pt-0.5"
+                                >
+                                  Tautan Google Maps &rarr;
+                                </a>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditEventModal(evt)}
+                                className="py-1 px-2 text-[11px] border border-border rounded bg-surface hover:bg-surface-elevated text-text-primary font-medium transition-colors cursor-pointer"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEventToDelete(evt);
+                                  setDeleteEventModalOpen(true);
+                                }}
+                                className="py-1 px-2 text-[11px] border border-border rounded bg-surface hover:bg-danger/10 hover:border-danger/30 text-danger font-medium transition-colors cursor-pointer"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: GALERI FOTO (GALLERY) */}
+            {activeTab === 'gallery' && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-text-primary">
+                      Galeri Foto
+                    </h3>
+                    <p className="text-text-muted leading-relaxed">
+                      Dokumentasi foto kebahagiaan yang tampil pada halaman undangan.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddGalleryModal}
+                    className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    + Tambah Foto
+                  </button>
+                </div>
+
+                {/* Pemberitahuan Audit Storage */}
+                <div className="p-3 bg-surface-elevated border border-border rounded text-[11px] text-text-muted leading-relaxed">
+                  <strong className="text-text-primary font-medium">Catatan Integrasi:</strong> Supabase Storage bucket langsung untuk upload file saat ini belum dikonfigurasi pada database production. Penambahan foto dilakukan melalui tautan URL gambar (misal CDN / Unsplash / image hosting) yang disimpan ke tabel <code className="font-mono text-text-primary">gallery_items</code>.
+                </div>
+
+                {draftGallery.length === 0 ? (
+                  <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                    <p className="text-text-muted">
+                      Belum ada foto yang ditambahkan ke galeri.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddGalleryModal}
+                      className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      + Tambah Foto Pertama
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {draftGallery.map((item, index) => (
+                      <div
+                        key={item.id}
+                        className="p-3 border border-border rounded bg-surface hover:bg-surface-elevated/40 transition-colors flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Tombol Urutan */}
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveGalleryUp(index)}
+                              disabled={index === 0}
+                              aria-label="Pindahkan foto ke atas"
+                              className="w-5 h-5 flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed border border-border rounded text-[10px] bg-surface"
+                            >
+                              &uarr;
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveGalleryDown(index)}
+                              disabled={index === draftGallery.length - 1}
+                              aria-label="Pindahkan foto ke bawah"
+                              className="w-5 h-5 flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed border border-border rounded text-[10px] bg-surface"
+                            >
+                              &darr;
+                            </button>
+                          </div>
+
+                          {/* Thumbnail */}
+                          <img
+                            src={item.storage_path || item.thumbnail_path || ''}
+                            alt={item.caption || 'Foto galeri'}
+                            className="w-14 h-14 object-cover rounded border border-border bg-surface-elevated shrink-0"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f5f4f0" width="100" height="100"/><text fill="%2378716c" font-size="12" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Gambar</text></svg>';
+                            }}
+                          />
+
+                          <div className="truncate">
+                            <span className="font-mono text-[10px] text-text-subtle block">
+                              Urutan #{index + 1}
+                            </span>
+                            <p className="text-xs text-text-primary font-medium truncate">
+                              {item.caption || 'Tanpa keterangan foto'}
+                            </p>
+                            <p className="text-[10px] text-text-subtle font-mono truncate max-w-[240px]">
+                              {item.storage_path}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditGalleryModal(item)}
+                            className="py-1 px-2 text-[11px] border border-border rounded bg-surface hover:bg-surface-elevated text-text-primary font-medium transition-colors cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGalleryToDelete(item);
+                              setDeleteGalleryModalOpen(true);
+                            }}
+                            className="py-1 px-2 text-[11px] border border-border rounded bg-surface hover:bg-danger/10 hover:border-danger/30 text-danger font-medium transition-colors cursor-pointer"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 5: KELOLA SEKSI */}
             {activeTab === 'sections' && (
               <div className="p-5 space-y-4 text-xs">
                 <div className="space-y-1">
@@ -1232,7 +1885,7 @@ export function InvitationDetail() {
                 </div>
               </div>
 
-              {/* Area Renderer Undangan (Responsif terhadap draft lokal) */}
+              {/* Area Renderer Undangan (Responsif terhadap draft lokal acara dan galeri) */}
               <div
                 className={`max-h-[720px] overflow-y-auto ${
                   previewDevice === 'mobile' ? 'p-6 flex justify-center bg-surface-elevated/60' : ''
@@ -1251,8 +1904,8 @@ export function InvitationDetail() {
                       template={previewConfig?.template}
                       customSections={draftSections}
                       content={liveContent}
-                      events={previewConfig?.events}
-                      gallery={previewConfig?.gallery}
+                      events={draftEvents}
+                      gallery={draftGallery}
                     />
                   ) : (
                     <div className="py-24 text-center text-xs text-text-muted">
@@ -1266,7 +1919,341 @@ export function InvitationDetail() {
         )}
       </div>
 
-      {/* 3. Modal Konfirmasi Publikasi */}
+      {/* 3. Modal Tambah / Edit Acara */}
+      {eventModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-lg w-full p-6 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-serif text-xl font-bold text-primary">
+              {editingEventId ? 'Edit Rangkaian Acara' : 'Tambah Rangkaian Acara'}
+            </h2>
+
+            {eventErrorMessage && (
+              <div className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+                {eventErrorMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEvent} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label htmlFor="evtTitle" className="font-semibold text-text-primary block">
+                  Nama / Jenis Acara
+                </label>
+                <input
+                  id="evtTitle"
+                  type="text"
+                  required
+                  maxLength={100}
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                  placeholder="Contoh: Akad Nikah / Pemberkatan / Resepsi"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label htmlFor="evtStartTime" className="font-semibold text-text-primary block">
+                    Waktu Mulai
+                  </label>
+                  <input
+                    id="evtStartTime"
+                    type="datetime-local"
+                    required
+                    value={eventForm.start_time}
+                    onChange={(e) => setEventForm({ ...eventForm, start_time: e.target.value })}
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="evtEndTime" className="font-semibold text-text-primary block">
+                    Waktu Selesai (Opsional)
+                  </label>
+                  <input
+                    id="evtEndTime"
+                    type="datetime-local"
+                    value={eventForm.end_time}
+                    onChange={(e) => setEventForm({ ...eventForm, end_time: e.target.value })}
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="evtTimezone" className="font-semibold text-text-primary block">
+                  Zona Waktu
+                </label>
+                <select
+                  id="evtTimezone"
+                  value={eventForm.timezone}
+                  onChange={(e) => setEventForm({ ...eventForm, timezone: e.target.value })}
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs cursor-pointer"
+                >
+                  <option value="Asia/Jakarta">WIB (Waktu Indonesia Barat / Asia/Jakarta)</option>
+                  <option value="Asia/Makassar">WITA (Waktu Indonesia Tengah / Asia/Makassar)</option>
+                  <option value="Asia/Jayapura">WIT (Waktu Indonesia Timur / Asia/Jayapura)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="evtVenue" className="font-semibold text-text-primary block">
+                  Nama Tempat / Gedung / Lokasi
+                </label>
+                <input
+                  id="evtVenue"
+                  type="text"
+                  required
+                  value={eventForm.venue_name}
+                  onChange={(e) => setEventForm({ ...eventForm, venue_name: e.target.value })}
+                  placeholder="Contoh: Masjid Agung Al-Azhar / Sasana Kriya TMII"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="evtAddress" className="font-semibold text-text-primary block">
+                  Alamat Lengkap (Opsional)
+                </label>
+                <textarea
+                  id="evtAddress"
+                  rows={2}
+                  value={eventForm.address}
+                  onChange={(e) => setEventForm({ ...eventForm, address: e.target.value })}
+                  placeholder="Contoh: Jl. Sisingamangaraja, Kebayoran Baru, Jakarta Selatan"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="evtMapsUrl" className="font-semibold text-text-primary block">
+                  Tautan Google Maps (Opsional)
+                </label>
+                <input
+                  id="evtMapsUrl"
+                  type="url"
+                  value={eventForm.maps_url}
+                  onChange={(e) => setEventForm({ ...eventForm, maps_url: e.target.value })}
+                  placeholder="https://maps.google.com/..."
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-border">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={eventForm.is_primary}
+                    onChange={(e) => setEventForm({ ...eventForm, is_primary: e.target.checked })}
+                    className="rounded border-border text-primary focus:ring-0"
+                  />
+                  <span className="font-medium text-text-primary">
+                    Jadikan sebagai Acara Utama (Primary Event)
+                  </span>
+                </label>
+                <p className="text-[11px] text-text-subtle pt-1">
+                  Acara utama akan ditampilkan pada sampul depan (Hero) dan menjadi penanggalan utama undangan.
+                </p>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEventModalOpen(false)}
+                  disabled={isSavingEvent}
+                  className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEvent}
+                  className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingEvent ? 'Menyimpan...' : 'Simpan Acara'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Modal Hapus Acara */}
+      {deleteEventModalOpen && eventToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
+            <h2 className="font-serif text-xl font-bold text-danger">
+              Hapus Acara Ini?
+            </h2>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Acara <strong className="text-text-primary">{eventToDelete.title}</strong> akan dihapus dari daftar rangkaian acara. Undangan utama Anda tidak akan terhapus.
+            </p>
+
+            <div className="pt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteEventModalOpen(false);
+                  setEventToDelete(null);
+                }}
+                disabled={isDeletingEvent}
+                className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteEvent}
+                disabled={isDeletingEvent}
+                className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingEvent ? 'Menghapus...' : 'Ya, Hapus Acara'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Modal Tambah / Edit Foto Galeri */}
+      {galleryModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
+            <h2 className="font-serif text-xl font-bold text-primary">
+              {editingGalleryId ? 'Edit Keterangan Foto' : 'Tambah Foto Galeri'}
+            </h2>
+
+            {galleryErrorMessage && (
+              <div className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+                {galleryErrorMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveGalleryItem} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label htmlFor="galPath" className="font-semibold text-text-primary block">
+                  Tautan URL Foto / Jalur Gambar
+                </label>
+                <input
+                  id="galPath"
+                  type="url"
+                  required
+                  disabled={Boolean(editingGalleryId)}
+                  value={galleryForm.storage_path}
+                  onChange={(e) => setGalleryForm({ ...galleryForm, storage_path: e.target.value })}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs disabled:opacity-60"
+                />
+                <p className="text-[11px] text-text-subtle">
+                  Masukkan tautan URL langsung ke file gambar (JPG, PNG, atau WebP).
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="galCaption" className="font-semibold text-text-primary block">
+                  Keterangan Foto (Caption Opsional)
+                </label>
+                <input
+                  id="galCaption"
+                  type="text"
+                  maxLength={200}
+                  value={galleryForm.caption}
+                  onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })}
+                  placeholder="Contoh: Momen foto pranikah di Bromo"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              {galleryForm.storage_path && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[11px] text-text-subtle font-medium block">
+                    Pratinjau Foto:
+                  </span>
+                  <img
+                    src={galleryForm.storage_path}
+                    alt="Pratinjau"
+                    className="w-full h-36 object-cover rounded border border-border bg-surface-elevated"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="60" viewBox="0 0 100 60"><rect fill="%23f5f4f0" width="100" height="60"/><text fill="%23991b1b" font-size="10" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Gambar tidak valid</text></svg>';
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="pt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGalleryModalOpen(false)}
+                  disabled={isSavingGallery}
+                  className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingGallery}
+                  className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingGallery ? 'Menyimpan...' : 'Simpan Foto'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Modal Hapus Foto Galeri */}
+      {deleteGalleryModalOpen && galleryToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
+            <h2 className="font-serif text-xl font-bold text-danger">
+              Hapus Foto Ini?
+            </h2>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Foto ini akan dihapus dari galeri dokumentasi undangan Anda.
+            </p>
+
+            <div className="pt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteGalleryModalOpen(false);
+                  setGalleryToDelete(null);
+                }}
+                disabled={isDeletingGallery}
+                className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteGallery}
+                disabled={isDeletingGallery}
+                className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingGallery ? 'Menghapus...' : 'Ya, Hapus Foto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Modal Konfirmasi Publikasi */}
       {publishModalOpen && (
         <div
           role="dialog"
@@ -1334,7 +2321,7 @@ export function InvitationDetail() {
         </div>
       )}
 
-      {/* 4. Modal Sukses Publikasi */}
+      {/* 8. Modal Sukses Publikasi */}
       {publishSuccessModalOpen && (
         <div
           role="dialog"
@@ -1384,7 +2371,7 @@ export function InvitationDetail() {
         </div>
       )}
 
-      {/* 5. Modal Konfirmasi Pembatalan Publikasi (Unpublish) */}
+      {/* 9. Modal Konfirmasi Pembatalan Publikasi (Unpublish) */}
       {unpublishModalOpen && (
         <div
           role="dialog"
@@ -1427,7 +2414,7 @@ export function InvitationDetail() {
         </div>
       )}
 
-      {/* 6. Modal Konfirmasi Hapus Undangan */}
+      {/* 10. Modal Konfirmasi Hapus Undangan */}
       {deleteModalOpen && (
         <div
           role="dialog"

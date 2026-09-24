@@ -16,7 +16,7 @@ export const GallerySection: React.FC<SectionRendererProps> = ({ gallery }) => {
 
       {images.length === 0 ? (
         <div className="p-6 border border-[var(--theme-color-border)] rounded bg-[var(--theme-color-surface)] text-center text-xs text-[var(--theme-color-primary)]/70">
-          Belum ada foto yang diunggah ke galeri.
+          Belum ada foto yang ditambahkan.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
