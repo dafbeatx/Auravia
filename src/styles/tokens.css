@@ -1,0 +1,29 @@
+:root {
+  /* Surface & Background (Warm Editorial Palette) */
+  --color-bg: #FAF9F6;               /* Warm Alabaster */
+  --color-surface: #FFFFFF;          /* Pure White */
+  --color-surface-elevated: #F5F4F0; /* Soft Stone */
+
+  /* Borders */
+  --color-border: #E7E5E0;           /* Subtle Warm Gray */
+  --color-border-strong: #D1CFC7;    /* Distinct Divider */
+
+  /* Typography / Text Colors (WCAG AA Compliant) */
+  --color-text-primary: #1C1917;     /* Deep Warm Charcoal */
+  --color-text-muted: #57534E;       /* Muted Stone */
+  --color-text-subtle: #78716C;      /* Secondary Stone */
+
+  /* Brand / Semantic Accents */
+  --color-primary: #292524;          /* Editorial Dark Bronze/Charcoal */
+  --color-primary-hover: #44403C;
+  --color-primary-foreground: #FAFAF9;
+
+  --color-danger: #991B1B;           /* Deep Crimson */
+  --color-danger-foreground: #FEF2F2;
+
+  --color-success: #166534;          /* Deep Forest */
+  --color-success-foreground: #F0FDF4;
+
+  /* Focus Indicator for Accessibility */
+  --color-focus-ring: #0284C7;
+}
