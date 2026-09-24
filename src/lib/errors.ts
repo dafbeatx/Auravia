@@ -7,6 +7,7 @@ export type AppErrorCode =
   | 'VALIDATION_ERROR'
   | 'AUTHENTICATION_ERROR'
   | 'AUTHORIZATION_ERROR'
+  | 'NOT_FOUND_ERROR'
   | 'DATABASE_ERROR'
   | 'NETWORK_ERROR'
   | 'UNKNOWN_ERROR';
@@ -41,6 +42,13 @@ export class AuthorizationError extends AppError {
   constructor(message: string = 'Anda tidak memiliki hak akses ke data ini.', originalError?: unknown) {
     super(message, 'AUTHORIZATION_ERROR', originalError);
     this.name = 'AuthorizationError';
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message: string = 'Data atau sumber daya yang diminta tidak ditemukan.', originalError?: unknown) {
+    super(message, 'NOT_FOUND_ERROR', originalError);
+    this.name = 'NotFoundError';
   }
 }
 

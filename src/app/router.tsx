@@ -5,11 +5,13 @@ import { Login } from '@/app/routes/Login';
 import { Register } from '@/app/routes/Register';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Dashboard } from '@/app/routes/Dashboard';
+import { InvitationDetail } from '@/app/routes/InvitationDetail';
+import { PublicInvitation } from '@/app/routes/PublicInvitation';
 
 /**
  * Konfigurasi rute Aurovia.
- * Mendaftarkan rute publik (landing, login, register) dan
- * rute terproteksi (dashboard) melalui ProtectedRoute.
+ * Mendaftarkan rute publik (landing, login, register, public invitation) dan
+ * rute terproteksi (dashboard, detail invitation) melalui ProtectedRoute.
  */
 export const router = createBrowserRouter([
   {
@@ -35,8 +37,16 @@ export const router = createBrowserRouter([
             path: 'dashboard',
             element: <Dashboard />,
           },
+          {
+            path: 'dashboard/invitations/:id',
+            element: <InvitationDetail />,
+          },
         ],
       },
     ],
+  },
+  {
+    path: 'i/:slug',
+    element: <PublicInvitation />,
   },
 ]);
