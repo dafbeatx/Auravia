@@ -1,6 +1,7 @@
 -- ============================================================================
 -- AUROVIA DATABASE INITIAL SCHEMA & SECURITY MIGRATION
 -- Source of Truth: Aurovia Database & RLS Specification v1.3
+-- Security Hardening: Aurovia Database Security Audit v1.4
 -- ============================================================================
 
 -- Prerequisites
@@ -12,25 +13,32 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Function: Auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.set_updated_at()
-RETURNS trigger AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
--- Function: Auto-create profile on Supabase auth user signup
+-- Function: Auto-create profile on Supabase auth user signup (Hardened)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', 'User Aurovia')
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================================================
 -- 1. PROFILES
@@ -596,11 +604,13 @@ CREATE POLICY "Public can view unhidden rsvp wishes"
     )
   );
 
+-- Public submit RSVP: Hardened with is_hidden = false
 CREATE POLICY "Public can submit rsvp to published invitations"
   ON public.rsvps FOR INSERT
   TO anon, authenticated
   WITH CHECK (
-    EXISTS (
+    is_hidden = false
+    AND EXISTS (
       SELECT 1 FROM public.invitations
       WHERE id = rsvps.invitation_id
         AND status = 'published'
@@ -619,6 +629,7 @@ CREATE POLICY "Owners can view all rsvps"
     )
   );
 
+-- Owners can only update moderation state (is_hidden) via RLS & column grant
 CREATE POLICY "Owners can update rsvps"
   ON public.rsvps FOR UPDATE
   TO authenticated
@@ -653,24 +664,32 @@ CREATE POLICY "Owners can delete rsvps"
 -- ============================================================================
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM public, anon, authenticated;
 
--- Role anon (Tamu Publik)
+-- Role anon (Tamu Publik: Least Privilege & Column Level Protection)
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT SELECT ON public.templates TO anon;
-GRANT SELECT ON public.invitations TO anon;
+-- Exclude user_id from anonymous SELECT:
+GRANT SELECT (id, template_id, slug, title, event_type, status, allow_rsvp, show_wishes, theme_override, settings, published_at, created_at) ON public.invitations TO anon;
 GRANT SELECT ON public.invitation_data TO anon;
 GRANT SELECT ON public.invitation_sections TO anon;
 GRANT SELECT ON public.events TO anon;
 GRANT SELECT ON public.gallery_items TO anon;
-GRANT SELECT, INSERT ON public.rsvps TO anon;
+-- Exclude guest_id, pax_count, status, is_hidden from anonymous SELECT:
+GRANT SELECT (id, invitation_id, guest_name, wishes, created_at) ON public.rsvps TO anon;
+-- Exclude is_hidden from anonymous INSERT:
+GRANT INSERT (invitation_id, guest_id, guest_name, status, pax_count, wishes) ON public.rsvps TO anon;
 
--- Role authenticated (Pengguna Terdaftar)
+-- Role authenticated (Pengguna Terdaftar: Explicit DML Only, No TRUNCATE/TRIGGER/REFERENCES)
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT ON public.templates TO authenticated;
-GRANT ALL ON public.invitations TO authenticated;
-GRANT ALL ON public.invitation_data TO authenticated;
-GRANT ALL ON public.invitation_sections TO authenticated;
-GRANT ALL ON public.events TO authenticated;
-GRANT ALL ON public.gallery_items TO authenticated;
-GRANT ALL ON public.guests TO authenticated;
-GRANT ALL ON public.rsvps TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.invitations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.invitation_data TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.invitation_sections TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.events TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.gallery_items TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.guests TO authenticated;
+GRANT SELECT, DELETE ON public.rsvps TO authenticated;
+-- Allow authenticated users to submit RSVP as guests (excluding is_hidden):
+GRANT INSERT (invitation_id, guest_id, guest_name, status, pax_count, wishes) ON public.rsvps TO authenticated;
+-- Owner only permitted to update moderation column (is_hidden):
+GRANT UPDATE (is_hidden) ON public.rsvps TO authenticated;
