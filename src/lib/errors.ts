@@ -9,6 +9,7 @@ export type AppErrorCode =
   | 'AUTHORIZATION_ERROR'
   | 'NOT_FOUND_ERROR'
   | 'DATABASE_ERROR'
+  | 'STORAGE_ERROR'
   | 'NETWORK_ERROR'
   | 'UNKNOWN_ERROR';
 
@@ -56,6 +57,13 @@ export class DatabaseError extends AppError {
   constructor(message: string = 'Terjadi kesalahan saat memproses data di server.', originalError?: unknown) {
     super(message, 'DATABASE_ERROR', originalError);
     this.name = 'DatabaseError';
+  }
+}
+
+export class StorageError extends AppError {
+  constructor(message: string = 'Terjadi kesalahan saat memproses berkas di penyimpanan.', originalError?: unknown) {
+    super(message, 'STORAGE_ERROR', originalError);
+    this.name = 'StorageError';
   }
 }
 

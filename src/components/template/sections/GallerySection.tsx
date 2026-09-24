@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
+import { getGalleryPublicUrl } from '@/lib/invitations';
 
 export const GallerySection: React.FC<SectionRendererProps> = ({ gallery }) => {
   const images = gallery && gallery.length > 0 ? gallery : [];
@@ -26,7 +27,7 @@ export const GallerySection: React.FC<SectionRendererProps> = ({ gallery }) => {
               className="border border-[var(--theme-color-border)] rounded overflow-hidden bg-[var(--theme-color-surface)]"
             >
               <img
-                src={img.storage_path || img.thumbnail_path || ''}
+                src={getGalleryPublicUrl(img.storage_path || img.thumbnail_path || '')}
                 alt={img.caption || 'Foto dokumentasi acara'}
                 loading="lazy"
                 className="w-full h-48 object-cover"

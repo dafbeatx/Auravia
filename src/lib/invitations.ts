@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { AuthenticationError, AuthorizationError, DatabaseError, ValidationError } from '@/lib/errors';
+import { AuthenticationError, AuthorizationError, DatabaseError, StorageError, ValidationError } from '@/lib/errors';
 import type { Tables, TablesUpdate } from '@/types/database';
 
 export type InvitationListItem = Pick<
@@ -712,8 +712,184 @@ export async function getInvitationGalleryItems(invitationId: string): Promise<I
   return data ?? [];
 }
 
+export const INVITATION_GALLERY_BUCKET = 'invitation-gallery';
+export const MAX_GALLERY_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+export const ALLOWED_GALLERY_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
 /**
- * Menambahkan item foto baru ke galeri undangan.
+ * Mengonversi path penyimpanan atau URL gambar menjadi URL publik yang dapat diakses browser.
+ * Jika berkas tersimpan di Supabase Storage bucket 'invitation-gallery', fungsi ini
+ * menghasilkan public URL secara deterministik tanpa request jaringan berulang (hemat egress).
+ */
+export function getGalleryPublicUrl(storagePath: string | null | undefined): string {
+  if (!storagePath) return '';
+  const trimmed = storagePath.trim();
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return trimmed;
+  }
+  const { data } = supabase.storage.from(INVITATION_GALLERY_BUCKET).getPublicUrl(trimmed);
+  return data.publicUrl;
+}
+
+/**
+ * Validasi ketat berkas foto sebelum proses pengunggahan.
+ * Menolak format selain JPEG, PNG, dan WebP (termasuk SVG dan format non-image).
+ * Membatasi ukuran berkas maksimal 5 MB per foto.
+ */
+export function validateGalleryImageFile(file: File): void {
+  if (!file) {
+    throw new ValidationError('Berkas foto tidak ditemukan.');
+  }
+
+  if (file.size > MAX_GALLERY_FILE_SIZE_BYTES) {
+    throw new ValidationError(
+      `Ukuran berkas "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 5 MB.`
+    );
+  }
+
+  if (!ALLOWED_GALLERY_MIME_TYPES.includes(file.type as (typeof ALLOWED_GALLERY_MIME_TYPES)[number])) {
+    throw new ValidationError(
+      `Format berkas "${file.name}" tidak didukung. Harap gunakan gambar berformat JPG, PNG, atau WebP.`
+    );
+  }
+
+  const nameParts = file.name.split('.');
+  const ext = (nameParts.length > 1 ? nameParts.pop() : '')?.toLowerCase();
+  const validExts = ['jpg', 'jpeg', 'png', 'webp'];
+  if (!ext || !validExts.includes(ext)) {
+    throw new ValidationError(
+      `Ekstensi berkas "${file.name}" tidak valid. Hanya ekstensi .jpg, .jpeg, .png, dan .webp yang diizinkan.`
+    );
+  }
+}
+
+/**
+ * Ekstraksi dimensi gambar (width & height) secara aman di browser tanpa library eksternal.
+ */
+export function getBrowserImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.URL) {
+      resolve({ width: 0, height: 0 });
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const width = img.naturalWidth || 0;
+      const height = img.naturalHeight || 0;
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width, height });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width: 0, height: 0 });
+    };
+
+    img.src = objectUrl;
+  });
+}
+
+/**
+ * Mengunggah satu foto galeri ke Supabase Storage dengan struktur path tenant-safe:
+ * {user_id}/{invitation_id}/{uuid}.{ext}
+ *
+ * Menjaga multi-tenant isolation dan prinsip atomik:
+ * 1. Validasi sesi & berkas.
+ * 2. Ekstraksi dimensi (width & height).
+ * 3. Unggah ke storage bucket 'invitation-gallery'.
+ * 4. Buat baris baru di tabel public.gallery_items.
+ * 5. Rollback (hapus berkas di Storage) jika insert database gagal, mencegah orphan files.
+ */
+export async function uploadInvitationGalleryPhoto(
+  invitationId: string,
+  file: File,
+  caption?: string | null,
+  displayOrder?: number
+): Promise<InvitationGalleryItem> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new AuthenticationError('Sesi pengguna tidak valid. Silakan masuk kembali.');
+  }
+
+  validateGalleryImageFile(file);
+
+  const { width, height } = await getBrowserImageDimensions(file);
+
+  let ext = 'jpg';
+  if (file.type === 'image/png') ext = 'png';
+  else if (file.type === 'image/webp') ext = 'webp';
+  else if (file.type === 'image/jpeg') ext = 'jpg';
+
+  const fileId = crypto.randomUUID();
+  const storagePath = `${user.id}/${invitationId}/${fileId}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(INVITATION_GALLERY_BUCKET)
+    .upload(storagePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    });
+
+  if (uploadError) {
+    if (
+      uploadError.message.includes('row-level security') ||
+      uploadError.message.includes('unauthorized') ||
+      (uploadError as { statusCode?: number }).statusCode === 403
+    ) {
+      throw new AuthorizationError('Anda tidak memiliki hak akses untuk mengunggah berkas ke undangan ini.');
+    }
+    throw new StorageError(
+      'Gagal mengunggah foto ke penyimpanan. Silakan periksa koneksi internet Anda dan coba lagi.',
+      uploadError
+    );
+  }
+
+  const cleanCaption = caption?.trim() || null;
+  const { data: itemData, error: insertError } = await supabase
+    .from('gallery_items')
+    .insert({
+      invitation_id: invitationId,
+      storage_path: storagePath,
+      thumbnail_path: storagePath,
+      caption: cleanCaption,
+      display_order: typeof displayOrder === 'number' ? displayOrder : 0,
+      width: width > 0 ? width : null,
+      height: height > 0 ? height : null,
+    })
+    .select('id, storage_path, thumbnail_path, caption, display_order, width, height')
+    .single();
+
+  if (insertError) {
+    // Rollback: bersihkan objek storage yang baru diunggah agar tidak meninggalkan orphan file
+    try {
+      await supabase.storage.from(INVITATION_GALLERY_BUCKET).remove([storagePath]);
+    } catch {
+      // Abaikan error pada rollback cleanup
+    }
+    throw new DatabaseError(
+      'Gagal menyimpan data foto ke galeri. Berkas telah dibersihkan secara otomatis.',
+      insertError
+    );
+  }
+
+  return itemData;
+}
+
+/**
+ * Menambahkan item foto baru ke galeri undangan secara langsung lewat path/URL.
  */
 export async function createInvitationGalleryItem(
   invitationId: string,
@@ -758,7 +934,7 @@ export async function createInvitationGalleryItem(
 }
 
 /**
- * Memperbarui keterangan atau data item galeri.
+ * Memperbarui keterangan atau urutan foto galeri tanpa perlu mengunggah ulang berkas.
  */
 export async function updateInvitationGalleryItem(
   itemId: string,
@@ -798,9 +974,73 @@ export async function updateInvitationGalleryItem(
 }
 
 /**
- * Menghapus foto dari galeri undangan.
+ * Menghapus foto galeri secara menyeluruh:
+ * 1. Menghapus objek fisik di Supabase Storage (jika berupa path storage Aurovia).
+ * 2. Menghapus record metadata di tabel public.gallery_items.
+ * Jika penghapusan storage gagal, batalkan atau laporkan kegagalan secara transparan.
  */
-export async function deleteInvitationGalleryItem(itemId: string, invitationId: string): Promise<void> {
+export async function deleteInvitationGalleryPhoto(
+  item: InvitationGalleryItem,
+  invitationId: string
+): Promise<void> {
+  const isStoragePath =
+    item.storage_path &&
+    !item.storage_path.startsWith('http://') &&
+    !item.storage_path.startsWith('https://') &&
+    !item.storage_path.startsWith('blob:') &&
+    !item.storage_path.startsWith('data:');
+
+  if (isStoragePath) {
+    const { error: storageError } = await supabase.storage
+      .from(INVITATION_GALLERY_BUCKET)
+      .remove([item.storage_path]);
+
+    if (storageError) {
+      throw new StorageError(
+        'Gagal menghapus berkas foto dari penyimpanan. Operasi dibatalkan demi keamanan data.',
+        storageError
+      );
+    }
+  }
+
+  const { error: dbError } = await supabase
+    .from('gallery_items')
+    .delete()
+    .eq('id', item.id)
+    .eq('invitation_id', invitationId);
+
+  if (dbError) {
+    throw new DatabaseError('Gagal menghapus data foto dari galeri.', dbError);
+  }
+}
+
+/**
+ * Menghapus foto dari galeri undangan (kompatibilitas mundur dengan opsi hapus berkas storage).
+ */
+export async function deleteInvitationGalleryItem(
+  itemId: string,
+  invitationId: string,
+  storagePath?: string | null
+): Promise<void> {
+  if (
+    storagePath &&
+    !storagePath.startsWith('http://') &&
+    !storagePath.startsWith('https://') &&
+    !storagePath.startsWith('blob:') &&
+    !storagePath.startsWith('data:')
+  ) {
+    const { error: storageError } = await supabase.storage
+      .from(INVITATION_GALLERY_BUCKET)
+      .remove([storagePath]);
+
+    if (storageError) {
+      throw new StorageError(
+        'Gagal menghapus berkas foto dari penyimpanan. Operasi dibatalkan demi keamanan data.',
+        storageError
+      );
+    }
+  }
+
   const { error } = await supabase
     .from('gallery_items')
     .delete()

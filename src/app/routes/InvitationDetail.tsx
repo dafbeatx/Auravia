@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, type FormEvent } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type FormEvent } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   getMyInvitationById,
@@ -16,10 +16,12 @@ import {
   updateInvitationEvent,
   deleteInvitationEvent,
   getInvitationGalleryItems,
-  createInvitationGalleryItem,
   updateInvitationGalleryItem,
-  deleteInvitationGalleryItem,
   updateGalleryItemsOrder,
+  uploadInvitationGalleryPhoto,
+  deleteInvitationGalleryPhoto,
+  getGalleryPublicUrl,
+  validateGalleryImageFile,
   extractInvitationContent,
   type InvitationDetail as IInvitationDetail,
   type InvitationTemplateConfig,
@@ -145,20 +147,34 @@ export function InvitationDetail() {
   const [eventToDelete, setEventToDelete] = useState<InvitationEventItem | null>(null);
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
 
-  // Modal Galeri Foto (Gallery Modal)
-  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
-  const [editingGalleryId, setEditingGalleryId] = useState<string | null>(null);
-  const [galleryForm, setGalleryForm] = useState({
-    storage_path: '',
-    caption: '',
-  });
-  const [isSavingGallery, setIsSavingGallery] = useState(false);
-  const [galleryErrorMessage, setGalleryErrorMessage] = useState<string | null>(null);
+  // Modal Unggah Foto Galeri (Upload Modal)
+  interface StagedUploadFile {
+    id: string;
+    file: File;
+    previewUrl: string;
+    caption: string;
+    sizeFormatted: string;
+  }
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<StagedUploadFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; fileName: string } | null>(null);
+  const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Modal Edit Keterangan Foto
+  const [editGalleryModalOpen, setEditGalleryModalOpen] = useState(false);
+  const [editingGalleryItem, setEditingGalleryItem] = useState<InvitationGalleryItem | null>(null);
+  const [editCaption, setEditCaption] = useState('');
+  const [isSavingEditGallery, setIsSavingEditGallery] = useState(false);
+  const [editGalleryErrorMessage, setEditGalleryErrorMessage] = useState<string | null>(null);
 
   // Modal Konfirmasi Hapus Foto Galeri
   const [deleteGalleryModalOpen, setDeleteGalleryModalOpen] = useState(false);
   const [galleryToDelete, setGalleryToDelete] = useState<InvitationGalleryItem | null>(null);
   const [isDeletingGallery, setIsDeletingGallery] = useState(false);
+  const [deleteGalleryErrorMessage, setDeleteGalleryErrorMessage] = useState<string | null>(null);
 
   // Status publikasi
   const [isPublishing, setIsPublishing] = useState(false);
@@ -729,74 +745,185 @@ export function InvitationDetail() {
   // GALLERY HANDLERS
   // ==========================================
 
-  const handleOpenAddGalleryModal = () => {
-    setEditingGalleryId(null);
-    setGalleryForm({
-      storage_path: '',
-      caption: '',
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleOpenUploadModal = () => {
+    setStagedFiles([]);
+    setUploadErrorMessage(null);
+    setUploadProgress(null);
+    setUploadModalOpen(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    if (isUploading) return;
+    stagedFiles.forEach((f) => {
+      try {
+        URL.revokeObjectURL(f.previewUrl);
+      } catch {
+        // Abaikan pembersihan
+      }
     });
-    setGalleryErrorMessage(null);
-    setGalleryModalOpen(true);
+    setStagedFiles([]);
+    setUploadErrorMessage(null);
+    setUploadProgress(null);
+    setUploadModalOpen(false);
+  };
+
+  const handleSelectFiles = (fileList: FileList | File[]) => {
+    setUploadErrorMessage(null);
+    const filesArray = Array.from(fileList);
+    if (filesArray.length === 0) return;
+
+    if (stagedFiles.length + filesArray.length > 5) {
+      setUploadErrorMessage('Maksimal 5 foto dalam satu batch pengunggahan untuk menjaga stabilitas jaringan.');
+      return;
+    }
+
+    const newlyStaged: StagedUploadFile[] = [];
+    for (const file of filesArray) {
+      try {
+        validateGalleryImageFile(file);
+        newlyStaged.push({
+          id: crypto.randomUUID(),
+          file,
+          previewUrl: URL.createObjectURL(file),
+          caption: '',
+          sizeFormatted: formatFileSize(file.size),
+        });
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setUploadErrorMessage(err.message);
+        } else {
+          setUploadErrorMessage('Format atau ukuran salah satu berkas tidak valid.');
+        }
+        return;
+      }
+    }
+
+    setStagedFiles((prev) => [...prev, ...newlyStaged]);
+  };
+
+  const handleRemoveStagedFile = (idToRemove: string) => {
+    setStagedFiles((prev) => {
+      const target = prev.find((f) => f.id === idToRemove);
+      if (target?.previewUrl) {
+        try {
+          URL.revokeObjectURL(target.previewUrl);
+        } catch {
+          // Abaikan pembersihan
+        }
+      }
+      return prev.filter((f) => f.id !== idToRemove);
+    });
+  };
+
+  const handleUpdateStagedCaption = (idToUpdate: string, newCaption: string) => {
+    setStagedFiles((prev) =>
+      prev.map((f) => (f.id === idToUpdate ? { ...f, caption: newCaption } : f))
+    );
+  };
+
+  const handleStartUpload = async () => {
+    if (!id || stagedFiles.length === 0 || isUploading) return;
+
+    setIsUploading(true);
+    setUploadErrorMessage(null);
+
+    const uploadedResults: InvitationGalleryItem[] = [];
+    const baseOrder = draftGallery.length;
+
+    try {
+      for (let i = 0; i < stagedFiles.length; i++) {
+        const item = stagedFiles[i];
+        if (!item) continue;
+        setUploadProgress({
+          current: i + 1,
+          total: stagedFiles.length,
+          fileName: item.file.name,
+        });
+
+        const createdItem = await uploadInvitationGalleryPhoto(
+          id,
+          item.file,
+          item.caption,
+          baseOrder + i
+        );
+        uploadedResults.push(createdItem);
+      }
+
+      // Update state galeri lokal seketika agar preview undangan langsung update
+      setDraftGallery((prev) => [...prev, ...uploadedResults]);
+      setSaveSuccessMessage(`${uploadedResults.length} foto berhasil diunggah ke galeri.`);
+
+      // Bersihkan object URLs
+      stagedFiles.forEach((f) => {
+        try {
+          URL.revokeObjectURL(f.previewUrl);
+        } catch {
+          // Abaikan pembersihan
+        }
+      });
+      setStagedFiles([]);
+      setUploadProgress(null);
+      setUploadModalOpen(false);
+    } catch (err: unknown) {
+      if (uploadedResults.length > 0) {
+        setDraftGallery((prev) => [...prev, ...uploadedResults]);
+        setStagedFiles((prev) => prev.slice(uploadedResults.length));
+      }
+      if (err instanceof Error) {
+        setUploadErrorMessage(err.message);
+      } else {
+        setUploadErrorMessage('Gagal mengunggah foto ke penyimpanan.');
+      }
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleOpenEditGalleryModal = (item: InvitationGalleryItem) => {
-    setEditingGalleryId(item.id);
-    setGalleryForm({
-      storage_path: item.storage_path,
-      caption: item.caption || '',
-    });
-    setGalleryErrorMessage(null);
-    setGalleryModalOpen(true);
+    setEditingGalleryItem(item);
+    setEditCaption(item.caption || '');
+    setEditGalleryErrorMessage(null);
+    setEditGalleryModalOpen(true);
   };
 
-  const handleSaveGalleryItem = async (e: FormEvent) => {
+  const handleSaveEditCaption = async (e: FormEvent) => {
     e.preventDefault();
-    if (!id) return;
+    if (!id || !editingGalleryItem) return;
 
-    setGalleryErrorMessage(null);
-
-    const cleanPath = galleryForm.storage_path.trim();
-    if (!cleanPath) {
-      setGalleryErrorMessage('Tautan atau jalur berkas foto wajib diisi.');
+    const cleanCaption = editCaption.trim();
+    if (cleanCaption.length > 200) {
+      setEditGalleryErrorMessage('Keterangan foto maksimal 200 karakter.');
       return;
     }
 
-    const cleanCaption = galleryForm.caption.trim() || null;
-    if (cleanCaption && cleanCaption.length > 200) {
-      setGalleryErrorMessage('Keterangan foto maksimal 200 karakter.');
-      return;
-    }
-
-    setIsSavingGallery(true);
+    setIsSavingEditGallery(true);
+    setEditGalleryErrorMessage(null);
 
     try {
-      if (editingGalleryId) {
-        const updated = await updateInvitationGalleryItem(editingGalleryId, id, {
-          caption: cleanCaption,
-        });
-        setDraftGallery((prev) =>
-          prev.map((g) => (g.id === editingGalleryId ? updated : g))
-        );
-      } else {
-        const created = await createInvitationGalleryItem(id, {
-          storage_path: cleanPath,
-          thumbnail_path: cleanPath,
-          caption: cleanCaption,
-          display_order: draftGallery.length,
-        });
-        setDraftGallery((prev) => [...prev, created]);
-      }
+      const updated = await updateInvitationGalleryItem(editingGalleryItem.id, id, {
+        caption: cleanCaption || null,
+      });
 
-      setGalleryModalOpen(false);
-      setSaveSuccessMessage('Foto galeri berhasil disimpan.');
+      setDraftGallery((prev) =>
+        prev.map((g) => (g.id === editingGalleryItem.id ? updated : g))
+      );
+      setEditGalleryModalOpen(false);
+      setEditingGalleryItem(null);
+      setSaveSuccessMessage('Keterangan foto berhasil disimpan.');
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setGalleryErrorMessage(err.message);
+        setEditGalleryErrorMessage(err.message);
       } else {
-        setGalleryErrorMessage('Gagal menyimpan foto galeri.');
+        setEditGalleryErrorMessage('Gagal memperbarui keterangan foto.');
       }
     } finally {
-      setIsSavingGallery(false);
+      setIsSavingEditGallery(false);
     }
   };
 
@@ -845,14 +972,20 @@ export function InvitationDetail() {
   const handleConfirmDeleteGallery = async () => {
     if (!id || !galleryToDelete) return;
     setIsDeletingGallery(true);
+    setDeleteGalleryErrorMessage(null);
+
     try {
-      await deleteInvitationGalleryItem(galleryToDelete.id, id);
+      await deleteInvitationGalleryPhoto(galleryToDelete, id);
       setDraftGallery((prev) => prev.filter((g) => g.id !== galleryToDelete.id));
       setDeleteGalleryModalOpen(false);
       setGalleryToDelete(null);
-      setSaveSuccessMessage('Foto berhasil dihapus dari galeri.');
-    } catch {
-      alert('Gagal menghapus foto. Silakan periksa koneksi Anda dan coba lagi.');
+      setSaveSuccessMessage('Foto berhasil dihapus dari galeri dan penyimpanan.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setDeleteGalleryErrorMessage(err.message);
+      } else {
+        setDeleteGalleryErrorMessage('Gagal menghapus foto dari galeri.');
+      }
     } finally {
       setIsDeletingGallery(false);
     }
@@ -1626,117 +1759,178 @@ export function InvitationDetail() {
             {/* TAB 4: GALERI FOTO (GALLERY) */}
             {activeTab === 'gallery' && (
               <div className="p-5 space-y-4 text-xs">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <h3 className="font-semibold text-text-primary">
+                    <h3 className="font-semibold text-text-primary text-sm">
                       Galeri Foto
                     </h3>
                     <p className="text-text-muted leading-relaxed">
-                      Dokumentasi foto kebahagiaan yang tampil pada halaman undangan.
+                      Dokumentasi foto momen kebahagiaan yang tampil pada halaman undangan.
                     </p>
                   </div>
                   <button
                     type="button"
-                    onClick={handleOpenAddGalleryModal}
-                    className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer whitespace-nowrap"
+                    onClick={handleOpenUploadModal}
+                    className="py-2 px-3.5 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer whitespace-nowrap min-h-[38px] flex items-center gap-1.5 shadow-xs"
                   >
-                    + Tambah Foto
+                    <span>+</span> Unggah Foto
                   </button>
                 </div>
 
-                {/* Pemberitahuan Audit Storage */}
-                <div className="p-3 bg-surface-elevated border border-border rounded text-[11px] text-text-muted leading-relaxed">
-                  <strong className="text-text-primary font-medium">Catatan Integrasi:</strong> Supabase Storage bucket langsung untuk upload file saat ini belum dikonfigurasi pada database production. Penambahan foto dilakukan melalui tautan URL gambar (misal CDN / Unsplash / image hosting) yang disimpan ke tabel <code className="font-mono text-text-primary">gallery_items</code>.
+                {/* Status Storage Information */}
+                <div className="p-3 bg-surface-elevated border border-border rounded text-[11px] text-text-muted leading-relaxed flex items-start gap-2">
+                  <span className="text-primary font-bold shrink-0 mt-0.5">&bull;</span>
+                  <div>
+                    <strong className="text-text-primary font-medium">Penyimpanan Terintegrasi:</strong> Foto diunggah langsung ke Supabase Storage bucket <code className="font-mono text-text-primary">invitation-gallery</code> dengan struktur tenant-safe. Format didukung: JPG, PNG, WebP (maks. 5 MB per foto, maksimal 5 foto per batch).
+                  </div>
                 </div>
 
                 {draftGallery.length === 0 ? (
-                  <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
-                    <p className="text-text-muted">
-                      Belum ada foto yang ditambahkan ke galeri.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleOpenAddGalleryModal}
-                      className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                    >
-                      + Tambah Foto Pertama
-                    </button>
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOver(false);
+                      if (e.dataTransfer.files) {
+                        handleOpenUploadModal();
+                        handleSelectFiles(e.dataTransfer.files);
+                      }
+                    }}
+                    className={`p-8 border-2 border-dashed rounded-lg text-center space-y-3 transition-colors ${
+                      isDraggingOver
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border bg-surface'
+                    }`}
+                  >
+                    <div className="w-12 h-12 mx-auto rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted text-lg">
+                      &#128247;
+                    </div>
+                    <div>
+                      <p className="text-text-primary font-medium text-xs">
+                        Belum ada foto yang diunggah ke galeri
+                      </p>
+                      <p className="text-text-subtle text-[11px] mt-0.5">
+                        Tarik dan lepaskan foto ke area ini, atau klik tombol di bawah untuk memilih berkas.
+                      </p>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleOpenUploadModal}
+                        className="py-2 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        + Unggah Foto Pertama
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {draftGallery.map((item, index) => (
-                      <div
-                        key={item.id}
-                        className="p-3 border border-border rounded bg-surface hover:bg-surface-elevated/40 transition-colors flex items-center justify-between gap-3"
+                    {/* Header kontrol & total */}
+                    <div className="flex items-center justify-between text-[11px] text-text-subtle px-1">
+                      <span>Total {draftGallery.length} foto dalam galeri</span>
+                      <span>Format display: Grid responsif</span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {draftGallery.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="p-3 border border-border rounded-lg bg-surface hover:bg-surface-elevated/40 transition-colors flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Tombol Urutan */}
+                            <div className="flex flex-col gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGalleryUp(index)}
+                                disabled={index === 0}
+                                aria-label="Pindahkan foto ke atas"
+                                className="w-6 h-6 flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed border border-border rounded text-xs bg-surface hover:bg-surface-elevated transition-colors"
+                              >
+                                &uarr;
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveGalleryDown(index)}
+                                disabled={index === draftGallery.length - 1}
+                                aria-label="Pindahkan foto ke bawah"
+                                className="w-6 h-6 flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed border border-border rounded text-xs bg-surface hover:bg-surface-elevated transition-colors"
+                              >
+                                &darr;
+                              </button>
+                            </div>
+
+                            {/* Thumbnail Foto */}
+                            <img
+                              src={getGalleryPublicUrl(item.storage_path)}
+                              alt={item.caption || 'Foto galeri'}
+                              className="w-14 h-14 object-cover rounded border border-border bg-surface-elevated shrink-0"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f5f4f0" width="100" height="100"/><text fill="%2378716c" font-size="12" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Gambar</text></svg>';
+                              }}
+                            />
+
+                            <div className="truncate min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] text-text-subtle">
+                                  #{index + 1}
+                                </span>
+                                {item.width && item.height ? (
+                                  <span className="text-[10px] bg-surface-elevated text-text-muted px-1.5 py-0.5 rounded font-mono border border-border">
+                                    {item.width} &times; {item.height} px
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="text-xs text-text-primary font-medium truncate mt-0.5">
+                                {item.caption || 'Tanpa keterangan foto'}
+                              </p>
+                              <p className="text-[10px] text-text-subtle font-mono truncate max-w-[260px]">
+                                {item.storage_path}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditGalleryModal(item)}
+                              className="py-1.5 px-2.5 text-xs border border-border rounded bg-surface hover:bg-surface-elevated text-text-primary font-medium transition-colors cursor-pointer min-h-[32px]"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGalleryToDelete(item);
+                                setDeleteGalleryErrorMessage(null);
+                                setDeleteGalleryModalOpen(true);
+                              }}
+                              className="py-1.5 px-2.5 text-xs border border-border rounded bg-surface hover:bg-danger/10 hover:border-danger/30 text-danger font-medium transition-colors cursor-pointer min-h-[32px]"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 text-center">
+                      <button
+                        type="button"
+                        onClick={handleOpenUploadModal}
+                        className="py-2 px-4 border border-dashed border-border hover:border-primary rounded-lg text-text-muted hover:text-primary text-xs font-semibold transition-colors cursor-pointer w-full flex items-center justify-center gap-1.5 bg-surface"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Tombol Urutan */}
-                          <div className="flex flex-col gap-0.5">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveGalleryUp(index)}
-                              disabled={index === 0}
-                              aria-label="Pindahkan foto ke atas"
-                              className="w-5 h-5 flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed border border-border rounded text-[10px] bg-surface"
-                            >
-                              &uarr;
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveGalleryDown(index)}
-                              disabled={index === draftGallery.length - 1}
-                              aria-label="Pindahkan foto ke bawah"
-                              className="w-5 h-5 flex items-center justify-center text-text-muted hover:text-text-primary disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed border border-border rounded text-[10px] bg-surface"
-                            >
-                              &darr;
-                            </button>
-                          </div>
-
-                          {/* Thumbnail */}
-                          <img
-                            src={item.storage_path || item.thumbnail_path || ''}
-                            alt={item.caption || 'Foto galeri'}
-                            className="w-14 h-14 object-cover rounded border border-border bg-surface-elevated shrink-0"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f5f4f0" width="100" height="100"/><text fill="%2378716c" font-size="12" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Gambar</text></svg>';
-                            }}
-                          />
-
-                          <div className="truncate">
-                            <span className="font-mono text-[10px] text-text-subtle block">
-                              Urutan #{index + 1}
-                            </span>
-                            <p className="text-xs text-text-primary font-medium truncate">
-                              {item.caption || 'Tanpa keterangan foto'}
-                            </p>
-                            <p className="text-[10px] text-text-subtle font-mono truncate max-w-[240px]">
-                              {item.storage_path}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditGalleryModal(item)}
-                            className="py-1 px-2 text-[11px] border border-border rounded bg-surface hover:bg-surface-elevated text-text-primary font-medium transition-colors cursor-pointer"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setGalleryToDelete(item);
-                              setDeleteGalleryModalOpen(true);
-                            }}
-                            className="py-1 px-2 text-[11px] border border-border rounded bg-surface hover:bg-danger/10 hover:border-danger/30 text-danger font-medium transition-colors cursor-pointer"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                        + Tambah Foto Lainnya ke Galeri
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2121,8 +2315,206 @@ export function InvitationDetail() {
         </div>
       )}
 
-      {/* 5. Modal Tambah / Edit Foto Galeri */}
-      {galleryModalOpen && (
+      {/* 5. Modal Unggah Foto Galeri */}
+      {uploadModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-lg w-full p-6 shadow-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-xl font-bold text-primary">
+                Unggah Foto Galeri
+              </h2>
+              <button
+                type="button"
+                onClick={handleCloseUploadModal}
+                disabled={isUploading}
+                aria-label="Tutup modal"
+                className="text-text-muted hover:text-text-primary p-1 rounded cursor-pointer disabled:opacity-40"
+              >
+                &times;
+              </button>
+            </div>
+
+            {uploadErrorMessage && (
+              <div className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+                {uploadErrorMessage}
+              </div>
+            )}
+
+            {/* Input Berkas Tersembunyi */}
+            <input
+              ref={galleryFileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => {
+                if (e.target.files) {
+                  handleSelectFiles(e.target.files);
+                  e.target.value = '';
+                }
+              }}
+              className="hidden"
+            />
+
+            {/* Area Drag & Drop */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+                if (e.dataTransfer.files) {
+                  handleSelectFiles(e.dataTransfer.files);
+                }
+              }}
+              onClick={() => {
+                if (!isUploading) galleryFileInputRef.current?.click();
+              }}
+              className={`p-6 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
+                isDraggingOver
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-surface-elevated/40 hover:bg-surface-elevated'
+              } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <div className="space-y-1.5">
+                <p className="text-xs text-text-primary font-medium">
+                  Tarik berkas foto ke sini atau <span className="text-primary underline">klik untuk memilih</span>
+                </p>
+                <p className="text-[11px] text-text-subtle">
+                  Format didukung: JPG, PNG, atau WebP. Maksimal 5 MB per berkas.
+                </p>
+              </div>
+            </div>
+
+            {/* Daftar Berkas Siap Diunggah */}
+            {stagedFiles.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between text-xs text-text-muted">
+                  <span className="font-semibold text-text-primary">
+                    Foto yang Dipilih ({stagedFiles.length}/5):
+                  </span>
+                  {!isUploading && (
+                    <button
+                      type="button"
+                      onClick={() => setStagedFiles([])}
+                      className="text-[11px] text-danger hover:underline cursor-pointer"
+                    >
+                      Hapus Semua
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                  {stagedFiles.map((staged, idx) => (
+                    <div
+                      key={staged.id}
+                      className="p-2.5 border border-border rounded-lg bg-surface flex items-start gap-3"
+                    >
+                      <img
+                        src={staged.previewUrl}
+                        alt="Pratinjau"
+                        className="w-12 h-12 object-cover rounded border border-border bg-surface-elevated shrink-0"
+                      />
+
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs text-text-primary font-medium truncate">
+                            {staged.file.name}
+                          </p>
+                          <span className="text-[10px] text-text-subtle font-mono shrink-0">
+                            {staged.sizeFormatted}
+                          </span>
+                        </div>
+
+                        <input
+                          type="text"
+                          maxLength={200}
+                          disabled={isUploading}
+                          value={staged.caption}
+                          onChange={(e) => handleUpdateStagedCaption(staged.id, e.target.value)}
+                          placeholder={`Keterangan foto #${idx + 1} (opsional)`}
+                          className="w-full py-1 px-2 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-[11px]"
+                        />
+                      </div>
+
+                      {!isUploading && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStagedFile(staged.id)}
+                          aria-label="Batalkan foto ini"
+                          className="text-text-muted hover:text-danger p-1 text-sm cursor-pointer shrink-0"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Indikator Status Pengunggahan */}
+            {isUploading && uploadProgress && (
+              <div className="p-3 bg-surface-elevated border border-border rounded-lg space-y-2 text-xs">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-text-primary font-medium">
+                    Mengunggah {uploadProgress.current} dari {uploadProgress.total} foto...
+                  </span>
+                  <span className="text-text-muted truncate max-w-[160px]">
+                    {uploadProgress.fileName}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{
+                      width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCloseUploadModal}
+                disabled={isUploading}
+                className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50 min-h-[36px]"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleStartUpload}
+                disabled={isUploading || stagedFiles.length === 0}
+                className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50 min-h-[36px] flex items-center gap-1.5"
+              >
+                {isUploading ? (
+                  <>
+                    <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Mengunggah...</span>
+                  </>
+                ) : (
+                  <span>Unggah {stagedFiles.length > 0 ? `${stagedFiles.length} Foto` : ''}</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5b. Modal Edit Keterangan Foto */}
+      {editGalleryModalOpen && editingGalleryItem && (
         <div
           role="dialog"
           aria-modal="true"
@@ -2130,82 +2522,66 @@ export function InvitationDetail() {
         >
           <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
             <h2 className="font-serif text-xl font-bold text-primary">
-              {editingGalleryId ? 'Edit Keterangan Foto' : 'Tambah Foto Galeri'}
+              Edit Keterangan Foto
             </h2>
 
-            {galleryErrorMessage && (
+            {editGalleryErrorMessage && (
               <div className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
-                {galleryErrorMessage}
+                {editGalleryErrorMessage}
               </div>
             )}
 
-            <form onSubmit={handleSaveGalleryItem} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label htmlFor="galPath" className="font-semibold text-text-primary block">
-                  Tautan URL Foto / Jalur Gambar
-                </label>
-                <input
-                  id="galPath"
-                  type="url"
-                  required
-                  disabled={Boolean(editingGalleryId)}
-                  value={galleryForm.storage_path}
-                  onChange={(e) => setGalleryForm({ ...galleryForm, storage_path: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs disabled:opacity-60"
+            <form onSubmit={handleSaveEditCaption} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-text-subtle font-medium block">
+                  Foto Terpilih:
+                </span>
+                <img
+                  src={getGalleryPublicUrl(editingGalleryItem.storage_path)}
+                  alt="Foto Galeri"
+                  className="w-full h-40 object-cover rounded-lg border border-border bg-surface-elevated"
                 />
-                <p className="text-[11px] text-text-subtle">
-                  Masukkan tautan URL langsung ke file gambar (JPG, PNG, atau WebP).
+                <p className="text-[10px] text-text-subtle font-mono truncate">
+                  {editingGalleryItem.storage_path}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="galCaption" className="font-semibold text-text-primary block">
-                  Keterangan Foto (Caption Opsional)
+                <label htmlFor="editCaptionInput" className="font-semibold text-text-primary block">
+                  Keterangan Foto (Caption)
                 </label>
                 <input
-                  id="galCaption"
+                  id="editCaptionInput"
                   type="text"
                   maxLength={200}
-                  value={galleryForm.caption}
-                  onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })}
-                  placeholder="Contoh: Momen foto pranikah di Bromo"
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  placeholder="Contoh: Momen bahagia saat pertunangan"
                   className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                 />
+                <p className="text-[11px] text-text-subtle">
+                  Maksimal 200 karakter. Keterangan ini akan tampil di bawah foto pada undangan.
+                </p>
               </div>
 
-              {galleryForm.storage_path && (
-                <div className="space-y-1 pt-1">
-                  <span className="text-[11px] text-text-subtle font-medium block">
-                    Pratinjau Foto:
-                  </span>
-                  <img
-                    src={galleryForm.storage_path}
-                    alt="Pratinjau"
-                    className="w-full h-36 object-cover rounded border border-border bg-surface-elevated"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="60" viewBox="0 0 100 60"><rect fill="%23f5f4f0" width="100" height="60"/><text fill="%23991b1b" font-size="10" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Gambar tidak valid</text></svg>';
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="pt-3 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setGalleryModalOpen(false)}
-                  disabled={isSavingGallery}
-                  className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50"
+                  onClick={() => {
+                    setEditGalleryModalOpen(false);
+                    setEditingGalleryItem(null);
+                  }}
+                  disabled={isSavingEditGallery}
+                  className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50 min-h-[36px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={isSavingGallery}
-                  className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+                  disabled={isSavingEditGallery}
+                  className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50 min-h-[36px]"
                 >
-                  {isSavingGallery ? 'Menyimpan...' : 'Simpan Foto'}
+                  {isSavingEditGallery ? 'Menyimpan...' : 'Simpan Keterangan'}
                 </button>
               </div>
             </form>
@@ -2224,19 +2600,43 @@ export function InvitationDetail() {
             <h2 className="font-serif text-xl font-bold text-danger">
               Hapus Foto Ini?
             </h2>
+
+            {deleteGalleryErrorMessage && (
+              <div className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+                {deleteGalleryErrorMessage}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 p-2.5 bg-surface-elevated border border-border rounded-lg">
+              <img
+                src={getGalleryPublicUrl(galleryToDelete.storage_path)}
+                alt="Foto yang akan dihapus"
+                className="w-14 h-14 object-cover rounded border border-border shrink-0"
+              />
+              <div className="truncate text-xs">
+                <p className="text-text-primary font-medium truncate">
+                  {galleryToDelete.caption || 'Tanpa keterangan foto'}
+                </p>
+                <p className="text-[10px] text-text-subtle font-mono truncate">
+                  {galleryToDelete.storage_path}
+                </p>
+              </div>
+            </div>
+
             <p className="text-xs text-text-muted leading-relaxed">
-              Foto ini akan dihapus dari galeri dokumentasi undangan Anda.
+              Foto ini akan dihapus secara permanen dari penyimpanan cloud dan galeri dokumentasi undangan Anda. Tindakan ini tidak dapat dibatalkan.
             </p>
 
-            <div className="pt-3 flex justify-end gap-2">
+            <div className="pt-2 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setDeleteGalleryModalOpen(false);
                   setGalleryToDelete(null);
+                  setDeleteGalleryErrorMessage(null);
                 }}
                 disabled={isDeletingGallery}
-                className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer disabled:opacity-50 min-h-[36px]"
               >
                 Batal
               </button>
@@ -2244,7 +2644,7 @@ export function InvitationDetail() {
                 type="button"
                 onClick={handleConfirmDeleteGallery}
                 disabled={isDeletingGallery}
-                className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50 min-h-[36px]"
               >
                 {isDeletingGallery ? 'Menghapus...' : 'Ya, Hapus Foto'}
               </button>
