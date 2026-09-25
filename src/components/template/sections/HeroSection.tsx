@@ -37,6 +37,11 @@ export const HeroSection: React.FC<SectionRendererProps> = ({
   const displayLocation =
     content?.hero?.location_short?.trim() || primaryEvent?.venue_name || null;
 
+  const guestGreeting =
+    content?.hero?.guest_greeting?.trim() ||
+    content?.hero?.guestGreeting?.trim() ||
+    'Kepada Yth.';
+
   return (
     <header className="py-20 sm:py-28 px-6 text-center max-w-3xl mx-auto space-y-6">
       <div className="inline-block px-3 py-1 text-xs uppercase tracking-widest font-semibold rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)] text-[var(--theme-color-primary)]/80">
@@ -53,9 +58,9 @@ export const HeroSection: React.FC<SectionRendererProps> = ({
       ) : null}
 
       {guest?.name ? (
-        <div className="inline-flex flex-col items-center gap-1 py-2 px-5 rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/90 backdrop-blur-sm text-center">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--theme-color-primary)]/70 font-semibold">
-            Kepada Yth. Bapak/Ibu/Saudara/i
+        <div className="inline-flex flex-col items-center gap-1 py-2.5 px-6 rounded-lg border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/90 backdrop-blur-sm text-center shadow-xs">
+          <span className="text-[11px] uppercase tracking-wider text-[var(--theme-color-primary)]/70 font-semibold">
+            {guestGreeting}
           </span>
           <span
             className="text-base sm:text-lg font-medium text-[var(--theme-color-primary)]"

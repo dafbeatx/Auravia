@@ -15,6 +15,12 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
   const [uiState, setUiState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (guest?.name) {
+      setGuestName(guest.name);
+    }
+  }, [guest?.name]);
+
   if (invitation.allowRsvp === false) {
     return null;
   }
@@ -218,11 +224,6 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
                 >
                   Jumlah Kehadiran (Pax)
                 </label>
-                {guest?.pax_limit ? (
-                  <span className="text-[11px] text-[var(--theme-color-primary)]/60">
-                    Batas undangan: {guest.pax_limit} orang
-                  </span>
-                ) : null}
               </div>
               <select
                 id="rsvp-pax-count"

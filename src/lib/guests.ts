@@ -143,12 +143,14 @@ export async function resolveUniqueGuestSlug(
 
     counter += 1;
     const suffix = `-${counter}`;
-    candidate = `${baseSlug.slice(0, 60 - suffix.length)}${suffix}`.replace(/-+$/, '');
+    const truncatedBase = baseSlug.slice(0, 60 - suffix.length).replace(/-+$/, '');
+    candidate = `${truncatedBase}${suffix}`;
   }
 
   // Fallback random suffix when counter exhausts
   const randomSuffix = `-${Math.random().toString(36).substring(2, 6)}`;
-  return `${baseSlug.slice(0, 60 - randomSuffix.length)}${randomSuffix}`;
+  const truncatedFallbackBase = baseSlug.slice(0, 60 - randomSuffix.length).replace(/-+$/, '');
+  return `${truncatedFallbackBase}${randomSuffix}`;
 }
 
 export async function getInvitationGuests(
@@ -314,11 +316,13 @@ export function buildGuestInvitationUrl(
   guestSlug: string,
   origin?: string
 ): string {
+  const resolvedOrigin =
+    origin ?? (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '');
   const path = `/i/${encodeURIComponent(invitationSlug)}?to=${encodeURIComponent(guestSlug)}`;
-  if (!origin) {
+  if (!resolvedOrigin) {
     return path;
   }
-  const cleanOrigin = origin.replace(/\/+$/, '');
+  const cleanOrigin = resolvedOrigin.replace(/\/+$/, '');
   return `${cleanOrigin}${path}`;
 }
 

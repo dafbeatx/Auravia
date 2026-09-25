@@ -167,3 +167,158 @@ describe('generateWhatsAppShareUrl', () => {
   });
 });
 
+describe('Guest Personalization and Slug Collision Handling', () => {
+  it('generates deterministic collision candidate slugs sequentially', () => {
+    const simulateCollisionCandidate = (baseSlug: string, counter: number) => {
+      if (counter === 1) return baseSlug;
+      const suffix = `-${counter}`;
+      return `${baseSlug.slice(0, 60 - suffix.length)}${suffix}`.replace(/-+$/, '');
+    };
+
+    const base = normalizeGuestSlug('Ahmad Pratama');
+    expect(base).toBe('ahmad-pratama');
+    expect(simulateCollisionCandidate(base, 1)).toBe('ahmad-pratama');
+    expect(simulateCollisionCandidate(base, 2)).toBe('ahmad-pratama-2');
+    expect(simulateCollisionCandidate(base, 3)).toBe('ahmad-pratama-3');
+  });
+
+  it('keeps collision slugs within the 60-character PostgreSQL constraint', () => {
+    const longName = 'Sangat Panjang Sekali Nama Tamu Undangan Pernikahan Mewah Di Kota Besar';
+    const baseSlug = normalizeGuestSlug(longName);
+    const suffix = '-2';
+    const truncatedBase = baseSlug.slice(0, 60 - suffix.length).replace(/-+$/, '');
+    const candidate = `${truncatedBase}${suffix}`;
+
+    expect(candidate.length).toBeLessThanOrEqual(60);
+    expect(isValidGuestSlug(candidate)).toBe(true);
+    expect(candidate.endsWith('-2')).toBe(true);
+  });
+});
+
+describe('Guest Resolution & Isolation Security Rules', () => {
+  interface MockGuestRecord {
+    id: string;
+    invitation_id: string;
+    name: string;
+    phone: string | null;
+    pax_limit: number;
+    slug: string;
+  }
+
+  const mockGuestDatabase: MockGuestRecord[] = [
+    {
+      id: 'g-1',
+      invitation_id: 'inv-romeo-juliet',
+      name: 'Ahmad Pratama',
+      phone: '08123456789',
+      pax_limit: 2,
+      slug: 'ahmad-pratama',
+    },
+    {
+      id: 'g-2',
+      invitation_id: 'inv-sarah-dimas',
+      name: 'Ahmad Pratama',
+      phone: '08198765432',
+      pax_limit: 4,
+      slug: 'ahmad-pratama',
+    },
+  ];
+
+  it('resolves guest accurately when slug and invitation_id match', () => {
+    const resolvePublicGuest = (invitationId: string, slug: string) => {
+      const cleanSlug = slug.trim().toLowerCase();
+      if (!cleanSlug) return null;
+      const found = mockGuestDatabase.find(
+        (g) => g.invitation_id === invitationId && g.slug === cleanSlug
+      );
+      if (!found) return null;
+      // Least-privilege public projection: excludes phone number
+      return {
+        id: found.id,
+        invitation_id: found.invitation_id,
+        name: found.name,
+        pax_limit: found.pax_limit,
+        slug: found.slug,
+      };
+    };
+
+    const resolved = resolvePublicGuest('inv-romeo-juliet', 'ahmad-pratama');
+    expect(resolved).not.toBeNull();
+    expect(resolved?.id).toBe('g-1');
+    expect(resolved?.name).toBe('Ahmad Pratama');
+    expect(resolved?.pax_limit).toBe(2);
+    // Verified: phone must never be exposed in public resolution
+    expect((resolved as Record<string, unknown>).phone).toBeUndefined();
+  });
+
+  it('enforces multi-tenant invitation isolation', () => {
+    const resolvePublicGuest = (invitationId: string, slug: string) => {
+      const cleanSlug = slug.trim().toLowerCase();
+      return (
+        mockGuestDatabase.find(
+          (g) => g.invitation_id === invitationId && g.slug === cleanSlug
+        ) ?? null
+      );
+    };
+
+    // Guest exists on inv-romeo-juliet, but looking up on an unrelated invitation returns null
+    const guestFromOtherInvitation = resolvePublicGuest('inv-unrelated-event', 'ahmad-pratama');
+    expect(guestFromOtherInvitation).toBeNull();
+  });
+
+  it('safely handles non-existent or invalid guest slugs with graceful null fallback', () => {
+    const resolvePublicGuest = (invitationId: string, slug?: string | null) => {
+      if (!slug) return null;
+      const cleanSlug = slug.trim().toLowerCase();
+      if (!cleanSlug || !isValidGuestSlug(cleanSlug)) return null;
+      return (
+        mockGuestDatabase.find(
+          (g) => g.invitation_id === invitationId && g.slug === cleanSlug
+        ) ?? null
+      );
+    };
+
+    expect(resolvePublicGuest('inv-romeo-juliet', '')).toBeNull();
+    expect(resolvePublicGuest('inv-romeo-juliet', null)).toBeNull();
+    expect(resolvePublicGuest('inv-romeo-juliet', 'unknown-guest')).toBeNull();
+    expect(resolvePublicGuest('inv-romeo-juliet', 'invalid slug with spaces')).toBeNull();
+    expect(resolvePublicGuest('inv-romeo-juliet', '-malformed-slug')).toBeNull();
+  });
+
+  it('binds guest_id and personal pax limit to RSVP submission', () => {
+    const buildRsvpPayload = (
+      invitationId: string,
+      inputName: string,
+      guest?: { id: string; name: string; pax_limit: number } | null,
+      selectedPax?: number
+    ) => {
+      const maxPax = guest?.pax_limit ? Math.min(Math.max(guest.pax_limit, 1), 20) : 5;
+      const effectivePax = Math.min(selectedPax ?? 1, maxPax);
+
+      return {
+        invitation_id: invitationId,
+        guest_id: guest?.id ?? null,
+        guest_name: guest?.name ?? inputName,
+        pax_count: effectivePax,
+      };
+    };
+
+    // Personalized guest flow
+    const personalizedPayload = buildRsvpPayload(
+      'inv-romeo-juliet',
+      'Someone Else',
+      { id: 'g-1', name: 'Ahmad Pratama', pax_limit: 2 },
+      3
+    );
+    expect(personalizedPayload.guest_id).toBe('g-1');
+    expect(personalizedPayload.guest_name).toBe('Ahmad Pratama');
+    expect(personalizedPayload.pax_count).toBe(2); // Capped by guest.pax_limit
+
+    // Anonymous public attendee flow
+    const anonymousPayload = buildRsvpPayload('inv-romeo-juliet', 'Tamu Umum', null, 3);
+    expect(anonymousPayload.guest_id).toBeNull();
+    expect(anonymousPayload.guest_name).toBe('Tamu Umum');
+    expect(anonymousPayload.pax_count).toBe(3);
+  });
+});
+

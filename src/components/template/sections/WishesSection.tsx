@@ -27,6 +27,12 @@ export const WishesSection: React.FC<SectionRendererProps> = ({ invitation, gues
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
 
+  useEffect(() => {
+    if (guest?.name) {
+      setGuestName(guest.name);
+    }
+  }, [guest?.name]);
+
   const loadWishes = useCallback(async () => {
     if (invitation.showWishes === false) {
       setLoading(false);

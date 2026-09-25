@@ -152,6 +152,23 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
     );
   }, [wishesList, rsvpSearch]);
 
+  // Peta tamu terdaftar untuk resolusi cepat di tabel RSVP
+  const registeredGuestMap = useMemo(
+    () => new Map(guests.map((g) => [g.id, g])),
+    [guests]
+  );
+
+  // Peta status RSVP per tamu undangan
+  const guestRsvpMap = useMemo(() => {
+    const map = new Map<string, RsvpItem>();
+    for (const r of rsvps) {
+      if (r.guest_id) {
+        map.set(r.guest_id, r);
+      }
+    }
+    return map;
+  }, [rsvps]);
+
   // Handler modal tambah tamu
   const handleOpenAddGuestModal = () => {
     setEditingGuestId(null);
@@ -261,10 +278,42 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
   const handleCopyPersonalLink = (guestSlug: string) => {
     const origin = window.location.origin;
     const personalUrl = buildGuestInvitationUrl(invitationSlug, guestSlug, origin);
-    navigator.clipboard.writeText(personalUrl).then(() => {
-      setCopiedGuestSlug(guestSlug);
-      setTimeout(() => setCopiedGuestSlug(null), 2500);
-    });
+    if (!navigator.clipboard?.writeText) {
+      setErrorMessage('Browser tidak mendukung penyalinan otomatis ke papan klip.');
+      return;
+    }
+    navigator.clipboard
+      .writeText(personalUrl)
+      .then(() => {
+        setCopiedGuestSlug(guestSlug);
+        setSuccessMessage('Link berhasil disalin.');
+        setTimeout(() => setCopiedGuestSlug(null), 2500);
+      })
+      .catch(() => {
+        setErrorMessage('Gagal menyalin link ke papan klip. Pastikan izin browser diaktifkan.');
+      });
+  };
+
+  // Salin semua link tamu sekaligus (Bulk Copy)
+  const handleCopyAllLinks = () => {
+    if (guests.length === 0) return;
+    const origin = window.location.origin;
+    const allLinksText = guests
+      .map((g) => `${g.name}: ${buildGuestInvitationUrl(invitationSlug, g.slug, origin)}`)
+      .join('\n');
+
+    if (!navigator.clipboard?.writeText) {
+      setErrorMessage('Browser tidak mendukung penyalinan otomatis ke papan klip.');
+      return;
+    }
+    navigator.clipboard
+      .writeText(allLinksText)
+      .then(() => {
+        setSuccessMessage(`Berhasil menyalin ${guests.length} link undangan tamu.`);
+      })
+      .catch(() => {
+        setErrorMessage('Gagal menyalin semua link ke papan klip.');
+      });
   };
 
   // Bagikan undangan via WhatsApp
@@ -531,6 +580,9 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                   </thead>
                   <tbody className="divide-y divide-border/60">
                     {filteredRsvps.map((rsvp) => {
+                      const registeredGuest = rsvp.guest_id ? registeredGuestMap.get(rsvp.guest_id) : undefined;
+                      const isRegistered = Boolean(registeredGuest || rsvp.guest_id);
+
                       const statusBadge =
                         rsvp.status === 'attending' ? (
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-success/30 bg-success/10 text-success">
@@ -549,8 +601,19 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                       return (
                         <tr key={rsvp.id} className="hover:bg-surface-elevated/30 transition-colors">
                           <td className="py-2.5 px-3">
-                            <div className="font-semibold text-text-primary">
-                              {rsvp.guest_name}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-semibold text-text-primary">
+                                {rsvp.guest_name}
+                              </span>
+                              {isRegistered ? (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary">
+                                  Tamu Terdaftar
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated border border-border text-text-subtle">
+                                  Tamu Umum
+                                </span>
+                              )}
                             </div>
                             {rsvp.wishes ? (
                               <p className="text-[11px] text-text-muted mt-0.5 line-clamp-1 italic max-w-xs">
@@ -699,7 +762,7 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
           </div>
         )}
 
-        {/* 3. TAMPILAN DAFTAR TAMU UNDANGAN */}
+        {/* 3. TAMPILAN DAFTAR TAMU UNDANGAN (5-KOLOM LENGKAP) */}
         {subView === 'guests' && (
           <div className="p-4 bg-surface border border-t-0 border-border rounded-b space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -712,13 +775,25 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleOpenAddGuestModal}
-                className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer self-start sm:self-auto inline-flex items-center gap-1.5"
-              >
-                + Tambah Tamu
-              </button>
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                {guests.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleCopyAllLinks}
+                    className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-text-primary text-xs font-semibold rounded transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                    title="Salin seluruh link personal tamu ke papan klip"
+                  >
+                    Salin Semua Link
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleOpenAddGuestModal}
+                  className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  + Tambah Tamu
+                </button>
+              </div>
             </div>
 
             {/* Input Pencarian Tamu */}
@@ -728,13 +803,13 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                   type="text"
                   value={guestSearch}
                   onChange={(e) => setGuestSearch(e.target.value)}
-                  placeholder="Cari nama atau telepon..."
+                  placeholder="Cari nama, nomor telepon, atau slug..."
                   className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                 />
               </div>
             )}
 
-            {/* Daftar / Tabel Tamu */}
+            {/* Tabel Tamu 5 Kolom: Nama Tamu, Pax Limit, Status, Link Personal, Aksi */}
             {guests.length === 0 ? (
               <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
                 <p className="text-xs text-text-muted font-medium">
@@ -749,73 +824,136 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                 Tidak ada tamu yang cocok dengan pencarian &quot;{guestSearch}&quot;.
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {filteredGuests.map((guest) => {
-                  const isCopied = copiedGuestSlug === guest.slug;
-                  return (
-                    <div
-                      key={guest.id}
-                      className="p-3.5 border border-border rounded bg-surface hover:bg-surface-elevated/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-text-primary text-xs">
-                            {guest.name}
+              <div className="overflow-x-auto border border-border rounded-lg bg-surface">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-surface-elevated border-b border-border text-[11px] text-text-muted uppercase tracking-wider font-semibold">
+                      <th className="py-2.5 px-3">Nama Tamu</th>
+                      <th className="py-2.5 px-3">Pax Limit</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3">Link Personal</th>
+                      <th className="py-2.5 px-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {filteredGuests.map((guest) => {
+                      const guestRsvp = guestRsvpMap.get(guest.id);
+                      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                      const personalUrl = buildGuestInvitationUrl(invitationSlug, guest.slug, origin);
+                      const isCopied = copiedGuestSlug === guest.slug;
+
+                      const statusBadge = guestRsvp ? (
+                        guestRsvp.status === 'attending' ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-success/30 bg-success/10 text-success">
+                            Hadir ({guestRsvp.pax_count} pax)
                           </span>
-                          <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-surface-elevated border border-border font-mono">
-                            Batas {guest.pax_limit} pax
+                        ) : guestRsvp.status === 'declined' ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-danger/30 bg-danger/10 text-danger">
+                            Tidak Hadir
                           </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-text-subtle">
-                          {guest.phone && <span>WhatsApp: {guest.phone}</span>}
-                          <span className="font-mono text-[10px]">
-                            ?to={guest.slug}
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800">
+                            Masih Ragu ({guestRsvp.pax_count} pax)
                           </span>
-                        </div>
-                      </div>
+                        )
+                      ) : (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-border bg-surface-elevated text-text-subtle">
+                          Belum Konfirmasi
+                        </span>
+                      );
 
-                      <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyPersonalLink(guest.slug)}
-                          className="py-1 px-2.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-primary rounded transition-colors cursor-pointer"
-                        >
-                          {isCopied ? 'Tautan Disalin!' : 'Salin Tautan'}
-                        </button>
+                      return (
+                        <tr key={guest.id} className="hover:bg-surface-elevated/30 transition-colors">
+                          {/* 1. Kolom Nama Tamu */}
+                          <td className="py-2.5 px-3">
+                            <div className="font-semibold text-text-primary">
+                              {guest.name}
+                            </div>
+                            {guest.phone && (
+                              <div className="text-[11px] text-text-subtle mt-0.5">
+                                Telp/WA: {guest.phone}
+                              </div>
+                            )}
+                          </td>
 
-                        <button
-                          type="button"
-                          onClick={() => handleShareWhatsApp(guest)}
-                          className="py-1 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold rounded transition-colors cursor-pointer"
-                        >
-                          WhatsApp
-                        </button>
+                          {/* 2. Kolom Pax Limit */}
+                          <td className="py-2.5 px-3 whitespace-nowrap font-mono text-text-primary">
+                            {guest.pax_limit} pax
+                          </td>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditGuestModal(guest)}
-                          className="py-1 px-2 text-text-muted hover:text-text-primary rounded cursor-pointer"
-                          title="Edit Tamu"
-                        >
-                          Edit
-                        </button>
+                          {/* 3. Kolom Status */}
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            {statusBadge}
+                          </td>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setGuestToDelete(guest);
-                            setDeleteGuestModalOpen(true);
-                          }}
-                          className="py-1 px-2 text-danger hover:bg-danger/10 rounded cursor-pointer"
-                          title="Hapus Tamu"
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                          {/* 4. Kolom Link Personal */}
+                          <td className="py-2.5 px-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+                              <span
+                                className="font-mono text-[10px] text-text-subtle max-w-[130px] truncate"
+                                title={personalUrl}
+                              >
+                                ?to={guest.slug}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPersonalLink(guest.slug)}
+                                  className="py-1 px-2 text-[11px] font-semibold rounded border border-border bg-surface hover:bg-surface-elevated text-text-primary transition-colors cursor-pointer shrink-0"
+                                  title="Salin Link Personal"
+                                >
+                                  {isCopied ? 'Tersalin' : 'Salin Link'}
+                                </button>
+                                <a
+                                  href={personalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="py-1 px-2 text-[11px] font-semibold rounded border border-border bg-surface hover:bg-surface-elevated text-text-primary transition-colors cursor-pointer shrink-0"
+                                  title="Buka Link Personal di Tab Baru"
+                                >
+                                  Buka
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleShareWhatsApp(guest)}
+                                  className="py-1 px-2 text-[11px] font-semibold rounded border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-colors cursor-pointer shrink-0"
+                                  title="Kirim Undangan via WhatsApp"
+                                >
+                                  WA
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 5. Kolom Aksi */}
+                          <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditGuestModal(guest)}
+                                className="py-1 px-2 rounded text-xs font-semibold text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
+                                title="Edit Data Tamu"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGuestToDelete(guest);
+                                  setDeleteGuestModalOpen(true);
+                                }}
+                                className="py-1 px-2 rounded text-xs font-semibold text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                                title="Hapus Tamu"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

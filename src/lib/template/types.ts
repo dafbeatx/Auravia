@@ -52,6 +52,8 @@ export interface InvitationContentHero {
   opening_text?: string;
   couple_names?: string;
   location_short?: string;
+  guest_greeting?: string;
+  guestGreeting?: string;
 }
 
 export interface InvitationContentHost {
