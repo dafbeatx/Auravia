@@ -1,5 +1,6 @@
 import { ValidationError } from '@/lib/errors';
 import type { InvitationContentMusic } from '@/lib/template/types';
+import { isValidWebUrl } from '@/lib/urls';
 
 /**
  * Nilai default konfigurasi pemutar musik latar
@@ -15,46 +16,9 @@ export const DEFAULT_MUSIC_CONFIG: InvitationContentMusic = {
 
 /**
  * Memvalidasi apakah URL audio aman dan valid untuk streaming latar.
- * Aturan keamanan:
- * - Hanya mengizinkan protokol http:// atau https://
- * - Menolak mutlak skema javascript:, data:, blob:, file:, dsb.
- * - Menolak URL yang mengandung kredensial sensitif (user:pass@)
- * - Panjang maksimum 2000 karakter
+ * Menggunakan helper URL terpadu yang mematuhi standar keamanan ketat.
  */
-export function isValidAudioUrl(url: string | null | undefined): boolean {
-  if (!url || typeof url !== 'string') return false;
-
-  const trimmed = url.trim();
-  if (!trimmed || trimmed.length > 2000) return false;
-
-  // Cek skema berbahaya
-  const lower = trimmed.toLowerCase();
-  if (
-    lower.startsWith('javascript:') ||
-    lower.startsWith('data:') ||
-    lower.startsWith('blob:') ||
-    lower.startsWith('file:') ||
-    lower.startsWith('ftp:')
-  ) {
-    return false;
-  }
-
-  // Wajib protokol HTTP atau HTTPS
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return false;
-  }
-
-  try {
-    const parsed = new URL(trimmed);
-    // Tolak jika URL memuat kredensial akun
-    if (parsed.username || parsed.password) {
-      return false;
-    }
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
+export const isValidAudioUrl = isValidWebUrl;
 
 /**
  * Validasi ketat konfigurasi musik latar sebelum disimpan ke database.

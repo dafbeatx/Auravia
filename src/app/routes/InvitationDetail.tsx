@@ -37,6 +37,7 @@ import type {
   InvitationContentGiftAccount,
   InvitationContentGiftAddress,
   InvitationContentMusic,
+  InvitationContentCover,
 } from '@/lib/template/types';
 import {
   isValidAudioUrl,
@@ -44,6 +45,12 @@ import {
   sanitizeMusicConfig,
   DEFAULT_MUSIC_CONFIG,
 } from '@/lib/music';
+import {
+  DEFAULT_COVER_CONFIG,
+  validateCoverConfig,
+  sanitizeCoverConfig,
+} from '@/lib/cover';
+import { isValidWebUrl } from '@/lib/urls';
 import { getInvitationGuests } from '@/lib/guests';
 import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
 import { InvitationRenderer } from '@/components/template';
@@ -138,7 +145,14 @@ export function InvitationDetail() {
       is_enabled: false,
     }),
     musicJson: JSON.stringify(DEFAULT_MUSIC_CONFIG),
+    coverJson: JSON.stringify(DEFAULT_COVER_CONFIG),
   });
+
+  // State Formulir Sampul Pembuka (Cover Envelope)
+  const [draftCover, setDraftCover] = useState<InvitationContentCover>({
+    ...DEFAULT_COVER_CONFIG,
+  });
+  const [coverPreviewResetKey, setCoverPreviewResetKey] = useState(0);
 
   // State Formulir Pengaturan Umum (General Settings)
   const [draftTitle, setDraftTitle] = useState('');
@@ -250,7 +264,7 @@ export function InvitationDetail() {
 
   // Tampilan antarmuka
   const [activeTab, setActiveTab] = useState<
-    'settings' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'gift' | 'music' | 'sections' | 'guests'
+    'settings' | 'cover' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'gift' | 'music' | 'sections' | 'guests'
   >('settings');
   const [guestCount, setGuestCount] = useState(0);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
@@ -405,6 +419,7 @@ export function InvitationDetail() {
         is_enabled: false,
       };
       let initialMusic: InvitationContentMusic = { ...DEFAULT_MUSIC_CONFIG };
+      let initialCover: InvitationContentCover = { ...DEFAULT_COVER_CONFIG };
 
       if (contentRecord?.content) {
         const c = contentRecord.content;
@@ -497,6 +512,10 @@ export function InvitationDetail() {
         if (c.music) {
           initialMusic = sanitizeMusicConfig(c.music);
         }
+
+        if (c.cover) {
+          initialCover = sanitizeCoverConfig(c.cover);
+        }
       }
 
       setDraftHeroHeadline(initialHeroHeadline);
@@ -533,6 +552,7 @@ export function InvitationDetail() {
       setDraftGiftAccounts(initialGiftAccounts);
       setDraftGiftAddress(initialGiftAddress);
       setDraftMusic(initialMusic);
+      setDraftCover(initialCover);
 
       // Muat template config & pastikan seksi terinisialisasi
       const config = await getInvitationTemplateConfig(id);
@@ -586,6 +606,7 @@ export function InvitationDetail() {
         giftAccountsJson: initialGiftAccountsJson,
         giftAddressJson: initialGiftAddressJson,
         musicJson: initialMusicJson,
+        coverJson: JSON.stringify(initialCover),
         heroHeadline: initialHeroHeadline,
         heroOpeningText: initialHeroOpeningText,
         heroCoupleNames: initialHeroCoupleNames,
@@ -636,6 +657,7 @@ export function InvitationDetail() {
   const currentGiftAccountsJson = useMemo(() => JSON.stringify(draftGiftAccounts), [draftGiftAccounts]);
   const currentGiftAddressJson = useMemo(() => JSON.stringify(draftGiftAddress), [draftGiftAddress]);
   const currentMusicJson = useMemo(() => JSON.stringify(draftMusic), [draftMusic]);
+  const currentCoverJson = useMemo(() => JSON.stringify(draftCover), [draftCover]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!invitation) return false;
@@ -656,6 +678,7 @@ export function InvitationDetail() {
       currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
       currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
       currentMusicJson !== savedSnapshot.musicJson ||
+      currentCoverJson !== savedSnapshot.coverJson ||
       draftHeroHeadline !== savedSnapshot.heroHeadline ||
       draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
       draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
@@ -713,6 +736,7 @@ export function InvitationDetail() {
     currentStoryJson,
     draftClosingNotes,
     currentSectionsJson,
+    currentCoverJson,
     savedSnapshot,
   ]);
 
@@ -780,6 +804,7 @@ export function InvitationDetail() {
         physical_address: draftGiftAddress,
       },
       music: draftMusic,
+      cover: draftCover,
     };
   }, [
     draftHeroHeadline,
@@ -811,6 +836,7 @@ export function InvitationDetail() {
     draftGiftAccounts,
     draftGiftAddress,
     draftMusic,
+    draftCover,
   ]);
 
   // Handler simpan satu tombol untuk form pengaturan, hero, mempelai, dan cerita
@@ -849,6 +875,19 @@ export function InvitationDetail() {
           setSaveErrorMessage(err.message);
         } else {
           setSaveErrorMessage('Konfigurasi musik tidak valid.');
+        }
+        return;
+      }
+    }
+
+    if (draftCover.enabled) {
+      try {
+        validateCoverConfig(draftCover);
+      } catch (err: unknown) {
+        if (err instanceof ValidationError) {
+          setSaveErrorMessage(err.message);
+        } else {
+          setSaveErrorMessage('Konfigurasi cover tidak valid.');
         }
         return;
       }
@@ -915,7 +954,8 @@ export function InvitationDetail() {
         draftGiftDescription !== savedSnapshot.giftDescription ||
         currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
         currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
-        currentMusicJson !== savedSnapshot.musicJson;
+        currentMusicJson !== savedSnapshot.musicJson ||
+        currentCoverJson !== savedSnapshot.coverJson;
 
       if (isContentChanged) {
         updateTasks.push(upsertInvitationData(id, liveContent));
@@ -957,6 +997,7 @@ export function InvitationDetail() {
         giftAccountsJson: currentGiftAccountsJson,
         giftAddressJson: currentGiftAddressJson,
         musicJson: currentMusicJson,
+        coverJson: currentCoverJson,
         heroHeadline: draftHeroHeadline,
         heroOpeningText: draftHeroOpeningText,
         heroCoupleNames: draftHeroCoupleNames,
@@ -2197,6 +2238,17 @@ export function InvitationDetail() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab('cover')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'cover'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Cover {draftCover.enabled ? '✓' : ''}
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('hero')}
                 className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === 'hero'
@@ -2532,6 +2584,219 @@ export function InvitationDetail() {
                       </span>
                     </div>
                   </label>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: COVER ENVELOPE */}
+            {activeTab === 'cover' && (
+              <div className="p-5 space-y-5 text-xs">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div>
+                    <h3 className="font-semibold text-text-primary text-sm">
+                      Sampul Pembuka (Cover Envelope)
+                    </h3>
+                    <p className="text-[11px] text-text-muted">
+                      Pengunjung melihat sampul pembuka elegan sebelum masuk ke isi undangan utama.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={draftCover.enabled}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({ ...prev, enabled: e.target.checked }))
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+                    <span className="ml-2.5 text-xs font-medium text-text-primary">
+                      {draftCover.enabled ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Eyebrow */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="coverEyebrow" className="font-semibold text-text-primary block">
+                        Teks Eyebrow / Sapaan Atas
+                      </label>
+                      <span className="text-[11px] text-text-subtle">
+                        Maks. 80 karakter
+                      </span>
+                    </div>
+                    <input
+                      id="coverEyebrow"
+                      type="text"
+                      maxLength={80}
+                      value={draftCover.eyebrow ?? ''}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({ ...prev, eyebrow: e.target.value }))
+                      }
+                      placeholder="The Wedding Of"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <p className="text-[11px] text-text-subtle">
+                      Default: The Wedding Of
+                    </p>
+                  </div>
+
+                  {/* Judul Cover */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="coverTitle" className="font-semibold text-text-primary block">
+                        Judul Utama Cover
+                      </label>
+                      <span className="text-[11px] text-text-subtle">
+                        Maks. 120 karakter
+                      </span>
+                    </div>
+                    <input
+                      id="coverTitle"
+                      type="text"
+                      maxLength={120}
+                      value={draftCover.title ?? ''}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({ ...prev, title: e.target.value }))
+                      }
+                      placeholder={draftHeroCoupleNames || draftTitle || 'Nama Pasangan'}
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <p className="text-[11px] text-text-subtle">
+                      Dikosongkan untuk menggunakan nama pasangan atau judul undangan yang sudah ada secara otomatis.
+                    </p>
+                  </div>
+
+                  {/* Subtitle Cover */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="coverSubtitle" className="font-semibold text-text-primary block">
+                        Subjudul / Keterangan Acara
+                      </label>
+                      <span className="text-[11px] text-text-subtle">
+                        Maks. 200 karakter
+                      </span>
+                    </div>
+                    <input
+                      id="coverSubtitle"
+                      type="text"
+                      maxLength={200}
+                      value={draftCover.subtitle ?? ''}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({ ...prev, subtitle: e.target.value }))
+                      }
+                      placeholder="Contoh: Sabtu, 28 November 2026 • Grand Ballroom"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <p className="text-[11px] text-text-subtle">
+                      Dikosongkan untuk menyusun tanggal dan venue acara utama secara otomatis.
+                    </p>
+                  </div>
+
+                  {/* Label Tombol Buka Undangan */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="coverButtonLabel" className="font-semibold text-text-primary block">
+                        Label Tombol Pembuka
+                      </label>
+                      <span className="text-[11px] text-text-subtle">
+                        Maks. 40 karakter
+                      </span>
+                    </div>
+                    <input
+                      id="coverButtonLabel"
+                      type="text"
+                      maxLength={40}
+                      value={draftCover.button_label ?? 'Buka Undangan'}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({ ...prev, button_label: e.target.value }))
+                      }
+                      placeholder="Buka Undangan"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <p className="text-[11px] text-text-subtle">
+                      Tombol yang disentuh tamu untuk memulai animasi pembukaan sampul dan memicu musik latar.
+                    </p>
+                  </div>
+
+                  {/* URL Gambar Latar Belakang Cover */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="coverBackgroundImageUrl" className="font-semibold text-text-primary block">
+                        Tautan Gambar Latar Belakang (Opsional)
+                      </label>
+                      <span className="text-[11px] text-text-subtle">
+                        URL http/https
+                      </span>
+                    </div>
+                    <input
+                      id="coverBackgroundImageUrl"
+                      type="url"
+                      value={draftCover.background_image_url ?? ''}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({ ...prev, background_image_url: e.target.value }))
+                      }
+                      placeholder="https://example.com/foto-sampul.jpg"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    {draftCover.background_image_url && !isValidWebUrl(draftCover.background_image_url) && (
+                      <p className="text-[11px] text-danger">
+                        Tautan tidak valid. Harap gunakan alamat URL http:// atau https:// tanpa skema berbahaya.
+                      </p>
+                    )}
+                    <p className="text-[11px] text-text-subtle">
+                      Jika dikosongkan, tema visual undangan akan menjadi latar belakang mewah tanpa gambar tiruan.
+                    </p>
+                  </div>
+
+                  {/* Opasitas Lapisan Overlay */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="coverOverlayOpacity" className="font-semibold text-text-primary block">
+                        Opasitas Lapisan Gelap (Overlay)
+                      </label>
+                      <span className="text-xs font-mono font-medium text-text-secondary">
+                        {Math.round((draftCover.overlay_opacity ?? 0.4) * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      id="coverOverlayOpacity"
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={draftCover.overlay_opacity ?? 0.4}
+                      onChange={(e) =>
+                        setDraftCover((prev) => ({
+                          ...prev,
+                          overlay_opacity: parseFloat(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-primary cursor-pointer"
+                    />
+                    <p className="text-[11px] text-text-subtle">
+                      Lapisan gelap di atas gambar latar belakang untuk menjaga keterbacaan teks sesuai standar kontras WCAG AA.
+                    </p>
+                  </div>
+
+                  {/* Tombol Uji / Reset Pratinjau Cover */}
+                  <div className="pt-2 flex items-center justify-between p-3 rounded bg-surface-elevated border border-border">
+                    <div>
+                      <p className="font-medium text-text-primary">Pratinjau Sampul</p>
+                      <p className="text-[11px] text-text-muted">
+                        Sentuh Buka Undangan pada jendela pratinjau untuk melihat animasi pembukaan.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCoverPreviewResetKey((k) => k + 1)}
+                      className="py-1.5 px-3 rounded border border-border bg-surface hover:bg-surface-elevated text-text-primary text-xs font-medium cursor-pointer transition-colors"
+                    >
+                      Muat Ulang Sampul
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -4036,12 +4301,15 @@ export function InvitationDetail() {
                 >
                   {liveInvitation ? (
                     <InvitationRenderer
+                      key={coverPreviewResetKey}
                       invitation={liveInvitation}
                       template={previewConfig?.template}
                       customSections={draftSections}
                       content={liveContent}
                       events={draftEvents}
                       gallery={draftGallery}
+                      mode="editor"
+                      previewCover={activeTab === 'cover' && draftCover.enabled}
                     />
                   ) : (
                     <div className="py-24 text-center text-xs text-text-muted">

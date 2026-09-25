@@ -6,6 +6,7 @@ import { getSectionComponent } from '@/lib/template/SectionRegistry';
 import { ThemeInjector } from './ThemeInjector';
 import { UnknownSectionFallback } from './sections/UnknownSectionFallback';
 import { MusicPlayer } from './MusicPlayer';
+import { CoverEnvelope } from './CoverEnvelope';
 
 export interface InvitationRendererProps {
   invitation: {
@@ -63,12 +64,14 @@ export interface InvitationRendererProps {
     slug: string;
   } | null;
   className?: string;
+  mode?: 'public' | 'editor';
+  previewCover?: boolean;
 }
 
 /**
  * Komponen utama InvitationRenderer (Presentation-Only):
  * Menerjemahkan konfigurasi template, tema, dan urutan seksi menjadi antarmuka undangan nyata.
- * Pure presentation: tidak melakukan query Supabase langsung di dalam komponen ini.
+ * Mendukung Cover Envelope Experience pada mode publik dan pratinjau editor yang responsif.
  */
 export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
   invitation,
@@ -80,7 +83,26 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
   gallery,
   guest,
   className = '',
+  mode = 'public',
+  previewCover = false,
 }) => {
+  const [isCoverOpen, setIsCoverOpen] = React.useState(false);
+
+  // Evaluasi apakah Cover Envelope harus ditampilkan
+  const isCoverActive = useMemo(() => {
+    if (mode === 'editor') {
+      return Boolean(previewCover);
+    }
+    // Pada halaman publik, cover aktif jika tidak dimatikan eksplisit (default true)
+    return content?.cover?.enabled !== false;
+  }, [mode, previewCover, content?.cover?.enabled]);
+
+  // Sinkronisasi status cover jika mode preview pada editor berubah
+  React.useEffect(() => {
+    if (mode === 'editor' && previewCover) {
+      setIsCoverOpen(false);
+    }
+  }, [mode, previewCover]);
   // Normalisasi properti invitation
   const normalizedInvitation = useMemo(() => {
     return {
@@ -130,7 +152,20 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
   ]);
 
   return (
-    <ThemeInjector theme={theme} className={className} as="article">
+    <ThemeInjector theme={theme} className={`relative ${className}`} as="article">
+      {/* Cover Envelope Experience */}
+      {isCoverActive && !isCoverOpen && (
+        <CoverEnvelope
+          cover={content?.cover}
+          invitation={normalizedInvitation}
+          content={content}
+          events={events}
+          guest={guest}
+          containerPosition={mode === 'editor' ? 'absolute' : 'fixed'}
+          onOpen={() => setIsCoverOpen(true)}
+        />
+      )}
+
       <main className="w-full min-h-screen">
         {activeSections.length === 0 ? (
           <div className="py-24 text-center px-4">

@@ -121,6 +121,16 @@ export interface InvitationContentMusic {
   source_type?: 'url' | 'storage';
 }
 
+export interface InvitationContentCover {
+  enabled: boolean;
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  button_label?: string;
+  background_image_url?: string;
+  overlay_opacity?: number;
+}
+
 export interface InvitationContent {
   hero?: InvitationContentHero;
   hosts?: InvitationContentHost[];
@@ -130,6 +140,7 @@ export interface InvitationContent {
   rsvp?: InvitationContentRsvp;
   gift?: InvitationContentGift;
   music?: InvitationContentMusic;
+  cover?: InvitationContentCover;
   [key: string]: unknown;
 }
 

@@ -78,12 +78,31 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ music, className = '' 
       }
     };
 
+    // Tangani pemicu resmi dari tombol "Buka Undangan" pada CoverEnvelope
+    const handleCoverTrigger = () => {
+      if (audio && !hasError) {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(() => {
+              // Gracefully tangani penolakan browser tanpa memicu uncaught promise rejection
+              setIsPlaying(false);
+            });
+        }
+      }
+    };
+
     window.addEventListener('click', handleFirstUserGesture, { once: true });
     window.addEventListener('touchstart', handleFirstUserGesture, { once: true });
+    window.addEventListener('aurovia:play-music', handleCoverTrigger);
 
     return () => {
       window.removeEventListener('click', handleFirstUserGesture);
       window.removeEventListener('touchstart', handleFirstUserGesture);
+      window.removeEventListener('aurovia:play-music', handleCoverTrigger);
       audio.pause();
     };
   }, [isConfigValid, music, hasError]);
