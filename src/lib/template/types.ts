@@ -47,6 +47,41 @@ export interface SectionConfig {
   custom_config?: Record<string, unknown> | Json;
 }
 
+export interface InvitationContentHero {
+  headline?: string;
+  opening_text?: string;
+  couple_names?: string;
+  location_short?: string;
+}
+
+export interface InvitationContentHost {
+  id?: string;
+  name: string;
+  role?: string;
+  bio?: string;
+  parents?: string;
+  photo_url?: string;
+  storage_path?: string;
+}
+
+export interface InvitationContentStoryItem {
+  id: string;
+  title: string;
+  date?: string;
+  description: string;
+  display_order: number;
+  is_enabled: boolean;
+}
+
+export interface InvitationContent {
+  hero?: InvitationContentHero;
+  hosts?: InvitationContentHost[];
+  story?: InvitationContentStoryItem[];
+  financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
+  closing_notes?: string;
+  [key: string]: unknown;
+}
+
 /**
  * Properti terpadu yang dipass ke setiap komponen Section Renderer
  */
@@ -64,13 +99,7 @@ export interface SectionRendererProps<TConfig = Record<string, unknown>> {
     allowRsvp?: boolean;
     showWishes?: boolean;
   };
-  content?: {
-    hosts?: Array<{ name: string; role?: string; bio?: string }>;
-    story?: Array<{ title: string; description: string; date?: string }>;
-    financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
-    closing_notes?: string;
-    [key: string]: unknown;
-  } | null;
+  content?: InvitationContent | null;
   events?: Array<{
     id: string;
     title: string;
@@ -143,13 +172,7 @@ export interface InvitationRenderData {
     defaultSections?: Json;
   } | null;
   sections?: SectionConfig[] | null;
-  content?: {
-    hosts?: Array<{ name: string; role?: string; bio?: string }>;
-    story?: Array<{ title: string; description: string; date?: string }>;
-    financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
-    closing_notes?: string;
-    [key: string]: unknown;
-  } | null;
+  content?: InvitationContent | null;
   events?: Array<{
     id: string;
     title: string;

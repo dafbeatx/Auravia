@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { AuthenticationError, AuthorizationError, DatabaseError, StorageError, ValidationError } from '@/lib/errors';
 import type { Tables, TablesUpdate } from '@/types/database';
+import type { InvitationContent } from '@/lib/template/types';
 
 export type InvitationListItem = Pick<
   Tables<'invitations'>,
@@ -258,13 +259,7 @@ export async function updateInvitationCore(
 export interface InvitationDataRecord {
   id: string;
   invitation_id: string;
-  content: {
-    hosts?: Array<{ name: string; role?: string; bio?: string }>;
-    story?: Array<{ title: string; description: string; date?: string }>;
-    financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
-    closing_notes?: string;
-    [key: string]: unknown;
-  };
+  content: InvitationContent;
   updated_at: string;
 }
 
@@ -293,7 +288,7 @@ export async function getInvitationData(
  */
 export async function upsertInvitationData(
   invitationId: string,
-  content: Record<string, unknown>
+  content: InvitationContent | Record<string, unknown>
 ): Promise<InvitationDataRecord> {
   const { data, error } = await supabase
     .from('invitation_data')
@@ -1035,6 +1030,62 @@ export async function deleteInvitationGalleryPhoto(
 }
 
 /**
+ * Mengunggah foto profil mempelai atau host ke Supabase Storage.
+ * Menggunakan bucket 'invitation-gallery' dengan subpath tenant-safe:
+ * {userId}/{invitationId}/couple/{slot}-{fileId}.{ext}
+ */
+export async function uploadCouplePhoto(
+  invitationId: string,
+  file: File,
+  slot: string = 'host'
+): Promise<{ storage_path: string; photo_url: string }> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new AuthenticationError('Sesi pengguna tidak valid. Silakan masuk kembali.');
+  }
+
+  validateGalleryImageFile(file);
+
+  let ext = 'jpg';
+  if (file.type === 'image/png') ext = 'png';
+  else if (file.type === 'image/webp') ext = 'webp';
+  else if (file.type === 'image/jpeg') ext = 'jpg';
+
+  const cleanSlot = slot.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'host';
+  const fileId = crypto.randomUUID();
+  const storagePath = `${user.id}/${invitationId}/couple/${cleanSlot}-${fileId}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(INVITATION_GALLERY_BUCKET)
+    .upload(storagePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    });
+
+  if (uploadError) {
+    if (
+      uploadError.message.includes('row-level security') ||
+      uploadError.message.includes('unauthorized') ||
+      (uploadError as { statusCode?: number }).statusCode === 403
+    ) {
+      throw new AuthorizationError('Anda tidak memiliki hak akses untuk mengunggah berkas ke undangan ini.');
+    }
+    throw new StorageError(
+      'Gagal mengunggah foto mempelai ke penyimpanan. Silakan periksa koneksi dan coba lagi.',
+      uploadError
+    );
+  }
+
+  const photo_url = getGalleryPublicUrl(storagePath);
+  return { storage_path: storagePath, photo_url };
+}
+
+/**
  * Alias domain function untuk mengunggah gambar galeri.
  */
 export const uploadGalleryImage = uploadInvitationGalleryPhoto;
@@ -1108,12 +1159,12 @@ export function extractInvitationContent(
     | Array<{ content: import('@/types/database').Json }>
     | null
     | undefined
-): Record<string, unknown> | null {
+): InvitationContent | null {
   if (!rawData) return null;
   if (Array.isArray(rawData)) {
-    return (rawData[0]?.content as Record<string, unknown>) ?? null;
+    return (rawData[0]?.content as unknown as InvitationContent) ?? null;
   }
-  return (rawData.content as Record<string, unknown>) ?? null;
+  return (rawData.content as unknown as InvitationContent) ?? null;
 }
 
 export interface InvitationTemplateConfig {

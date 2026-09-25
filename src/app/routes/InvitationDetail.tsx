@@ -20,15 +20,21 @@ import {
   updateGalleryItemsOrder,
   uploadInvitationGalleryPhoto,
   deleteInvitationGalleryPhoto,
+  uploadCouplePhoto,
+  deleteGalleryImageFile,
   getGalleryPublicUrl,
   validateGalleryImageFile,
-  extractInvitationContent,
   type InvitationDetail as IInvitationDetail,
   type InvitationTemplateConfig,
   type InvitationSectionItem,
   type InvitationEventItem,
   type InvitationGalleryItem,
 } from '@/lib/invitations';
+import type {
+  InvitationContent,
+  InvitationContentStoryItem,
+  InvitationContentHost,
+} from '@/lib/template/types';
 import { getInvitationGuests } from '@/lib/guests';
 import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
 import { InvitationRenderer } from '@/components/template';
@@ -86,10 +92,23 @@ export function InvitationDetail() {
     eventType: 'wedding',
     allowRsvp: true,
     showWishes: true,
+    heroHeadline: '',
+    heroOpeningText: '',
+    heroCoupleNames: '',
+    heroLocation: '',
     groomName: '',
+    groomRole: 'Mempelai Pria',
+    groomParents: '',
     groomBio: '',
+    groomPhotoUrl: '',
+    groomStoragePath: '',
     brideName: '',
+    brideRole: 'Mempelai Wanita',
+    brideParents: '',
     brideBio: '',
+    bridePhotoUrl: '',
+    brideStoragePath: '',
+    storyJson: '[]',
     closingNotes: '',
     sectionsJson: '',
   });
@@ -101,12 +120,43 @@ export function InvitationDetail() {
   const [draftAllowRsvp, setDraftAllowRsvp] = useState(true);
   const [draftShowWishes, setDraftShowWishes] = useState(true);
 
-  // State Formulir Konten Mempelai (invitation_data)
+  // State Hero / Cover (Hero Content)
+  const [draftHeroHeadline, setDraftHeroHeadline] = useState('');
+  const [draftHeroOpeningText, setDraftHeroOpeningText] = useState('');
+  const [draftHeroCoupleNames, setDraftHeroCoupleNames] = useState('');
+  const [draftHeroLocation, setDraftHeroLocation] = useState('');
+
+  // State Formulir Konten Mempelai (Couple & Hosts)
   const [draftGroomName, setDraftGroomName] = useState('');
+  const [draftGroomRole, setDraftGroomRole] = useState('Mempelai Pria');
+  const [draftGroomParents, setDraftGroomParents] = useState('');
   const [draftGroomBio, setDraftGroomBio] = useState('');
+  const [draftGroomPhotoUrl, setDraftGroomPhotoUrl] = useState('');
+  const [draftGroomStoragePath, setDraftGroomStoragePath] = useState('');
+  const [isUploadingGroomPhoto, setIsUploadingGroomPhoto] = useState(false);
+  const [groomPhotoError, setGroomPhotoError] = useState<string | null>(null);
+  const groomFileInputRef = useRef<HTMLInputElement>(null);
+
   const [draftBrideName, setDraftBrideName] = useState('');
+  const [draftBrideRole, setDraftBrideRole] = useState('Mempelai Wanita');
+  const [draftBrideParents, setDraftBrideParents] = useState('');
   const [draftBrideBio, setDraftBrideBio] = useState('');
+  const [draftBridePhotoUrl, setDraftBridePhotoUrl] = useState('');
+  const [draftBrideStoragePath, setDraftBrideStoragePath] = useState('');
+  const [isUploadingBridePhoto, setIsUploadingBridePhoto] = useState(false);
+  const [bridePhotoError, setBridePhotoError] = useState<string | null>(null);
+  const brideFileInputRef = useRef<HTMLInputElement>(null);
+
   const [draftClosingNotes, setDraftClosingNotes] = useState('');
+
+  // State Linimasa Cerita Cinta (Story)
+  const [draftStory, setDraftStory] = useState<InvitationContentStoryItem[]>([]);
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
+  const [storyForm, setStoryForm] = useState({ title: '', date: '', description: '' });
+  const [storyErrorMessage, setStoryErrorMessage] = useState<string | null>(null);
+  const [deleteStoryModalOpen, setDeleteStoryModalOpen] = useState(false);
+  const [storyToDelete, setStoryToDelete] = useState<InvitationContentStoryItem | null>(null);
 
   // State Seksi Undangan (invitation_sections)
   const [draftSections, setDraftSections] = useState<InvitationSectionItem[]>([]);
@@ -118,7 +168,9 @@ export function InvitationDetail() {
   const [draftGallery, setDraftGallery] = useState<InvitationGalleryItem[]>([]);
 
   // Tampilan antarmuka
-  const [activeTab, setActiveTab] = useState<'settings' | 'content' | 'events' | 'gallery' | 'sections' | 'guests'>('settings');
+  const [activeTab, setActiveTab] = useState<
+    'settings' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'sections' | 'guests'
+  >('settings');
   const [guestCount, setGuestCount] = useState(0);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('desktop');
@@ -229,34 +281,91 @@ export function InvitationDetail() {
       setDraftAllowRsvp(initialAllowRsvp);
       setDraftShowWishes(initialShowWishes);
 
-      // Muat data konten mempelai (invitation_data)
+      // Muat data konten mempelai, hero, dan cerita (invitation_data)
       const contentRecord = await getInvitationData(id);
+      let initialHeroHeadline = '';
+      let initialHeroOpeningText = '';
+      let initialHeroCoupleNames = '';
+      let initialHeroLocation = '';
+
       let initialGroomName = '';
+      let initialGroomRole = 'Mempelai Pria';
+      let initialGroomParents = '';
       let initialGroomBio = '';
+      let initialGroomPhotoUrl = '';
+      let initialGroomStoragePath = '';
+
       let initialBrideName = '';
+      let initialBrideRole = 'Mempelai Wanita';
+      let initialBrideParents = '';
       let initialBrideBio = '';
+      let initialBridePhotoUrl = '';
+      let initialBrideStoragePath = '';
+
+      let initialStory: InvitationContentStoryItem[] = [];
       let initialClosingNotes = '';
 
       if (contentRecord?.content) {
-        const hosts = Array.isArray(contentRecord.content.hosts) ? contentRecord.content.hosts : [];
+        const c = contentRecord.content;
+        if (c.hero) {
+          initialHeroHeadline = typeof c.hero.headline === 'string' ? c.hero.headline : '';
+          initialHeroOpeningText = typeof c.hero.opening_text === 'string' ? c.hero.opening_text : '';
+          initialHeroCoupleNames = typeof c.hero.couple_names === 'string' ? c.hero.couple_names : '';
+          initialHeroLocation = typeof c.hero.location_short === 'string' ? c.hero.location_short : '';
+        }
+
+        const hosts = Array.isArray(c.hosts) ? c.hosts : [];
         if (hosts[0]) {
           initialGroomName = typeof hosts[0].name === 'string' ? hosts[0].name : '';
+          initialGroomRole = typeof hosts[0].role === 'string' ? hosts[0].role : 'Mempelai Pria';
+          initialGroomParents = typeof hosts[0].parents === 'string' ? hosts[0].parents : '';
           initialGroomBio = typeof hosts[0].bio === 'string' ? hosts[0].bio : '';
+          initialGroomPhotoUrl = typeof hosts[0].photo_url === 'string' ? hosts[0].photo_url : '';
+          initialGroomStoragePath = typeof hosts[0].storage_path === 'string' ? hosts[0].storage_path : '';
         }
         if (hosts[1]) {
           initialBrideName = typeof hosts[1].name === 'string' ? hosts[1].name : '';
+          initialBrideRole = typeof hosts[1].role === 'string' ? hosts[1].role : 'Mempelai Wanita';
+          initialBrideParents = typeof hosts[1].parents === 'string' ? hosts[1].parents : '';
           initialBrideBio = typeof hosts[1].bio === 'string' ? hosts[1].bio : '';
+          initialBridePhotoUrl = typeof hosts[1].photo_url === 'string' ? hosts[1].photo_url : '';
+          initialBrideStoragePath = typeof hosts[1].storage_path === 'string' ? hosts[1].storage_path : '';
         }
-        initialClosingNotes =
-          typeof contentRecord.content.closing_notes === 'string'
-            ? contentRecord.content.closing_notes
-            : '';
+
+        if (Array.isArray(c.story)) {
+          initialStory = c.story.map((st, idx) => ({
+            id: typeof st.id === 'string' ? st.id : `story-${idx}`,
+            title: typeof st.title === 'string' ? st.title : '',
+            date: typeof st.date === 'string' ? st.date : undefined,
+            description: typeof st.description === 'string' ? st.description : '',
+            display_order: typeof st.display_order === 'number' ? st.display_order : idx,
+            is_enabled: st.is_enabled !== false,
+          }));
+        }
+
+        initialClosingNotes = typeof c.closing_notes === 'string' ? c.closing_notes : '';
       }
 
+      setDraftHeroHeadline(initialHeroHeadline);
+      setDraftHeroOpeningText(initialHeroOpeningText);
+      setDraftHeroCoupleNames(initialHeroCoupleNames);
+      setDraftHeroLocation(initialHeroLocation);
+
       setDraftGroomName(initialGroomName);
+      setDraftGroomRole(initialGroomRole);
+      setDraftGroomParents(initialGroomParents);
       setDraftGroomBio(initialGroomBio);
+      setDraftGroomPhotoUrl(initialGroomPhotoUrl);
+      setDraftGroomStoragePath(initialGroomStoragePath);
+
       setDraftBrideName(initialBrideName);
+      setDraftBrideRole(initialBrideRole);
+      setDraftBrideParents(initialBrideParents);
       setDraftBrideBio(initialBrideBio);
+      setDraftBridePhotoUrl(initialBridePhotoUrl);
+      setDraftBrideStoragePath(initialBrideStoragePath);
+
+      setDraftStory(initialStory);
       setDraftClosingNotes(initialClosingNotes);
 
       // Muat template config & pastikan seksi terinisialisasi
@@ -289,6 +398,7 @@ export function InvitationDetail() {
       const initialSectionsJson = JSON.stringify(
         initialSections.map((s) => ({ id: s.id, order: s.display_order, enabled: s.is_enabled }))
       );
+      const initialStoryJson = JSON.stringify(initialStory);
 
       setSavedSnapshot({
         title: initialTitle,
@@ -296,10 +406,23 @@ export function InvitationDetail() {
         eventType: initialEventType,
         allowRsvp: initialAllowRsvp,
         showWishes: initialShowWishes,
+        heroHeadline: initialHeroHeadline,
+        heroOpeningText: initialHeroOpeningText,
+        heroCoupleNames: initialHeroCoupleNames,
+        heroLocation: initialHeroLocation,
         groomName: initialGroomName,
+        groomRole: initialGroomRole,
+        groomParents: initialGroomParents,
         groomBio: initialGroomBio,
+        groomPhotoUrl: initialGroomPhotoUrl,
+        groomStoragePath: initialGroomStoragePath,
         brideName: initialBrideName,
+        brideRole: initialBrideRole,
+        brideParents: initialBrideParents,
         brideBio: initialBrideBio,
+        bridePhotoUrl: initialBridePhotoUrl,
+        brideStoragePath: initialBrideStoragePath,
+        storyJson: initialStoryJson,
         closingNotes: initialClosingNotes,
         sectionsJson: initialSectionsJson,
       });
@@ -321,6 +444,8 @@ export function InvitationDetail() {
     );
   }, [draftSections]);
 
+  const currentStoryJson = useMemo(() => JSON.stringify(draftStory), [draftStory]);
+
   const hasUnsavedChanges = useMemo(() => {
     if (!invitation) return false;
     return (
@@ -329,10 +454,23 @@ export function InvitationDetail() {
       draftEventType !== savedSnapshot.eventType ||
       draftAllowRsvp !== savedSnapshot.allowRsvp ||
       draftShowWishes !== savedSnapshot.showWishes ||
+      draftHeroHeadline !== savedSnapshot.heroHeadline ||
+      draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
+      draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
+      draftHeroLocation !== savedSnapshot.heroLocation ||
       draftGroomName !== savedSnapshot.groomName ||
+      draftGroomRole !== savedSnapshot.groomRole ||
+      draftGroomParents !== savedSnapshot.groomParents ||
       draftGroomBio !== savedSnapshot.groomBio ||
+      draftGroomPhotoUrl !== savedSnapshot.groomPhotoUrl ||
+      draftGroomStoragePath !== savedSnapshot.groomStoragePath ||
       draftBrideName !== savedSnapshot.brideName ||
+      draftBrideRole !== savedSnapshot.brideRole ||
+      draftBrideParents !== savedSnapshot.brideParents ||
       draftBrideBio !== savedSnapshot.brideBio ||
+      draftBridePhotoUrl !== savedSnapshot.bridePhotoUrl ||
+      draftBrideStoragePath !== savedSnapshot.brideStoragePath ||
+      currentStoryJson !== savedSnapshot.storyJson ||
       draftClosingNotes !== savedSnapshot.closingNotes ||
       currentSectionsJson !== savedSnapshot.sectionsJson
     );
@@ -343,10 +481,23 @@ export function InvitationDetail() {
     draftEventType,
     draftAllowRsvp,
     draftShowWishes,
+    draftHeroHeadline,
+    draftHeroOpeningText,
+    draftHeroCoupleNames,
+    draftHeroLocation,
     draftGroomName,
+    draftGroomRole,
+    draftGroomParents,
     draftGroomBio,
+    draftGroomPhotoUrl,
+    draftGroomStoragePath,
     draftBrideName,
+    draftBrideRole,
+    draftBrideParents,
     draftBrideBio,
+    draftBridePhotoUrl,
+    draftBrideStoragePath,
+    currentStoryJson,
     draftClosingNotes,
     currentSectionsJson,
     savedSnapshot,
@@ -368,32 +519,62 @@ export function InvitationDetail() {
   }, [invitation, draftTitle, draftSlug, draftEventType, draftAllowRsvp, draftShowWishes]);
 
   // Objek live content untuk preview lokal instan tanpa query
-  const liveContent = useMemo(() => {
-    const hosts = [];
-    if (draftGroomName.trim()) {
+  const liveContent = useMemo<InvitationContent>(() => {
+    const hosts: InvitationContentHost[] = [];
+    if (draftGroomName.trim() || draftGroomPhotoUrl) {
       hosts.push({
         name: draftGroomName.trim(),
-        role: 'Mempelai Pria',
+        role: draftGroomRole.trim() || 'Mempelai Pria',
+        parents: draftGroomParents.trim() || undefined,
         bio: draftGroomBio.trim() || undefined,
+        photo_url: draftGroomPhotoUrl || undefined,
+        storage_path: draftGroomStoragePath || undefined,
       });
     }
-    if (draftBrideName.trim()) {
+    if (draftBrideName.trim() || draftBridePhotoUrl) {
       hosts.push({
         name: draftBrideName.trim(),
-        role: 'Mempelai Wanita',
+        role: draftBrideRole.trim() || 'Mempelai Wanita',
+        parents: draftBrideParents.trim() || undefined,
         bio: draftBrideBio.trim() || undefined,
+        photo_url: draftBridePhotoUrl || undefined,
+        storage_path: draftBrideStoragePath || undefined,
       });
     }
 
-    const existingContent = extractInvitationContent(previewConfig?.data) || {};
     return {
-      ...existingContent,
+      hero: {
+        headline: draftHeroHeadline.trim() || undefined,
+        opening_text: draftHeroOpeningText.trim() || undefined,
+        couple_names: draftHeroCoupleNames.trim() || undefined,
+        location_short: draftHeroLocation.trim() || undefined,
+      },
       hosts,
+      story: draftStory,
       closing_notes: draftClosingNotes.trim(),
     };
-  }, [draftGroomName, draftGroomBio, draftBrideName, draftBrideBio, draftClosingNotes, previewConfig?.data]);
+  }, [
+    draftHeroHeadline,
+    draftHeroOpeningText,
+    draftHeroCoupleNames,
+    draftHeroLocation,
+    draftGroomName,
+    draftGroomRole,
+    draftGroomParents,
+    draftGroomBio,
+    draftGroomPhotoUrl,
+    draftGroomStoragePath,
+    draftBrideName,
+    draftBrideRole,
+    draftBrideParents,
+    draftBrideBio,
+    draftBridePhotoUrl,
+    draftBrideStoragePath,
+    draftStory,
+    draftClosingNotes,
+  ]);
 
-  // Handler simpan satu tombol untuk form pengaturan & konten mempelai
+  // Handler simpan satu tombol untuk form pengaturan, hero, mempelai, dan cerita
   const handleSaveAll = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     if (!id || !invitation) return;
@@ -452,37 +633,29 @@ export function InvitationDetail() {
         );
       }
 
-      // B. Periksa perubahan konten mempelai (invitation_data)
+      // B. Periksa perubahan konten mempelai, hero, dan cerita (invitation_data)
       const isContentChanged =
+        draftHeroHeadline !== savedSnapshot.heroHeadline ||
+        draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
+        draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
+        draftHeroLocation !== savedSnapshot.heroLocation ||
         draftGroomName !== savedSnapshot.groomName ||
+        draftGroomRole !== savedSnapshot.groomRole ||
+        draftGroomParents !== savedSnapshot.groomParents ||
         draftGroomBio !== savedSnapshot.groomBio ||
+        draftGroomPhotoUrl !== savedSnapshot.groomPhotoUrl ||
+        draftGroomStoragePath !== savedSnapshot.groomStoragePath ||
         draftBrideName !== savedSnapshot.brideName ||
+        draftBrideRole !== savedSnapshot.brideRole ||
+        draftBrideParents !== savedSnapshot.brideParents ||
         draftBrideBio !== savedSnapshot.brideBio ||
+        draftBridePhotoUrl !== savedSnapshot.bridePhotoUrl ||
+        draftBrideStoragePath !== savedSnapshot.brideStoragePath ||
+        currentStoryJson !== savedSnapshot.storyJson ||
         draftClosingNotes !== savedSnapshot.closingNotes;
 
       if (isContentChanged) {
-        const hosts = [];
-        if (draftGroomName.trim()) {
-          hosts.push({
-            name: draftGroomName.trim(),
-            role: 'Mempelai Pria',
-            bio: draftGroomBio.trim() || undefined,
-          });
-        }
-        if (draftBrideName.trim()) {
-          hosts.push({
-            name: draftBrideName.trim(),
-            role: 'Mempelai Wanita',
-            bio: draftBrideBio.trim() || undefined,
-          });
-        }
-
-        updateTasks.push(
-          upsertInvitationData(id, {
-            hosts,
-            closing_notes: draftClosingNotes.trim(),
-          })
-        );
+        updateTasks.push(upsertInvitationData(id, liveContent));
       }
 
       // C. Periksa perubahan seksi (invitation_sections)
@@ -510,10 +683,23 @@ export function InvitationDetail() {
         eventType: draftEventType,
         allowRsvp: draftAllowRsvp,
         showWishes: draftShowWishes,
+        heroHeadline: draftHeroHeadline,
+        heroOpeningText: draftHeroOpeningText,
+        heroCoupleNames: draftHeroCoupleNames,
+        heroLocation: draftHeroLocation,
         groomName: draftGroomName,
+        groomRole: draftGroomRole,
+        groomParents: draftGroomParents,
         groomBio: draftGroomBio,
+        groomPhotoUrl: draftGroomPhotoUrl,
+        groomStoragePath: draftGroomStoragePath,
         brideName: draftBrideName,
+        brideRole: draftBrideRole,
+        brideParents: draftBrideParents,
         brideBio: draftBrideBio,
+        bridePhotoUrl: draftBridePhotoUrl,
+        brideStoragePath: draftBrideStoragePath,
+        storyJson: currentStoryJson,
         closingNotes: draftClosingNotes,
         sectionsJson: currentSectionsJson,
       });
@@ -545,6 +731,167 @@ export function InvitationDetail() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Handler unggah foto mempelai / host
+  const handleUploadCouplePhoto = async (slot: 'groom' | 'bride', file: File) => {
+    if (!id) return;
+    const isGroom = slot === 'groom';
+    if (isGroom) {
+      setIsUploadingGroomPhoto(true);
+      setGroomPhotoError(null);
+    } else {
+      setIsUploadingBridePhoto(true);
+      setBridePhotoError(null);
+    }
+
+    try {
+      const result = await uploadCouplePhoto(id, file, slot);
+      const oldStoragePath = isGroom ? draftGroomStoragePath : draftBrideStoragePath;
+      if (oldStoragePath && oldStoragePath !== result.storage_path) {
+        deleteGalleryImageFile(oldStoragePath).catch(() => {});
+      }
+
+      if (isGroom) {
+        setDraftGroomPhotoUrl(result.photo_url);
+        setDraftGroomStoragePath(result.storage_path);
+      } else {
+        setDraftBridePhotoUrl(result.photo_url);
+        setDraftBrideStoragePath(result.storage_path);
+      }
+      setSaveSuccessMessage(`Foto ${isGroom ? 'mempelai pria' : 'mempelai wanita'} berhasil diunggah.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal mengunggah foto.';
+      if (isGroom) setGroomPhotoError(msg);
+      else setBridePhotoError(msg);
+    } finally {
+      if (isGroom) setIsUploadingGroomPhoto(false);
+      else setIsUploadingBridePhoto(false);
+    }
+  };
+
+  // Handler hapus foto mempelai / host
+  const handleDeleteCouplePhoto = async (slot: 'groom' | 'bride') => {
+    const isGroom = slot === 'groom';
+    const targetStoragePath = isGroom ? draftGroomStoragePath : draftBrideStoragePath;
+    if (targetStoragePath) {
+      deleteGalleryImageFile(targetStoragePath).catch(() => {});
+    }
+    if (isGroom) {
+      setDraftGroomPhotoUrl('');
+      setDraftGroomStoragePath('');
+      setGroomPhotoError(null);
+    } else {
+      setDraftBridePhotoUrl('');
+      setDraftBrideStoragePath('');
+      setBridePhotoError(null);
+    }
+  };
+
+  // Handler Linimasa Cerita (Story)
+  const handleOpenCreateStoryModal = () => {
+    setEditingStoryId(null);
+    setStoryForm({ title: '', date: '', description: '' });
+    setStoryErrorMessage(null);
+    setStoryModalOpen(true);
+  };
+
+  const handleOpenEditStoryModal = (item: InvitationContentStoryItem) => {
+    setEditingStoryId(item.id);
+    setStoryForm({
+      title: item.title,
+      date: item.date || '',
+      description: item.description,
+    });
+    setStoryErrorMessage(null);
+    setStoryModalOpen(true);
+  };
+
+  const handleSaveStory = (e: FormEvent) => {
+    e.preventDefault();
+    const cleanTitle = storyForm.title.trim();
+    const cleanDesc = storyForm.description.trim();
+
+    if (!cleanTitle) {
+      setStoryErrorMessage('Judul momen cerita wajib diisi.');
+      return;
+    }
+    if (!cleanDesc) {
+      setStoryErrorMessage('Isi cerita momen wajib diisi.');
+      return;
+    }
+
+    if (editingStoryId) {
+      setDraftStory((prev) =>
+        prev.map((item) =>
+          item.id === editingStoryId
+            ? {
+                ...item,
+                title: cleanTitle,
+                date: storyForm.date.trim() || undefined,
+                description: cleanDesc,
+              }
+            : item
+        )
+      );
+    } else {
+      const newItem: InvitationContentStoryItem = {
+        id: crypto.randomUUID(),
+        title: cleanTitle,
+        date: storyForm.date.trim() || undefined,
+        description: cleanDesc,
+        display_order: draftStory.length,
+        is_enabled: true,
+      };
+      setDraftStory((prev) => [...prev, newItem]);
+    }
+
+    setStoryModalOpen(false);
+    setStoryForm({ title: '', date: '', description: '' });
+    setStoryErrorMessage(null);
+  };
+
+  const handleMoveStoryUp = (index: number) => {
+    if (index <= 0) return;
+    setDraftStory((prev) => {
+      const copy = [...prev];
+      const target = copy[index];
+      const prevItem = copy[index - 1];
+      if (!target || !prevItem) return prev;
+      copy[index - 1] = target;
+      copy[index] = prevItem;
+      return copy.map((item, idx) => ({ ...item, display_order: idx }));
+    });
+  };
+
+  const handleMoveStoryDown = (index: number) => {
+    if (index >= draftStory.length - 1) return;
+    setDraftStory((prev) => {
+      const copy = [...prev];
+      const target = copy[index];
+      const nextItem = copy[index + 1];
+      if (!target || !nextItem) return prev;
+      copy[index + 1] = target;
+      copy[index] = nextItem;
+      return copy.map((item, idx) => ({ ...item, display_order: idx }));
+    });
+  };
+
+  const handleToggleStoryEnabled = (storyId: string) => {
+    setDraftStory((prev) =>
+      prev.map((s) => (s.id === storyId ? { ...s, is_enabled: !s.is_enabled } : s))
+    );
+  };
+
+  const handleConfirmDeleteStory = () => {
+    if (!storyToDelete) return;
+    setDraftStory((prev) =>
+      prev
+        .filter((s) => s.id !== storyToDelete.id)
+        .map((item, idx) => ({ ...item, display_order: idx }))
+    );
+    setDeleteStoryModalOpen(false);
+    setStoryToDelete(null);
   };
 
   // Handler toggle aktif/nonaktif seksi di draft lokal
@@ -1352,7 +1699,7 @@ export function InvitationDetail() {
           } ${mobileView === 'preview' ? 'hidden lg:block' : 'block'} space-y-4`}
         >
           <div className="bg-surface border border-border rounded shadow-sm overflow-hidden">
-            {/* Navigasi Sub-Tab Editor (5 Tab) */}
+            {/* Navigasi Sub-Tab Editor (8 Tab) */}
             <div className="flex border-b border-border bg-surface-elevated text-xs font-semibold overflow-x-auto">
               <button
                 type="button"
@@ -1367,6 +1714,17 @@ export function InvitationDetail() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab('hero')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'hero'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Hero &amp; Cover
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('content')}
                 className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === 'content'
@@ -1375,6 +1733,17 @@ export function InvitationDetail() {
                 }`}
               >
                 Mempelai
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('story')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'story'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Kisah Kami ({draftStory.length})
               </button>
               <button
                 type="button"
@@ -1545,74 +1914,332 @@ export function InvitationDetail() {
               </div>
             )}
 
-            {/* TAB 2: MEMPELAI & TUAN RUMAH */}
-            {activeTab === 'content' && (
+            {/* TAB: HERO / COVER */}
+            {activeTab === 'hero' && (
               <div className="p-5 space-y-5 text-xs">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="heroHeadline" className="font-semibold text-text-primary block">
+                      Headline Utama Cover
+                    </label>
+                    <span className="text-[11px] text-text-subtle">
+                      Opsional
+                    </span>
+                  </div>
+                  <input
+                    id="heroHeadline"
+                    type="text"
+                    value={draftHeroHeadline}
+                    onChange={(e) => setDraftHeroHeadline(e.target.value)}
+                    placeholder={`Contoh: ${draftTitle || 'The Wedding Celebration'}`}
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                  <p className="text-[11px] text-text-subtle">
+                    Jika dikosongkan, judul undangan di tab Pengaturan akan otomatis digunakan sebagai headline.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="heroOpeningText" className="font-semibold text-text-primary block">
+                    Teks Pembuka / Salam Khidmat
+                  </label>
+                  <input
+                    id="heroOpeningText"
+                    type="text"
+                    value={draftHeroOpeningText}
+                    onChange={(e) => setDraftHeroOpeningText(e.target.value)}
+                    placeholder="Contoh: Walimatul 'Ursy atau The Wedding Celebration of"
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                  <p className="text-[11px] text-text-subtle">
+                    Teks bernuansa elegan yang ditampilkan di atas headline atau salam pembuka.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="heroCoupleNames" className="font-semibold text-text-primary block">
+                    Nama Pasangan di Cover
+                  </label>
+                  <input
+                    id="heroCoupleNames"
+                    type="text"
+                    value={draftHeroCoupleNames}
+                    onChange={(e) => setDraftHeroCoupleNames(e.target.value)}
+                    placeholder="Contoh: Romeo & Juliet"
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                  <p className="text-[11px] text-text-subtle">
+                    Nama pasangan khusus tampilan cover. Jika dikosongkan, nama kedua mempelai akan otomatis digabungkan.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="heroLocation" className="font-semibold text-text-primary block">
+                    Lokasi Singkat di Cover
+                  </label>
+                  <input
+                    id="heroLocation"
+                    type="text"
+                    value={draftHeroLocation}
+                    onChange={(e) => setDraftHeroLocation(e.target.value)}
+                    placeholder="Contoh: Sleman, D.I. Yogyakarta"
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                  <p className="text-[11px] text-text-subtle">
+                    Jika dikosongkan, nama tempat dari agenda acara utama akan digunakan secara otomatis.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: MEMPELAI & TUAN RUMAH */}
+            {activeTab === 'content' && (
+              <div className="p-5 space-y-6 text-xs">
                 {/* Mempelai Pria */}
-                <div className="space-y-3 p-3.5 border border-border rounded bg-surface-elevated/40">
-                  <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
-                    Calon Mempelai Pria
-                  </h3>
+                <div className="space-y-4 p-4 border border-border rounded bg-surface-elevated/40">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                      Calon Mempelai Pria
+                    </h3>
+                  </div>
+
+                  {/* Foto Mempelai Pria */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                      {draftGroomPhotoUrl ? (
+                        <img
+                          src={draftGroomPhotoUrl}
+                          alt="Foto Mempelai Pria"
+                          className="w-16 h-16 rounded-full object-cover border border-border shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full border border-dashed border-border bg-surface flex items-center justify-center text-text-subtle text-base font-medium select-none">
+                          {draftGroomName.trim() ? draftGroomName.trim().charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={groomFileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleUploadCouplePhoto('groom', file);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => groomFileInputRef.current?.click()}
+                          disabled={isUploadingGroomPhoto}
+                          className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border rounded text-[11px] font-semibold text-text-primary transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isUploadingGroomPhoto ? 'Mengunggah...' : draftGroomPhotoUrl ? 'Ganti Foto' : 'Unggah Foto'}
+                        </button>
+                        {draftGroomPhotoUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCouplePhoto('groom')}
+                            className="py-1.5 px-2.5 bg-surface hover:bg-red-500/10 border border-border hover:border-red-500/30 rounded text-[11px] font-medium text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                          >
+                            Hapus
+                          </button>
+                        ) : null}
+                      </div>
+                      <p className="text-[10px] text-text-subtle">
+                        JPEG, PNG, WebP maks. 5 MB.
+                      </p>
+                      {groomPhotoError ? (
+                        <p className="text-[11px] text-danger">{groomPhotoError}</p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label htmlFor="groomName" className="font-medium text-text-primary block">
+                        Nama Lengkap / Panggilan
+                      </label>
+                      <input
+                        id="groomName"
+                        type="text"
+                        value={draftGroomName}
+                        onChange={(e) => setDraftGroomName(e.target.value)}
+                        placeholder="Contoh: Raden Satria Pratama"
+                        className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="groomRole" className="font-medium text-text-primary block">
+                        Peran / Sebutan
+                      </label>
+                      <input
+                        id="groomRole"
+                        type="text"
+                        value={draftGroomRole}
+                        onChange={(e) => setDraftGroomRole(e.target.value)}
+                        placeholder="Mempelai Pria"
+                        className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      />
+                    </div>
+                  </div>
 
                   <div className="space-y-1">
-                    <label htmlFor="groomName" className="font-medium text-text-primary block">
-                      Nama Lengkap / Panggilan
+                    <label htmlFor="groomParents" className="font-medium text-text-primary block">
+                      Nama Orang Tua / Informasi Keluarga
                     </label>
                     <input
-                      id="groomName"
+                      id="groomParents"
                       type="text"
-                      value={draftGroomName}
-                      onChange={(e) => setDraftGroomName(e.target.value)}
-                      placeholder="Contoh: Raden Satria Pratama"
+                      value={draftGroomParents}
+                      onChange={(e) => setDraftGroomParents(e.target.value)}
+                      placeholder="Contoh: Putra pertama dari Bpk. Hartono & Ibu Nurul"
                       className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label htmlFor="groomBio" className="font-medium text-text-primary block">
-                      Keterangan / Informasi Keluarga
+                      Kutipan / Akun Sosial Media
                     </label>
                     <input
                       id="groomBio"
                       type="text"
                       value={draftGroomBio}
                       onChange={(e) => setDraftGroomBio(e.target.value)}
-                      placeholder="Contoh: Putra pertama dari Bpk. Hartono & Ibu Nurul"
+                      placeholder="Contoh: @raden.satria"
                       className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
                   </div>
                 </div>
 
                 {/* Mempelai Wanita */}
-                <div className="space-y-3 p-3.5 border border-border rounded bg-surface-elevated/40">
-                  <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
-                    Calon Mempelai Wanita
-                  </h3>
+                <div className="space-y-4 p-4 border border-border rounded bg-surface-elevated/40">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                      Calon Mempelai Wanita
+                    </h3>
+                  </div>
+
+                  {/* Foto Mempelai Wanita */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                      {draftBridePhotoUrl ? (
+                        <img
+                          src={draftBridePhotoUrl}
+                          alt="Foto Mempelai Wanita"
+                          className="w-16 h-16 rounded-full object-cover border border-border shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full border border-dashed border-border bg-surface flex items-center justify-center text-text-subtle text-base font-medium select-none">
+                          {draftBrideName.trim() ? draftBrideName.trim().charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={brideFileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleUploadCouplePhoto('bride', file);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => brideFileInputRef.current?.click()}
+                          disabled={isUploadingBridePhoto}
+                          className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border rounded text-[11px] font-semibold text-text-primary transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isUploadingBridePhoto ? 'Mengunggah...' : draftBridePhotoUrl ? 'Ganti Foto' : 'Unggah Foto'}
+                        </button>
+                        {draftBridePhotoUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCouplePhoto('bride')}
+                            className="py-1.5 px-2.5 bg-surface hover:bg-red-500/10 border border-border hover:border-red-500/30 rounded text-[11px] font-medium text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                          >
+                            Hapus
+                          </button>
+                        ) : null}
+                      </div>
+                      <p className="text-[10px] text-text-subtle">
+                        JPEG, PNG, WebP maks. 5 MB.
+                      </p>
+                      {bridePhotoError ? (
+                        <p className="text-[11px] text-danger">{bridePhotoError}</p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label htmlFor="brideName" className="font-medium text-text-primary block">
+                        Nama Lengkap / Panggilan
+                      </label>
+                      <input
+                        id="brideName"
+                        type="text"
+                        value={draftBrideName}
+                        onChange={(e) => setDraftBrideName(e.target.value)}
+                        placeholder="Contoh: Dewi Larasati Putri"
+                        className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="brideRole" className="font-medium text-text-primary block">
+                        Peran / Sebutan
+                      </label>
+                      <input
+                        id="brideRole"
+                        type="text"
+                        value={draftBrideRole}
+                        onChange={(e) => setDraftBrideRole(e.target.value)}
+                        placeholder="Mempelai Wanita"
+                        className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      />
+                    </div>
+                  </div>
 
                   <div className="space-y-1">
-                    <label htmlFor="brideName" className="font-medium text-text-primary block">
-                      Nama Lengkap / Panggilan
+                    <label htmlFor="brideParents" className="font-medium text-text-primary block">
+                      Nama Orang Tua / Informasi Keluarga
                     </label>
                     <input
-                      id="brideName"
+                      id="brideParents"
                       type="text"
-                      value={draftBrideName}
-                      onChange={(e) => setDraftBrideName(e.target.value)}
-                      placeholder="Contoh: Dewi Larasati Putri"
+                      value={draftBrideParents}
+                      onChange={(e) => setDraftBrideParents(e.target.value)}
+                      placeholder="Contoh: Putri kedua dari Bpk. Surya & Ibu Ratna"
                       className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label htmlFor="brideBio" className="font-medium text-text-primary block">
-                      Keterangan / Informasi Keluarga
+                      Kutipan / Akun Sosial Media
                     </label>
                     <input
                       id="brideBio"
                       type="text"
                       value={draftBrideBio}
                       onChange={(e) => setDraftBrideBio(e.target.value)}
-                      placeholder="Contoh: Putri kedua dari Bpk. Surya & Ibu Ratna"
+                      placeholder="Contoh: @dewi.larasati"
                       className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
                   </div>
@@ -1621,7 +2248,7 @@ export function InvitationDetail() {
                 {/* Pesan Penutup & Kutipan */}
                 <div className="space-y-1 pt-2">
                   <label htmlFor="closingNotes" className="font-semibold text-text-primary block">
-                    Pesan Penutup atau Kutipan
+                    Pesan Penutup atau Doa Singkat
                   </label>
                   <textarea
                     id="closingNotes"
@@ -1635,6 +2262,140 @@ export function InvitationDetail() {
                     Pesan ini akan ditampilkan pada seksi penutup undangan.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* TAB: LINIMASA KISAH CINTA (STORY) */}
+            {activeTab === 'story' && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-text-primary">
+                      Linimasa Kisah Kami
+                    </h3>
+                    <p className="text-text-muted leading-relaxed">
+                      Bagikan momen-momen berharga dalam perjalanan cinta Anda.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateStoryModal}
+                    className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground font-semibold rounded transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1.5"
+                  >
+                    <span>+</span>
+                    <span>Tambah Momen</span>
+                  </button>
+                </div>
+
+                {draftStory.length === 0 ? (
+                  <div className="py-10 px-4 border border-dashed border-border rounded-lg bg-surface-elevated/30 text-center space-y-3">
+                    <p className="text-text-muted font-medium">
+                      Belum ada momen kisah yang ditambahkan.
+                    </p>
+                    <p className="text-[11px] text-text-subtle max-w-sm mx-auto">
+                      Tambahkan kisah seperti awal pertemuan, hari lamaran, atau momen tak terlupakan sebelum pernikahan.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateStoryModal}
+                      className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border font-medium rounded text-text-primary transition-colors cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <span>+ Tambah Momen Pertama</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {draftStory.map((story, index) => (
+                      <div
+                        key={story.id}
+                        className={`p-3.5 border rounded-lg transition-colors ${
+                          story.is_enabled
+                            ? 'border-border bg-surface-elevated/40'
+                            : 'border-border/60 bg-surface-elevated/10 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="w-5 h-5 rounded-full bg-surface border border-border flex items-center justify-center text-[10px] font-semibold text-text-subtle shrink-0">
+                                {index + 1}
+                              </span>
+                              <h4 className="font-semibold text-text-primary text-xs truncate">
+                                {story.title}
+                              </h4>
+                              {story.date ? (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface border border-border text-text-muted font-medium">
+                                  {story.date}
+                                </span>
+                              ) : null}
+                              {!story.is_enabled ? (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
+                                  Dinonaktifkan
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">
+                              {story.description}
+                            </p>
+                          </div>
+
+                          {/* Aksi Story */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStoryEnabled(story.id)}
+                              title={story.is_enabled ? 'Sembunyikan momen' : 'Tampilkan momen'}
+                              className={`p-1.5 rounded border transition-colors cursor-pointer text-[11px] ${
+                                story.is_enabled
+                                  ? 'border-border bg-surface text-text-primary hover:bg-surface-elevated'
+                                  : 'border-border bg-surface-elevated text-text-subtle'
+                              }`}
+                            >
+                              {story.is_enabled ? 'Aktif' : 'Nonaktif'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => handleMoveStoryUp(index)}
+                              title="Pindah ke atas"
+                              className="p-1.5 rounded border border-border bg-surface hover:bg-surface-elevated disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed text-[11px]"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === draftStory.length - 1}
+                              onClick={() => handleMoveStoryDown(index)}
+                              title="Pindah ke bawah"
+                              className="p-1.5 rounded border border-border bg-surface hover:bg-surface-elevated disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed text-[11px]"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditStoryModal(story)}
+                              title="Edit momen"
+                              className="p-1.5 rounded border border-border bg-surface hover:bg-surface-elevated text-text-primary cursor-pointer text-[11px]"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStoryToDelete(story);
+                                setDeleteStoryModalOpen(true);
+                              }}
+                              title="Hapus momen"
+                              className="p-1.5 rounded border border-border bg-surface hover:bg-red-500/10 text-red-600 dark:text-red-400 cursor-pointer text-[11px]"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2337,6 +3098,140 @@ export function InvitationDetail() {
                 className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isDeletingEvent ? 'Menghapus...' : 'Ya, Hapus Acara'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4a. Modal Tambah / Edit Kisah Cinta */}
+      {storyModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg shadow-lg max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-semibold text-text-primary text-sm">
+                {editingStoryId ? 'Edit Momen Kisah' : 'Tambah Momen Kisah'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setStoryModalOpen(false);
+                  setStoryErrorMessage(null);
+                }}
+                aria-label="Tutup modal"
+                className="text-text-muted hover:text-text-primary p-1 rounded cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            {storyErrorMessage && (
+              <div role="alert" className="p-2.5 bg-danger/10 border border-danger/30 rounded text-xs text-danger font-medium">
+                {storyErrorMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveStory} className="space-y-3.5 text-xs">
+              <div className="space-y-1">
+                <label htmlFor="storyTitle" className="font-medium text-text-primary block">
+                  Judul Momen <span className="text-danger">*</span>
+                </label>
+                <input
+                  id="storyTitle"
+                  type="text"
+                  value={storyForm.title}
+                  onChange={(e) => setStoryForm((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder="Contoh: Pertama Kali Bertemu"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="storyDate" className="font-medium text-text-primary block">
+                  Waktu / Tahun (Opsional)
+                </label>
+                <input
+                  id="storyDate"
+                  type="text"
+                  value={storyForm.date}
+                  onChange={(e) => setStoryForm((prev) => ({ ...prev, date: e.target.value }))}
+                  placeholder="Contoh: 14 Februari 2020 atau Tahun 2020"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="storyDescription" className="font-medium text-text-primary block">
+                  Isi Cerita Momen <span className="text-danger">*</span>
+                </label>
+                <textarea
+                  id="storyDescription"
+                  rows={4}
+                  value={storyForm.description}
+                  onChange={(e) => setStoryForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Ceritakan kisah indah pada momen ini secara singkat dan berkesan..."
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStoryModalOpen(false);
+                    setStoryErrorMessage(null);
+                  }}
+                  className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer"
+                >
+                  Simpan Momen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4b. Modal Konfirmasi Hapus Kisah */}
+      {deleteStoryModalOpen && storyToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg shadow-lg max-w-sm w-full p-6 space-y-4">
+            <h3 className="font-semibold text-text-primary text-sm">
+              Hapus Momen Kisah?
+            </h3>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Apakah Anda yakin ingin menghapus momen &ldquo;{storyToDelete.title}&rdquo; dari linimasa kisah perjalanan?
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteStoryModalOpen(false);
+                  setStoryToDelete(null);
+                }}
+                className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteStory}
+                className="py-1.5 px-3.5 bg-danger hover:bg-danger-hover text-white text-xs font-semibold rounded transition-colors cursor-pointer"
+              >
+                Ya, Hapus
               </button>
             </div>
           </div>

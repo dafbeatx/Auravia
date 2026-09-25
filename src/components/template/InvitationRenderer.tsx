@@ -34,13 +34,7 @@ export interface InvitationRendererProps {
   } | null;
   customSections?: SectionConfig[] | null;
   sections?: SectionConfig[] | null;
-  content?: {
-    hosts?: Array<{ name: string; role?: string; bio?: string }>;
-    story?: Array<{ title: string; description: string; date?: string }>;
-    financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
-    closing_notes?: string;
-    [key: string]: unknown;
-  } | null;
+  content?: import('@/lib/template/types').InvitationContent | null;
   events?: Array<{
     id: string;
     title: string;

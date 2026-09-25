@@ -3,10 +3,11 @@ import type { SectionRendererProps } from '@/lib/template/types';
 
 export const HeroSection: React.FC<SectionRendererProps> = ({
   invitation,
+  content,
   events,
   guest,
 }) => {
-  // Cari event utama (is_primary = true) atau event pertama sebagai penanggalan hero
+  // Ambil data event utama atau event pertama untuk penanggalan riil
   const primaryEvent = events?.find((e) => e.is_primary) ?? events?.[0];
   const eventDate = primaryEvent ? new Date(primaryEvent.start_time) : null;
   const isDateValid = eventDate && !isNaN(eventDate.getTime());
@@ -20,11 +21,36 @@ export const HeroSection: React.FC<SectionRendererProps> = ({
       })
     : null;
 
+  // Nama pasangan yang dikonfigurasi di hero atau diturunkan dari data hosts
+  const hostNames = Array.isArray(content?.hosts)
+    ? content.hosts
+        .map((h) => h?.name?.trim())
+        .filter((n): n is string => Boolean(n && n.length > 0))
+    : [];
+
+  const derivedCoupleNames =
+    content?.hero?.couple_names?.trim() ||
+    (hostNames.length >= 2 ? `${hostNames[0]} & ${hostNames[1]}` : null);
+
+  const displayHeadline = content?.hero?.headline?.trim() || invitation.title;
+  const openingText = content?.hero?.opening_text?.trim();
+  const displayLocation =
+    content?.hero?.location_short?.trim() || primaryEvent?.venue_name || null;
+
   return (
     <header className="py-20 sm:py-28 px-6 text-center max-w-3xl mx-auto space-y-6">
       <div className="inline-block px-3 py-1 text-xs uppercase tracking-widest font-semibold rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)] text-[var(--theme-color-primary)]/80">
         {invitation.eventType}
       </div>
+
+      {openingText ? (
+        <p
+          className="text-sm sm:text-base italic text-[var(--theme-color-primary)]/75 tracking-wide"
+          style={{ fontFamily: 'var(--theme-font-heading)' }}
+        >
+          {openingText}
+        </p>
+      ) : null}
 
       {guest?.name ? (
         <div className="inline-flex flex-col items-center gap-1 py-2 px-5 rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/90 backdrop-blur-sm text-center">
@@ -40,19 +66,30 @@ export const HeroSection: React.FC<SectionRendererProps> = ({
         </div>
       ) : null}
 
-      <h1
-        className="text-4xl sm:text-5xl md:text-6xl font-normal leading-tight text-[var(--theme-color-primary)]"
-        style={{ fontFamily: 'var(--theme-font-heading)' }}
-      >
-        {invitation.title}
-      </h1>
+      <div className="space-y-3">
+        <h1
+          className="text-4xl sm:text-5xl md:text-6xl font-normal leading-tight text-[var(--theme-color-primary)]"
+          style={{ fontFamily: 'var(--theme-font-heading)' }}
+        >
+          {displayHeadline}
+        </h1>
 
-      {formattedDate ? (
-        <div className="pt-2 text-sm sm:text-base font-medium text-[var(--theme-color-primary)]/80">
-          <p>{formattedDate}</p>
-          {primaryEvent?.venue_name ? (
-            <p className="text-xs text-[var(--theme-color-primary)]/60 mt-1">
-              {primaryEvent.venue_name}
+        {derivedCoupleNames && derivedCoupleNames !== displayHeadline ? (
+          <p
+            className="text-2xl sm:text-3xl font-light text-[var(--theme-color-primary)]/90 tracking-wide"
+            style={{ fontFamily: 'var(--theme-font-heading)' }}
+          >
+            {derivedCoupleNames}
+          </p>
+        ) : null}
+      </div>
+
+      {formattedDate || displayLocation ? (
+        <div className="pt-2 text-sm sm:text-base font-medium text-[var(--theme-color-primary)]/80 space-y-1">
+          {formattedDate ? <p>{formattedDate}</p> : null}
+          {displayLocation ? (
+            <p className="text-xs text-[var(--theme-color-primary)]/65">
+              {displayLocation}
             </p>
           ) : null}
         </div>
