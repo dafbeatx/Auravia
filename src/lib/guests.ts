@@ -157,7 +157,7 @@ export async function getInvitationGuests(
 ): Promise<GuestItem[]> {
   let query = supabase
     .from('guests')
-    .select('*')
+    .select('id, invitation_id, name, phone, pax_limit, slug, created_at')
     .eq('invitation_id', invitationId)
     .order('created_at', { ascending: false });
 
@@ -182,7 +182,7 @@ export async function getGuestById(
 ): Promise<GuestItem | null> {
   const { data, error } = await supabase
     .from('guests')
-    .select('*')
+    .select('id, invitation_id, name, phone, pax_limit, slug, created_at')
     .eq('id', guestId)
     .eq('invitation_id', invitationId)
     .maybeSingle();
@@ -203,16 +203,17 @@ export async function getGuestBySlug(
 
   const { data, error } = await supabase
     .from('guests')
-    .select('*')
+    .select('id, invitation_id, name, pax_limit, slug')
     .eq('invitation_id', invitationId)
     .eq('slug', cleanSlug)
     .maybeSingle();
 
   if (error) {
-    throw new DatabaseError('Gagal mencari tamu berdasarkan tautan.', error);
+    // Graceful fallback: do not crash public page on slug query errors
+    return null;
   }
 
-  return data;
+  return data as GuestItem | null;
 }
 
 export async function createGuest(
@@ -242,7 +243,7 @@ export async function createGuest(
   const { data, error } = await supabase
     .from('guests')
     .insert(payload)
-    .select('*')
+    .select('id, invitation_id, name, phone, pax_limit, slug, created_at')
     .single();
 
   if (error) {
@@ -283,7 +284,7 @@ export async function updateGuest(
     .update(updatePayload)
     .eq('id', guestId)
     .eq('invitation_id', invitationId)
-    .select('*')
+    .select('id, invitation_id, name, phone, pax_limit, slug, created_at')
     .single();
 
   if (error) {

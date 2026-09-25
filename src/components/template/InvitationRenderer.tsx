@@ -61,6 +61,12 @@ export interface InvitationRendererProps {
     width: number | null;
     height: number | null;
   }>;
+  guest?: {
+    id: string;
+    name: string;
+    pax_limit: number;
+    slug: string;
+  } | null;
   className?: string;
 }
 
@@ -77,6 +83,7 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
   content,
   events,
   gallery,
+  guest,
   className = '',
 }) => {
   // Normalisasi properti invitation
@@ -163,6 +170,7 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
                 content={content}
                 events={events}
                 gallery={gallery}
+                guest={guest}
               />
             );
           })

@@ -29,6 +29,8 @@ import {
   type InvitationEventItem,
   type InvitationGalleryItem,
 } from '@/lib/invitations';
+import { getInvitationGuests } from '@/lib/guests';
+import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
 import { InvitationRenderer } from '@/components/template';
 import { ValidationError, DatabaseError, AuthorizationError } from '@/lib/errors';
 
@@ -116,7 +118,8 @@ export function InvitationDetail() {
   const [draftGallery, setDraftGallery] = useState<InvitationGalleryItem[]>([]);
 
   // Tampilan antarmuka
-  const [activeTab, setActiveTab] = useState<'settings' | 'content' | 'events' | 'gallery' | 'sections'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'content' | 'events' | 'gallery' | 'sections' | 'guests'>('settings');
+  const [guestCount, setGuestCount] = useState(0);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('desktop');
   const [showPreviewDesktop, setShowPreviewDesktop] = useState(true);
@@ -277,6 +280,10 @@ export function InvitationDetail() {
       // Muat data galeri foto (gallery_items)
       const galleryData = await getInvitationGalleryItems(id);
       setDraftGallery(galleryData);
+
+      // Muat jumlah tamu (guests)
+      const guestsData = await getInvitationGuests(id);
+      setGuestCount(guestsData.length);
 
       // Simpan snapshot untuk melacak perubahan yang belum disimpan
       const initialSectionsJson = JSON.stringify(
@@ -1402,6 +1409,17 @@ export function InvitationDetail() {
               >
                 Seksi
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('guests')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'guests'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Tamu {guestCount > 0 ? `(${guestCount})` : ''}
+              </button>
             </div>
 
             {/* TAB 1: PENGATURAN UMUM */}
@@ -2029,6 +2047,16 @@ export function InvitationDetail() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* TAB 6: PENGELOLAAN TAMU & RSVP */}
+            {activeTab === 'guests' && (
+              <GuestManagementTab
+                invitationId={invitation.id}
+                invitationSlug={invitation.slug}
+                invitationTitle={invitation.title}
+                onGuestCountChange={setGuestCount}
+              />
             )}
           </div>
         </div>

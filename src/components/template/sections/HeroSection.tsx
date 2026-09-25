@@ -4,6 +4,7 @@ import type { SectionRendererProps } from '@/lib/template/types';
 export const HeroSection: React.FC<SectionRendererProps> = ({
   invitation,
   events,
+  guest,
 }) => {
   // Cari event utama (is_primary = true) atau event pertama sebagai penanggalan hero
   const primaryEvent = events?.find((e) => e.is_primary) ?? events?.[0];
@@ -24,6 +25,20 @@ export const HeroSection: React.FC<SectionRendererProps> = ({
       <div className="inline-block px-3 py-1 text-xs uppercase tracking-widest font-semibold rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)] text-[var(--theme-color-primary)]/80">
         {invitation.eventType}
       </div>
+
+      {guest?.name ? (
+        <div className="inline-flex flex-col items-center gap-1 py-2 px-5 rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/90 backdrop-blur-sm text-center">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--theme-color-primary)]/70 font-semibold">
+            Kepada Yth. Bapak/Ibu/Saudara/i
+          </span>
+          <span
+            className="text-base sm:text-lg font-medium text-[var(--theme-color-primary)]"
+            style={{ fontFamily: 'var(--theme-font-heading)' }}
+          >
+            {guest.name}
+          </span>
+        </div>
+      ) : null}
 
       <h1
         className="text-4xl sm:text-5xl md:text-6xl font-normal leading-tight text-[var(--theme-color-primary)]"

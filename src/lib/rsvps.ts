@@ -92,7 +92,7 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<RsvpItem> {
   const { data, error } = await supabase
     .from('rsvps')
     .insert(payload)
-    .select('*')
+    .select('id, invitation_id, guest_id, guest_name, status, pax_count, wishes, is_hidden, created_at')
     .single();
 
   if (error) {
@@ -130,7 +130,7 @@ export async function getInvitationRsvps(
 ): Promise<RsvpItem[]> {
   let query = supabase
     .from('rsvps')
-    .select('*')
+    .select('id, invitation_id, guest_id, guest_name, status, pax_count, wishes, is_hidden, created_at')
     .eq('invitation_id', invitationId)
     .order('created_at', { ascending: false });
 
@@ -163,7 +163,7 @@ export async function toggleRsvpHidden(
     .update({ is_hidden: isHidden })
     .eq('id', rsvpId)
     .eq('invitation_id', invitationId)
-    .select('*')
+    .select('id, invitation_id, guest_id, guest_name, status, pax_count, wishes, is_hidden, created_at')
     .single();
 
   if (error) {

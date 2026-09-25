@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
   getPublicInvitationBySlug,
   extractInvitationContent,
   type PublicInvitationPayload,
 } from '@/lib/invitations';
+import { getGuestBySlug, type GuestItem } from '@/lib/guests';
 import { InvitationRenderer } from '@/components/template';
 import { DatabaseError } from '@/lib/errors';
 
@@ -12,12 +13,16 @@ import { DatabaseError } from '@/lib/errors';
  * Halaman Publik Undangan (/i/:slug):
  * Halaman tanpa proteksi sesi untuk pengunjung/tamu.
  * Hanya memuat undangan yang berstatus 'published'.
+ * Mendukung tautan personal tamu (/i/:slug?to=:guest_slug).
  * Menggunakan InvitationRenderer untuk merender tema dan seksi secara responsif.
  */
 export function PublicInvitation() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const guestSlugParam = searchParams.get('to');
 
   const [invitation, setInvitation] = useState<PublicInvitationPayload | null>(null);
+  const [guest, setGuest] = useState<GuestItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,12 +39,27 @@ export function PublicInvitation() {
     setError(null);
 
     getPublicInvitationBySlug(slug)
-      .then((data) => {
+      .then(async (data) => {
         if (!isMounted) return;
         if (!data) {
           setError('Undangan tidak ditemukan atau belum dipublikasikan.');
         } else {
           setInvitation(data);
+
+          // Jika ada parameter ?to=:guest_slug, cari data tamu secara aman
+          if (guestSlugParam) {
+            try {
+              const guestData = await getGuestBySlug(data.id, guestSlugParam);
+              if (isMounted) {
+                setGuest(guestData);
+              }
+            } catch {
+              // Jika slug tidak ditemukan atau ada kendala, tampilkan sebagai pengunjung umum tanpa crash
+              if (isMounted) {
+                setGuest(null);
+              }
+            }
+          }
         }
       })
       .catch((err) => {
@@ -59,7 +79,7 @@ export function PublicInvitation() {
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [slug, guestSlugParam]);
 
   if (loading) {
     return (
@@ -105,6 +125,7 @@ export function PublicInvitation() {
       content={extractInvitationContent(invitation.data)}
       events={invitation.events}
       gallery={invitation.gallery}
+      guest={guest}
     />
   );
 }

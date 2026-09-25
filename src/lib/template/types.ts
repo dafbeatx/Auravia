@@ -91,6 +91,12 @@ export interface SectionRendererProps<TConfig = Record<string, unknown>> {
     width: number | null;
     height: number | null;
   }>;
+  guest?: {
+    id: string;
+    name: string;
+    pax_limit: number;
+    slug: string;
+  } | null;
 }
 
 /**

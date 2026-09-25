@@ -153,4 +153,17 @@ describe('generateWhatsAppShareUrl', () => {
 
     expect(url.startsWith('https://api.whatsapp.com/send?text=')).toBe(true);
   });
+
+  it('includes custom note when provided in options', () => {
+    const url = generateWhatsAppShareUrl({
+      phone: '081234567890',
+      guestName: 'Budi Santoso',
+      invitationTitle: 'Pernikahan Sarah & Dimas',
+      invitationUrl: 'https://aurovia.id/i/sarah-dimas?to=budi-santoso',
+      customNote: 'Diharapkan hadir 15 menit sebelum acara dimulai.',
+    });
+
+    expect(url).toContain(encodeURIComponent('Diharapkan hadir 15 menit sebelum acara dimulai.'));
+  });
 });
+
