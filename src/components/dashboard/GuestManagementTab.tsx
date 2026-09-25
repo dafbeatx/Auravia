@@ -55,6 +55,9 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
 
   // Filter & Search states
   const [guestSearch, setGuestSearch] = useState('');
+  const [guestStatusFilter, setGuestStatusFilter] = useState<
+    'all' | 'unconfirmed' | 'attending' | 'declined' | 'tentative'
+  >('all');
   const [rsvpStatusFilter, setRsvpStatusFilter] = useState<RsvpStatus | 'all'>('all');
   const [rsvpSearch, setRsvpSearch] = useState('');
 
@@ -111,18 +114,6 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
   // Statistik aktual RSVP murni dari database tanpa angka tiruan
   const summary = useMemo(() => calculateRsvpSummary(rsvps), [rsvps]);
 
-  // Filter daftar tamu berdasarkan pencarian
-  const filteredGuests = useMemo(() => {
-    const q = guestSearch.trim().toLowerCase();
-    if (!q) return guests;
-    return guests.filter(
-      (g) =>
-        g.name.toLowerCase().includes(q) ||
-        (g.phone && g.phone.includes(q)) ||
-        g.slug.toLowerCase().includes(q)
-    );
-  }, [guests, guestSearch]);
-
   // Filter daftar respons RSVP berdasarkan status dan pencarian
   const filteredRsvps = useMemo(() => {
     return rsvps.filter((r) => {
@@ -168,6 +159,22 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
     }
     return map;
   }, [rsvps]);
+
+  // Filter daftar tamu berdasarkan pencarian dan status RSVP
+  const filteredGuests = useMemo(() => {
+    const q = guestSearch.trim().toLowerCase();
+    return guests.filter((g) => {
+      const rsvp = guestRsvpMap.get(g.id);
+      const guestStatus: 'unconfirmed' | RsvpStatus = rsvp ? (rsvp.status as RsvpStatus) : 'unconfirmed';
+      const matchStatus = guestStatusFilter === 'all' || guestStatus === guestStatusFilter;
+      const matchSearch =
+        !q ||
+        g.name.toLowerCase().includes(q) ||
+        (g.phone && g.phone.includes(q)) ||
+        g.slug.toLowerCase().includes(q);
+      return matchStatus && matchSearch;
+    });
+  }, [guests, guestSearch, guestRsvpMap, guestStatusFilter]);
 
   // Handler modal tambah tamu
   const handleOpenAddGuestModal = () => {
@@ -796,18 +803,45 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
               </div>
             </div>
 
-            {/* Input Pencarian Tamu */}
-            {guests.length > 0 && (
-              <div className="max-w-xs">
-                <input
-                  type="text"
-                  value={guestSearch}
-                  onChange={(e) => setGuestSearch(e.target.value)}
-                  placeholder="Cari nama, nomor telepon, atau slug..."
-                  className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                />
+            {/* Filter Status & Input Pencarian Tamu */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    { label: 'Semua', val: 'all' },
+                    { label: 'Belum Konfirmasi', val: 'unconfirmed' },
+                    { label: 'Hadir', val: 'attending' },
+                    { label: 'Tidak Hadir', val: 'declined' },
+                    { label: 'Masih Ragu', val: 'tentative' },
+                  ] as const
+                ).map((filterOpt) => (
+                  <button
+                    key={filterOpt.val}
+                    type="button"
+                    onClick={() => setGuestStatusFilter(filterOpt.val)}
+                    className={`py-1 px-2.5 rounded text-xs font-semibold transition-colors cursor-pointer border ${
+                      guestStatusFilter === filterOpt.val
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-surface text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    {filterOpt.label}
+                  </button>
+                ))}
               </div>
-            )}
+
+              {guests.length > 0 && (
+                <div className="max-w-xs w-full sm:w-auto">
+                  <input
+                    type="text"
+                    value={guestSearch}
+                    onChange={(e) => setGuestSearch(e.target.value)}
+                    placeholder="Cari nama, telp, atau slug..."
+                    className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Tabel Tamu 5 Kolom: Nama Tamu, Pax Limit, Status, Link Personal, Aksi */}
             {guests.length === 0 ? (
@@ -821,7 +855,7 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
               </div>
             ) : filteredGuests.length === 0 ? (
               <div className="p-6 border border-border rounded bg-surface-elevated/20 text-center text-xs text-text-muted">
-                Tidak ada tamu yang cocok dengan pencarian &quot;{guestSearch}&quot;.
+                Tidak ada tamu yang cocok dengan filter atau kata pencarian.
               </div>
             ) : (
               <div className="overflow-x-auto border border-border rounded-lg bg-surface">
@@ -884,6 +918,11 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                           {/* 3. Kolom Status */}
                           <td className="py-2.5 px-3 whitespace-nowrap">
                             {statusBadge}
+                            {guestRsvp?.created_at && (
+                              <div className="text-[10px] text-text-subtle font-mono mt-0.5">
+                                {formatRelativeDate(guestRsvp.created_at)}
+                              </div>
+                            )}
                           </td>
 
                           {/* 4. Kolom Link Personal */}

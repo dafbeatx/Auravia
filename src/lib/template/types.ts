@@ -75,12 +75,21 @@ export interface InvitationContentStoryItem {
   is_enabled: boolean;
 }
 
+export interface InvitationContentRsvp {
+  title?: string;
+  description?: string;
+  max_pax_default?: number;
+  allow_tentative?: boolean;
+  allow_notes?: boolean;
+}
+
 export interface InvitationContent {
   hero?: InvitationContentHero;
   hosts?: InvitationContentHost[];
   story?: InvitationContentStoryItem[];
   financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
   closing_notes?: string;
+  rsvp?: InvitationContentRsvp;
   [key: string]: unknown;
 }
 

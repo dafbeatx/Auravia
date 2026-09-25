@@ -3,9 +3,14 @@ import type { SectionRendererProps } from '@/lib/template/types';
 import { submitRsvp, type RsvpStatus } from '@/lib/rsvps';
 import { ValidationError, DatabaseError } from '@/lib/errors';
 
-export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest }) => {
-  // Maximum allowed pax: based on personal guest allocation or default 5 (capped at 20)
-  const maxPaxLimit = guest?.pax_limit ? Math.min(Math.max(guest.pax_limit, 1), 20) : 5;
+export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest, content }) => {
+  const rsvpConfig = content?.rsvp;
+  const allowTentative = rsvpConfig?.allow_tentative !== false;
+  const allowNotes = rsvpConfig?.allow_notes !== false;
+  const defaultMaxPax = rsvpConfig?.max_pax_default ? Math.min(Math.max(rsvpConfig.max_pax_default, 1), 20) : 5;
+
+  // Maximum allowed pax: based on personal guest allocation or invitation default (capped at 20)
+  const maxPaxLimit = guest?.pax_limit ? Math.min(Math.max(guest.pax_limit, 1), 20) : defaultMaxPax;
 
   const [guestName, setGuestName] = useState(guest?.name || '');
   const [status, setStatus] = useState<RsvpStatus>('attending');
@@ -14,12 +19,25 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
 
   const [uiState, setUiState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submittedReceipt, setSubmittedReceipt] = useState<{
+    name: string;
+    status: RsvpStatus;
+    paxCount: number;
+    wishes: string | null;
+  } | null>(null);
 
   React.useEffect(() => {
     if (guest?.name) {
       setGuestName(guest.name);
     }
   }, [guest?.name]);
+
+  // Pastikan status tidak tersangkut di tentative jika tentative dimatikan oleh owner
+  React.useEffect(() => {
+    if (!allowTentative && status === 'tentative') {
+      setStatus('attending');
+    }
+  }, [allowTentative, status]);
 
   if (invitation.allowRsvp === false) {
     return null;
@@ -50,20 +68,29 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
     setUiState('submitting');
     setErrorMessage(null);
 
+    const finalWishes = allowNotes && wishes.trim() ? wishes.trim() : null;
+    const finalPaxCount = status === 'declined' ? 1 : Math.min(Math.max(paxCount, 1), maxPaxLimit);
+
     try {
       await submitRsvp({
         invitation_id: invitation.id,
         guest_name: trimmedName,
         status,
-        pax_count: status === 'declined' ? 1 : paxCount,
-        wishes: wishes.trim() || null,
+        pax_count: finalPaxCount,
+        wishes: finalWishes,
         guest_id: guest?.id || null,
       });
 
+      setSubmittedReceipt({
+        name: trimmedName,
+        status,
+        paxCount: finalPaxCount,
+        wishes: finalWishes,
+      });
       setUiState('success');
 
       // Dispatch custom event to notify WishesSection if a wish was submitted
-      if (wishes.trim()) {
+      if (finalWishes) {
         window.dispatchEvent(new CustomEvent('aurovia:wishes-updated'));
       }
     } catch (err: unknown) {
@@ -81,6 +108,7 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
   const handleResetForm = () => {
     setUiState('idle');
     setErrorMessage(null);
+    setSubmittedReceipt(null);
     setWishes('');
     setStatus('attending');
     setPaxCount(1);
@@ -88,6 +116,15 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
       setGuestName(guest.name);
     }
   };
+
+  const displayTitle = rsvpConfig?.title?.trim() || 'Konfirmasi Kehadiran';
+  const displayDescription = rsvpConfig?.description?.trim()
+    ? guest?.name
+      ? `Kepada Yth. ${guest.name}, ${rsvpConfig.description.trim()}`
+      : rsvpConfig.description.trim()
+    : guest?.name
+    ? `Kepada Yth. ${guest.name}, mohon konfirmasikan kepastian kehadiran Anda untuk kelancaran acara kami.`
+    : 'Kehadiran dan doa restu Anda merupakan kehormatan dan kebahagiaan bagi kami sekeluarga.';
 
   return (
     <section
@@ -100,13 +137,11 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
           className="text-2xl sm:text-3xl font-normal text-[var(--theme-color-primary)]"
           style={{ fontFamily: 'var(--theme-font-heading)' }}
         >
-          Konfirmasi Kehadiran
+          {displayTitle}
         </h2>
 
         <p className="text-xs sm:text-sm text-[var(--theme-color-primary)]/80 leading-relaxed max-w-md mx-auto">
-          {guest?.name
-            ? `Kepada Yth. ${guest.name}, mohon konfirmasikan kepastian kehadiran Anda untuk kelancaran acara kami.`
-            : 'Kehadiran dan doa restu Anda merupakan kehormatan dan kebahagiaan bagi kami sekeluarga.'}
+          {displayDescription}
         </p>
       </div>
 
@@ -122,8 +157,43 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
             Konfirmasi Berhasil Terkirim
           </h3>
           <p className="text-xs text-[var(--theme-color-primary)]/80 leading-relaxed">
-            Terima kasih atas konfirmasi dan untaian doa restu yang telah Anda kirimkan. Tanggapan Anda telah tercatat dengan baik.
+            Terima kasih atas konfirmasi kehadiran Anda. Tanggapan Anda telah tercatat dengan baik.
           </p>
+
+          {submittedReceipt && (
+            <div className="p-3.5 bg-[var(--theme-color-surface)]/60 border border-[var(--theme-color-border)]/70 rounded text-left space-y-2 text-xs max-w-sm mx-auto">
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-[var(--theme-color-primary)]/70">Nama Tamu:</span>
+                <span className="font-semibold text-[var(--theme-color-primary)]">
+                  {submittedReceipt.name}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-[var(--theme-color-primary)]/70">Kepastian:</span>
+                <span className="font-semibold text-[var(--theme-color-primary)]">
+                  {submittedReceipt.status === 'attending'
+                    ? 'Hadir'
+                    : submittedReceipt.status === 'declined'
+                    ? 'Tidak Hadir'
+                    : 'Masih Ragu'}
+                </span>
+              </div>
+              {submittedReceipt.status !== 'declined' && (
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[var(--theme-color-primary)]/70">Jumlah Tamu:</span>
+                  <span className="font-semibold text-[var(--theme-color-primary)] font-mono">
+                    {submittedReceipt.paxCount} orang
+                  </span>
+                </div>
+              )}
+              {submittedReceipt.wishes && (
+                <div className="pt-1.5 border-t border-[var(--theme-color-border)]/50 text-[11px] text-[var(--theme-color-primary)]/80 italic">
+                  &quot;{submittedReceipt.wishes}&quot;
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="pt-2">
             <button
               type="button"
@@ -174,7 +244,7 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
             <span className="block text-xs font-semibold text-[var(--theme-color-primary)]">
               Kepastian Kehadiran <span className="text-red-500">*</span>
             </span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className={`grid ${allowTentative ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
               <button
                 type="button"
                 onClick={() => setStatus('attending')}
@@ -199,18 +269,20 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
               >
                 Tidak Hadir
               </button>
-              <button
-                type="button"
-                onClick={() => setStatus('tentative')}
-                disabled={uiState === 'submitting'}
-                className={`py-2 px-2 text-center rounded text-xs font-medium border transition-all cursor-pointer ${
-                  status === 'tentative'
-                    ? 'border-[var(--theme-color-primary)] bg-[var(--theme-color-primary)] text-[var(--theme-color-surface)]'
-                    : 'border-[var(--theme-color-border)] bg-transparent text-[var(--theme-color-primary)]/80 hover:bg-[var(--theme-color-primary)]/5'
-                }`}
-              >
-                Masih Ragu
-              </button>
+              {allowTentative && (
+                <button
+                  type="button"
+                  onClick={() => setStatus('tentative')}
+                  disabled={uiState === 'submitting'}
+                  className={`py-2 px-2 text-center rounded text-xs font-medium border transition-all cursor-pointer ${
+                    status === 'tentative'
+                      ? 'border-[var(--theme-color-primary)] bg-[var(--theme-color-primary)] text-[var(--theme-color-surface)]'
+                      : 'border-[var(--theme-color-border)] bg-transparent text-[var(--theme-color-primary)]/80 hover:bg-[var(--theme-color-primary)]/5'
+                  }`}
+                >
+                  Masih Ragu
+                </button>
+              )}
             </div>
           </div>
 
@@ -241,30 +313,32 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
             </div>
           )}
 
-          {/* Pesan Doa dan Ucapan */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label
-                htmlFor="rsvp-wishes"
-                className="block text-xs font-semibold text-[var(--theme-color-primary)]"
-              >
-                Ucapan & Doa Restu
-              </label>
-              <span className="text-[11px] text-[var(--theme-color-primary)]/60 font-mono">
-                {wishes.length}/500
-              </span>
+          {/* Pesan Doa dan Ucapan (opsional, dapat dinonaktifkan dari editor) */}
+          {allowNotes && (
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label
+                  htmlFor="rsvp-wishes"
+                  className="block text-xs font-semibold text-[var(--theme-color-primary)]"
+                >
+                  Ucapan &amp; Doa Restu
+                </label>
+                <span className="text-[11px] text-[var(--theme-color-primary)]/60 font-mono">
+                  {wishes.length}/500
+                </span>
+              </div>
+              <textarea
+                id="rsvp-wishes"
+                rows={3}
+                value={wishes}
+                onChange={(e) => setWishes(e.target.value)}
+                disabled={uiState === 'submitting'}
+                maxLength={500}
+                placeholder="Tuliskan ucapan dan doa hangat untuk kedua mempelai..."
+                className="w-full py-2 px-3 rounded text-xs border border-[var(--theme-color-border)] bg-transparent text-[var(--theme-color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-color-primary)] transition-all resize-none disabled:opacity-50"
+              />
             </div>
-            <textarea
-              id="rsvp-wishes"
-              rows={3}
-              value={wishes}
-              onChange={(e) => setWishes(e.target.value)}
-              disabled={uiState === 'submitting'}
-              maxLength={500}
-              placeholder="Tuliskan ucapan dan doa hangat untuk kedua mempelai..."
-              className="w-full py-2 px-3 rounded text-xs border border-[var(--theme-color-border)] bg-transparent text-[var(--theme-color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-color-primary)] transition-all resize-none disabled:opacity-50"
-            />
-          </div>
+          )}
 
           {/* Tombol Kirim */}
           <div className="pt-2">
@@ -281,3 +355,4 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest 
     </section>
   );
 };
+

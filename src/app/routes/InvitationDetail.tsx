@@ -92,6 +92,11 @@ export function InvitationDetail() {
     eventType: 'wedding',
     allowRsvp: true,
     showWishes: true,
+    rsvpTitle: '',
+    rsvpDescription: '',
+    rsvpMaxPax: 5,
+    rsvpAllowTentative: true,
+    rsvpAllowNotes: true,
     heroHeadline: '',
     heroOpeningText: '',
     heroCoupleNames: '',
@@ -119,6 +124,13 @@ export function InvitationDetail() {
   const [draftEventType, setDraftEventType] = useState('wedding');
   const [draftAllowRsvp, setDraftAllowRsvp] = useState(true);
   const [draftShowWishes, setDraftShowWishes] = useState(true);
+
+  // State Pengaturan RSVP Kustom
+  const [draftRsvpTitle, setDraftRsvpTitle] = useState('');
+  const [draftRsvpDescription, setDraftRsvpDescription] = useState('');
+  const [draftRsvpMaxPax, setDraftRsvpMaxPax] = useState(5);
+  const [draftRsvpAllowTentative, setDraftRsvpAllowTentative] = useState(true);
+  const [draftRsvpAllowNotes, setDraftRsvpAllowNotes] = useState(true);
 
   // State Hero / Cover (Hero Content)
   const [draftHeroHeadline, setDraftHeroHeadline] = useState('');
@@ -305,6 +317,12 @@ export function InvitationDetail() {
       let initialStory: InvitationContentStoryItem[] = [];
       let initialClosingNotes = '';
 
+      let initialRsvpTitle = '';
+      let initialRsvpDescription = '';
+      let initialRsvpMaxPax = 5;
+      let initialRsvpAllowTentative = true;
+      let initialRsvpAllowNotes = true;
+
       if (contentRecord?.content) {
         const c = contentRecord.content;
         if (c.hero) {
@@ -344,6 +362,14 @@ export function InvitationDetail() {
         }
 
         initialClosingNotes = typeof c.closing_notes === 'string' ? c.closing_notes : '';
+
+        if (c.rsvp) {
+          initialRsvpTitle = typeof c.rsvp.title === 'string' ? c.rsvp.title : '';
+          initialRsvpDescription = typeof c.rsvp.description === 'string' ? c.rsvp.description : '';
+          initialRsvpMaxPax = typeof c.rsvp.max_pax_default === 'number' ? c.rsvp.max_pax_default : 5;
+          initialRsvpAllowTentative = c.rsvp.allow_tentative !== false;
+          initialRsvpAllowNotes = c.rsvp.allow_notes !== false;
+        }
       }
 
       setDraftHeroHeadline(initialHeroHeadline);
@@ -367,6 +393,12 @@ export function InvitationDetail() {
 
       setDraftStory(initialStory);
       setDraftClosingNotes(initialClosingNotes);
+
+      setDraftRsvpTitle(initialRsvpTitle);
+      setDraftRsvpDescription(initialRsvpDescription);
+      setDraftRsvpMaxPax(initialRsvpMaxPax);
+      setDraftRsvpAllowTentative(initialRsvpAllowTentative);
+      setDraftRsvpAllowNotes(initialRsvpAllowNotes);
 
       // Muat template config & pastikan seksi terinisialisasi
       const config = await getInvitationTemplateConfig(id);
@@ -406,6 +438,11 @@ export function InvitationDetail() {
         eventType: initialEventType,
         allowRsvp: initialAllowRsvp,
         showWishes: initialShowWishes,
+        rsvpTitle: initialRsvpTitle,
+        rsvpDescription: initialRsvpDescription,
+        rsvpMaxPax: initialRsvpMaxPax,
+        rsvpAllowTentative: initialRsvpAllowTentative,
+        rsvpAllowNotes: initialRsvpAllowNotes,
         heroHeadline: initialHeroHeadline,
         heroOpeningText: initialHeroOpeningText,
         heroCoupleNames: initialHeroCoupleNames,
@@ -454,6 +491,11 @@ export function InvitationDetail() {
       draftEventType !== savedSnapshot.eventType ||
       draftAllowRsvp !== savedSnapshot.allowRsvp ||
       draftShowWishes !== savedSnapshot.showWishes ||
+      draftRsvpTitle !== savedSnapshot.rsvpTitle ||
+      draftRsvpDescription !== savedSnapshot.rsvpDescription ||
+      draftRsvpMaxPax !== savedSnapshot.rsvpMaxPax ||
+      draftRsvpAllowTentative !== savedSnapshot.rsvpAllowTentative ||
+      draftRsvpAllowNotes !== savedSnapshot.rsvpAllowNotes ||
       draftHeroHeadline !== savedSnapshot.heroHeadline ||
       draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
       draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
@@ -481,6 +523,11 @@ export function InvitationDetail() {
     draftEventType,
     draftAllowRsvp,
     draftShowWishes,
+    draftRsvpTitle,
+    draftRsvpDescription,
+    draftRsvpMaxPax,
+    draftRsvpAllowTentative,
+    draftRsvpAllowNotes,
     draftHeroHeadline,
     draftHeroOpeningText,
     draftHeroCoupleNames,
@@ -552,6 +599,13 @@ export function InvitationDetail() {
       hosts,
       story: draftStory,
       closing_notes: draftClosingNotes.trim(),
+      rsvp: {
+        title: draftRsvpTitle.trim() || undefined,
+        description: draftRsvpDescription.trim() || undefined,
+        max_pax_default: draftRsvpMaxPax,
+        allow_tentative: draftRsvpAllowTentative,
+        allow_notes: draftRsvpAllowNotes,
+      },
     };
   }, [
     draftHeroHeadline,
@@ -572,6 +626,11 @@ export function InvitationDetail() {
     draftBrideStoragePath,
     draftStory,
     draftClosingNotes,
+    draftRsvpTitle,
+    draftRsvpDescription,
+    draftRsvpMaxPax,
+    draftRsvpAllowTentative,
+    draftRsvpAllowNotes,
   ]);
 
   // Handler simpan satu tombol untuk form pengaturan, hero, mempelai, dan cerita
@@ -633,7 +692,7 @@ export function InvitationDetail() {
         );
       }
 
-      // B. Periksa perubahan konten mempelai, hero, dan cerita (invitation_data)
+      // B. Periksa perubahan konten mempelai, hero, cerita, dan rsvp (invitation_data)
       const isContentChanged =
         draftHeroHeadline !== savedSnapshot.heroHeadline ||
         draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
@@ -652,7 +711,12 @@ export function InvitationDetail() {
         draftBridePhotoUrl !== savedSnapshot.bridePhotoUrl ||
         draftBrideStoragePath !== savedSnapshot.brideStoragePath ||
         currentStoryJson !== savedSnapshot.storyJson ||
-        draftClosingNotes !== savedSnapshot.closingNotes;
+        draftClosingNotes !== savedSnapshot.closingNotes ||
+        draftRsvpTitle !== savedSnapshot.rsvpTitle ||
+        draftRsvpDescription !== savedSnapshot.rsvpDescription ||
+        draftRsvpMaxPax !== savedSnapshot.rsvpMaxPax ||
+        draftRsvpAllowTentative !== savedSnapshot.rsvpAllowTentative ||
+        draftRsvpAllowNotes !== savedSnapshot.rsvpAllowNotes;
 
       if (isContentChanged) {
         updateTasks.push(upsertInvitationData(id, liveContent));
@@ -683,6 +747,11 @@ export function InvitationDetail() {
         eventType: draftEventType,
         allowRsvp: draftAllowRsvp,
         showWishes: draftShowWishes,
+        rsvpTitle: draftRsvpTitle,
+        rsvpDescription: draftRsvpDescription,
+        rsvpMaxPax: draftRsvpMaxPax,
+        rsvpAllowTentative: draftRsvpAllowTentative,
+        rsvpAllowNotes: draftRsvpAllowNotes,
         heroHeadline: draftHeroHeadline,
         heroOpeningText: draftHeroOpeningText,
         heroCoupleNames: draftHeroCoupleNames,
@@ -1893,6 +1962,123 @@ export function InvitationDetail() {
                       </span>
                     </div>
                   </label>
+
+                  {draftAllowRsvp && (
+                    <div className="ml-6 p-4 rounded-lg border border-border bg-surface-elevated/40 space-y-4">
+                      <div className="border-b border-border/60 pb-2">
+                        <span className="font-semibold text-text-primary text-xs block">
+                          Pengaturan Detail RSVP
+                        </span>
+                        <p className="text-[11px] text-text-subtle mt-0.5">
+                          Sesuaikan judul, instruksi, batas pax, dan opsi respons formulir RSVP.
+                        </p>
+                      </div>
+
+                      {/* Judul Formulir RSVP */}
+                      <div className="space-y-1">
+                        <label htmlFor="rsvpTitleInput" className="font-medium text-text-primary block">
+                          Teks Judul RSVP
+                        </label>
+                        <input
+                          id="rsvpTitleInput"
+                          type="text"
+                          value={draftRsvpTitle}
+                          onChange={(e) => setDraftRsvpTitle(e.target.value)}
+                          placeholder="Konfirmasi Kehadiran"
+                          maxLength={100}
+                          className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                        />
+                        <p className="text-[11px] text-text-subtle">
+                          Teks tajuk seksi RSVP (default: Konfirmasi Kehadiran).
+                        </p>
+                      </div>
+
+                      {/* Deskripsi / Instruksi RSVP */}
+                      <div className="space-y-1">
+                        <label htmlFor="rsvpDescInput" className="font-medium text-text-primary block">
+                          Teks Deskripsi / Instruksi RSVP
+                        </label>
+                        <textarea
+                          id="rsvpDescInput"
+                          rows={2}
+                          value={draftRsvpDescription}
+                          onChange={(e) => setDraftRsvpDescription(e.target.value)}
+                          placeholder="Mohon konfirmasikan kepastian kehadiran Anda untuk kelancaran acara kami."
+                          maxLength={300}
+                          className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
+                        />
+                        <p className="text-[11px] text-text-subtle">
+                          Pesan pengantar di bawah judul formulir RSVP.
+                        </p>
+                      </div>
+
+                      {/* Batas Maksimal Tamu per Undangan (Default Pax) */}
+                      <div className="space-y-1">
+                        <label htmlFor="rsvpMaxPaxInput" className="font-medium text-text-primary block">
+                          Batas Maksimal Jumlah Tamu (Pax) Default
+                        </label>
+                        <input
+                          id="rsvpMaxPaxInput"
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={draftRsvpMaxPax}
+                          onChange={(e) =>
+                            setDraftRsvpMaxPax(
+                              Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 20)
+                            )
+                          }
+                          className="w-24 py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs font-mono"
+                        />
+                        <p className="text-[11px] text-text-subtle">
+                          Batas maksimal kehadiran yang dapat dipilih tamu umum (tamu tanpa alokasi khusus).
+                        </p>
+                      </div>
+
+                      {/* Opsi Jawaban & Catatan */}
+                      <div className="space-y-2 pt-2 border-t border-border/50">
+                        <span className="font-medium text-text-primary block">
+                          Opsi Respon Tamu
+                        </span>
+
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-text-muted">
+                            <input
+                              type="checkbox"
+                              checked={true}
+                              disabled={true}
+                              className="rounded border-border text-primary cursor-not-allowed opacity-60"
+                            />
+                            <span>Pilihan &quot;Hadir&quot; &amp; &quot;Tidak Hadir&quot; (Standar wajib)</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={draftRsvpAllowTentative}
+                              onChange={(e) => setDraftRsvpAllowTentative(e.target.checked)}
+                              className="rounded border-border text-primary focus:ring-0"
+                            />
+                            <span className="text-text-primary">
+                              Sediakan opsi jawaban &quot;Masih Ragu / Tentatif&quot;
+                            </span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={draftRsvpAllowNotes}
+                              onChange={(e) => setDraftRsvpAllowNotes(e.target.checked)}
+                              className="rounded border-border text-primary focus:ring-0"
+                            />
+                            <span className="text-text-primary">
+                              Sediakan kolom catatan atau ucapan doa restu dari tamu
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
