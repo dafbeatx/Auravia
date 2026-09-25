@@ -18,7 +18,7 @@ export function InvitationCard({
   onDeleteClick,
 }: InvitationCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu on click outside or Escape
@@ -92,17 +92,18 @@ export function InvitationCard({
     try {
       const publicUrl = `${window.location.origin}/i/${invitation.slug}`;
       await navigator.clipboard.writeText(publicUrl);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2500);
       setMenuOpen(false);
     } catch {
       // Fallback
     }
   };
 
-  const formattedDate = useMemo(() => {
+  const formattedUpdatedDate = useMemo(() => {
+    const rawDate = invitation.updated_at || invitation.created_at;
     try {
-      return new Date(invitation.created_at).toLocaleDateString('id-ID', {
+      return new Date(rawDate).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -110,9 +111,11 @@ export function InvitationCard({
     } catch {
       return '';
     }
-  }, [invitation.created_at]);
+  }, [invitation.updated_at, invitation.created_at]);
 
-  // RENDER GRID VIEW
+  const templateName = invitation.template?.name || null;
+
+  // ==================== GRID VIEW ====================
   if (viewMode === 'grid') {
     return (
       <div className="bg-surface border border-border rounded-xl shadow-xs hover:shadow-md hover:border-border-strong transition-all flex flex-col overflow-hidden group">
@@ -141,8 +144,8 @@ export function InvitationCard({
             </div>
           )}
 
-          {/* Status Badge */}
-          <div className="absolute top-3 left-3">
+          {/* Badges: Status (Left) & Template (Right) */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
             <span
               className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded shadow-xs border ${
                 isPublished
@@ -154,36 +157,44 @@ export function InvitationCard({
             </span>
           </div>
 
-          {/* Toast Salin Tautan */}
-          {copySuccess && (
-            <div className="absolute inset-0 bg-primary/90 text-primary-foreground flex items-center justify-center text-xs font-semibold animate-fadeIn z-20">
-              Tautan publik berhasil disalin!
+          {templateName && (
+            <div className="absolute top-3 right-3">
+              <span className="text-[10px] font-medium tracking-wider uppercase px-2 py-0.5 rounded shadow-xs bg-surface/95 border border-border text-text-subtle">
+                {templateName}
+              </span>
+            </div>
+          )}
+
+          {/* Copy Feedback Overlay */}
+          {copyFeedback && (
+            <div className="absolute inset-0 bg-primary/95 text-primary-foreground flex items-center justify-center text-xs font-semibold animate-fadeIn z-20">
+              Tautan publik berhasil disalin ke clipboard!
             </div>
           )}
         </div>
 
         {/* Card Body */}
         <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <h2 className="font-serif text-lg font-bold text-primary group-hover:text-primary-hover transition-colors line-clamp-1">
               {invitation.title}
             </h2>
+
             <div className="flex items-center gap-2 text-xs text-text-subtle font-mono truncate">
               <span className="truncate">/i/{invitation.slug}</span>
             </div>
-            {formattedDate && (
-              <p className="text-[11px] text-text-subtle pt-1 font-sans">
-                Dibuat {formattedDate}
-              </p>
-            )}
+
+            <div className="flex items-center justify-between text-[11px] text-text-subtle pt-1 font-sans">
+              <span>Diperbarui {formattedUpdatedDate}</span>
+            </div>
           </div>
 
           {/* Card Actions */}
-          <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
+          <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Link
                 to={`/dashboard/invitations/${invitation.id}`}
-                className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[34px] inline-flex items-center"
               >
                 Edit
               </Link>
@@ -192,7 +203,7 @@ export function InvitationCard({
                   href={`/i/${invitation.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 border border-border hover:bg-surface-elevated text-text-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  className="px-3 py-1.5 border border-border hover:bg-surface-elevated text-text-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[34px] inline-flex items-center"
                 >
                   Lihat
                 </a>
@@ -206,7 +217,7 @@ export function InvitationCard({
                 onClick={() => setMenuOpen((prev) => !prev)}
                 aria-expanded={menuOpen}
                 aria-label={`Menu opsi untuk ${invitation.title}`}
-                className="p-1.5 text-text-subtle hover:text-text-primary hover:bg-surface-elevated rounded-lg border border-transparent hover:border-border transition-colors cursor-pointer"
+                className="p-2 text-text-subtle hover:text-text-primary hover:bg-surface-elevated rounded-lg border border-transparent hover:border-border transition-colors cursor-pointer min-h-[34px] min-w-[34px] flex items-center justify-center"
               >
                 <svg
                   className="w-4 h-4"
@@ -266,7 +277,7 @@ export function InvitationCard({
                     }}
                     className="w-full text-left px-3.5 py-2 text-xs font-semibold text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                   >
-                    Hapus
+                    Hapus Undangan
                   </button>
                 </div>
               )}
@@ -277,9 +288,16 @@ export function InvitationCard({
     );
   }
 
-  // RENDER LIST VIEW
+  // ==================== LIST VIEW ====================
   return (
-    <div className="bg-surface border border-border rounded-xl p-4 sm:p-5 shadow-xs hover:border-border-strong transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="bg-surface border border-border rounded-xl p-4 sm:p-5 shadow-xs hover:border-border-strong transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative">
+      {/* Copy Feedback Toast inside List View */}
+      {copyFeedback && (
+        <div className="absolute top-2 right-2 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-md shadow-md animate-fadeIn z-20">
+          Tautan publik disalin!
+        </div>
+      )}
+
       {/* Left: Thumbnail & Details */}
       <div className="flex items-center gap-4 min-w-0">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-surface-elevated border border-border flex-shrink-0 overflow-hidden relative">
@@ -316,17 +334,20 @@ export function InvitationCard({
             >
               {isPublished ? 'Dipublikasikan' : 'Draft'}
             </span>
+            {templateName && (
+              <span className="text-[9px] font-medium tracking-wider uppercase px-2 py-0.5 rounded bg-surface border border-border text-text-subtle">
+                {templateName}
+              </span>
+            )}
           </div>
 
           <p className="text-xs text-text-subtle font-mono truncate">
             /i/{invitation.slug}
           </p>
 
-          {formattedDate && (
-            <p className="text-[11px] text-text-subtle font-sans">
-              Dibuat {formattedDate}
-            </p>
-          )}
+          <p className="text-[11px] text-text-subtle font-sans">
+            Diperbarui {formattedUpdatedDate}
+          </p>
         </div>
       </div>
 
@@ -334,7 +355,7 @@ export function InvitationCard({
       <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
         <Link
           to={`/dashboard/invitations/${invitation.id}`}
-          className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+          className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[34px] inline-flex items-center"
         >
           Edit
         </Link>
@@ -344,7 +365,7 @@ export function InvitationCard({
             href={`/i/${invitation.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 border border-border hover:bg-surface-elevated text-text-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-border hover:bg-surface-elevated text-text-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[34px] inline-flex items-center"
           >
             Lihat
           </a>
@@ -357,7 +378,7 @@ export function InvitationCard({
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-expanded={menuOpen}
             aria-label={`Menu opsi untuk ${invitation.title}`}
-            className="p-1.5 text-text-subtle hover:text-text-primary hover:bg-surface-elevated rounded-lg border border-border transition-colors cursor-pointer"
+            className="p-2 text-text-subtle hover:text-text-primary hover:bg-surface-elevated rounded-lg border border-border transition-colors cursor-pointer min-h-[34px] min-w-[34px] flex items-center justify-center"
           >
             <svg
               className="w-4 h-4"
@@ -417,7 +438,7 @@ export function InvitationCard({
                 }}
                 className="w-full text-left px-3.5 py-2 text-xs font-semibold text-danger hover:bg-danger/10 transition-colors cursor-pointer"
               >
-                Hapus
+                Hapus Undangan
               </button>
             </div>
           )}

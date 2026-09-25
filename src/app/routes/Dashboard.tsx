@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   getMyInvitations,
   deleteMyInvitation,
@@ -13,6 +14,7 @@ import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmati
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [invitations, setInvitations] = useState<InvitationListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,14 @@ export function Dashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deletingInvitation, setDeletingInvitation] = useState<InvitationListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const greetingName = useMemo(() => {
+    if (!user) return '';
+    const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
+    if (metaName && typeof metaName === 'string') return metaName;
+    if (user.email) return user.email.split('@')[0];
+    return '';
+  }, [user]);
 
   const fetchInvitations = useCallback(async () => {
     setLoading(true);
@@ -66,7 +76,8 @@ export function Dashboard() {
         const q = searchQuery.toLowerCase().trim();
         const matchTitle = inv.title.toLowerCase().includes(q);
         const matchSlug = inv.slug.toLowerCase().includes(q);
-        return matchTitle || matchSlug;
+        const matchTemplate = inv.template?.name?.toLowerCase().includes(q) || false;
+        return matchTitle || matchSlug || matchTemplate;
       }
       return true;
     });
@@ -94,7 +105,10 @@ export function Dashboard() {
   return (
     <div className="space-y-8 sm:space-y-10 pb-12">
       {/* Welcome / Editorial Hero */}
-      <DashboardHero onCreateClick={() => setShowCreateModal(true)} />
+      <DashboardHero
+        userName={greetingName}
+        onCreateClick={() => setShowCreateModal(true)}
+      />
 
       {/* Actual Statistics Cards */}
       <DashboardStats
@@ -126,7 +140,7 @@ export function Dashboard() {
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="self-start md:self-auto inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+            className="self-start md:self-auto inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[40px]"
           >
             <span>+ Buat Undangan</span>
           </button>
@@ -154,7 +168,7 @@ export function Dashboard() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari berdasarkan judul atau slug..."
+              placeholder="Cari berdasarkan judul, slug, atau template..."
               className="w-full pl-9 pr-8 py-2 bg-background border border-border rounded-lg text-xs sm:text-sm text-text-primary placeholder:text-text-subtle/60 focus:border-primary focus:outline-none transition-colors"
             />
             {searchQuery && (
@@ -182,7 +196,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer min-h-[36px] flex items-center ${
                   statusFilter === 'all'
                     ? 'bg-surface text-primary font-semibold shadow-xs'
                     : 'text-text-muted hover:text-text-primary'
@@ -193,7 +207,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setStatusFilter('draft')}
-                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer min-h-[36px] flex items-center ${
                   statusFilter === 'draft'
                     ? 'bg-surface text-primary font-semibold shadow-xs'
                     : 'text-text-muted hover:text-text-primary'
@@ -204,7 +218,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setStatusFilter('published')}
-                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer min-h-[36px] flex items-center ${
                   statusFilter === 'published'
                     ? 'bg-surface text-primary font-semibold shadow-xs'
                     : 'text-text-muted hover:text-text-primary'
@@ -225,7 +239,7 @@ export function Dashboard() {
                 onClick={() => setViewMode('grid')}
                 aria-pressed={viewMode === 'grid'}
                 aria-label="Tampilan Grid"
-                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                className={`p-2 rounded-md transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center ${
                   viewMode === 'grid'
                     ? 'bg-surface text-primary shadow-xs'
                     : 'text-text-subtle hover:text-text-primary'
@@ -240,7 +254,7 @@ export function Dashboard() {
                 onClick={() => setViewMode('list')}
                 aria-pressed={viewMode === 'list'}
                 aria-label="Tampilan Daftar"
-                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                className={`p-2 rounded-md transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center ${
                   viewMode === 'list'
                     ? 'bg-surface text-primary shadow-xs'
                     : 'text-text-subtle hover:text-text-primary'
@@ -290,13 +304,13 @@ export function Dashboard() {
                 Belum ada undangan
               </h3>
               <p className="text-xs text-text-muted leading-relaxed">
-                Mulai buat undangan digital pertama Anda. Pilih template yang sesuai dan publikasikan momen bahagia Anda.
+                Mulai buat undangan digital pertama Anda.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer min-h-[44px]"
             >
               <span>+ Buat Undangan</span>
             </button>
@@ -313,7 +327,7 @@ export function Dashboard() {
             <button
               type="button"
               onClick={handleResetSearch}
-              className="px-3.5 py-1.5 border border-border hover:bg-surface-elevated text-xs font-semibold text-primary rounded-lg transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 border border-border hover:bg-surface-elevated text-xs font-semibold text-primary rounded-lg transition-colors cursor-pointer min-h-[36px]"
             >
               Atur Ulang Pencarian
             </button>

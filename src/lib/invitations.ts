@@ -5,8 +5,14 @@ import type { InvitationContent } from '@/lib/template/types';
 
 export type InvitationListItem = Pick<
   Tables<'invitations'>,
-  'id' | 'slug' | 'title' | 'event_type' | 'status' | 'created_at' | 'updated_at'
+  'id' | 'slug' | 'title' | 'event_type' | 'status' | 'template_id' | 'created_at' | 'updated_at'
 > & {
+  template?: {
+    id: string;
+    name: string;
+    slug: string;
+    category: string;
+  } | null;
   data?:
     | { content: import('@/types/database').Json }
     | Array<{ content: import('@/types/database').Json }>
@@ -118,7 +124,7 @@ export async function createInvitation(
       slug,
       status: 'draft',
     })
-    .select('id, slug, title, event_type, status, created_at, updated_at')
+    .select('id, slug, title, event_type, status, template_id, created_at, updated_at')
     .single();
 
   if (insertError) {
@@ -134,7 +140,7 @@ export async function createInvitation(
           slug: fallbackSlug,
           status: 'draft',
         })
-        .select('id, slug, title, event_type, status, created_at, updated_at')
+        .select('id, slug, title, event_type, status, template_id, created_at, updated_at')
         .single();
 
       if (retryError) {
@@ -161,8 +167,15 @@ export async function getMyInvitations(): Promise<InvitationListItem[]> {
       title,
       event_type,
       status,
+      template_id,
       created_at,
       updated_at,
+      template:templates (
+        id,
+        name,
+        slug,
+        category
+      ),
       data:invitation_data (
         content
       ),
