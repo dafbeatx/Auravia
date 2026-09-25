@@ -306,9 +306,14 @@ function LayoutContent() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
             to="/"
-            className="font-serif text-2xl font-bold tracking-tight text-primary hover:opacity-90 transition-opacity flex items-center gap-2"
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity focus-visible:outline-2 rounded"
+            aria-label="Aurovia Beranda"
           >
-            <span>Aurovia</span>
+            <img
+              src="/logo.svg"
+              alt="Aurovia"
+              className="h-7 sm:h-8 w-auto object-contain"
+            />
           </Link>
           <HeaderNav onOpenHelp={() => setHelpOpen(true)} />
         </div>
@@ -320,7 +325,11 @@ function LayoutContent() {
 
       <footer className="border-t border-border bg-surface px-6 py-6 text-center text-xs text-text-muted">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-serif text-sm font-semibold text-primary">Aurovia</p>
+          <img
+            src="/logo.svg"
+            alt="Aurovia"
+            className="h-5 sm:h-6 w-auto object-contain opacity-80"
+          />
           <p className="text-text-subtle text-[11px]">
             &copy; {new Date().getFullYear()} Aurovia. Platform Undangan Digital Terstruktur.
           </p>

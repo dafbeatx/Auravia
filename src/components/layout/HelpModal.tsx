@@ -38,16 +38,23 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
         className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6"
       >
         <div className="flex items-start justify-between pb-4 border-b border-border">
-          <div>
-            <h2
-              id="help-modal-title"
-              className="font-serif text-2xl font-bold text-primary"
-            >
-              Pusat Bantuan Aurovia
-            </h2>
-            <p className="text-xs text-text-muted mt-1">
-              Panduan lengkap mengelola dan mempublikasikan undangan digital Anda.
-            </p>
+          <div className="flex items-center gap-3">
+            <img
+              src="/favicon.svg"
+              alt="Aurovia"
+              className="w-10 h-10 rounded-xl object-contain shadow-xs flex-shrink-0"
+            />
+            <div>
+              <h2
+                id="help-modal-title"
+                className="font-serif text-2xl font-bold text-primary"
+              >
+                Pusat Bantuan Aurovia
+              </h2>
+              <p className="text-xs text-text-muted mt-0.5">
+                Panduan lengkap mengelola dan mempublikasikan undangan digital Anda.
+              </p>
+            </div>
           </div>
           <button
             type="button"

@@ -59,7 +59,12 @@ export function Login() {
 
   return (
     <div className="py-12 max-w-md mx-auto">
-      <div className="bg-surface border border-border rounded p-6 shadow-sm">
+      <div className="bg-surface border border-border rounded-xl p-6 sm:p-8 shadow-sm">
+        <div className="flex justify-center mb-6">
+          <Link to="/" aria-label="Beranda Aurovia">
+            <img src="/logo.svg" alt="Aurovia" className="h-8 w-auto object-contain" />
+          </Link>
+        </div>
         <h1 className="font-serif text-2xl font-bold text-primary mb-1">
           Masuk ke Aurovia
         </h1>

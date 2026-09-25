@@ -131,16 +131,15 @@ export function InvitationCard({
           ) : (
             /* Typographic Monogram Empty Visual */
             <div className="w-full h-full p-6 flex flex-col items-center justify-center text-center bg-gradient-to-b from-surface to-surface-elevated select-none">
+              <div className="w-8 h-8 rounded-lg overflow-hidden shadow-xs border border-border/80 mb-2">
+                <img src="/favicon.svg" alt="Aurovia" className="w-full h-full object-cover" />
+              </div>
               <span className="text-[10px] tracking-widest uppercase font-semibold text-text-subtle font-sans mb-1">
                 The Wedding Of
               </span>
               <p className="font-serif italic text-lg sm:text-xl text-primary font-normal line-clamp-2 px-3">
                 {coupleNames || invitation.title}
               </p>
-              <div className="w-8 h-[1px] bg-border-strong my-2" />
-              <span className="text-[11px] font-mono text-text-subtle">
-                Aurovia
-              </span>
             </div>
           )}
 
@@ -310,10 +309,10 @@ export function InvitationCard({
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-1 text-center bg-gradient-to-b from-surface to-surface-elevated select-none">
-              <span className="text-[8px] uppercase tracking-wider font-semibold text-text-subtle">
-                Aurovia
-              </span>
-              <p className="font-serif italic text-xs text-primary font-normal line-clamp-1">
+              <div className="w-5 h-5 rounded overflow-hidden shadow-2xs border border-border/70 mb-0.5">
+                <img src="/favicon.svg" alt="Aurovia" className="w-full h-full object-cover" />
+              </div>
+              <p className="font-serif italic text-[11px] text-primary font-normal line-clamp-1">
                 {coupleNames || invitation.title}
               </p>
             </div>
