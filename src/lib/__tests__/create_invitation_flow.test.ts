@@ -5,6 +5,7 @@ import {
   suggestSlugFromTitle,
   generateSlug,
 } from '@/lib/invitations';
+import { resolveTemplateConfig } from '@/lib/template/resolution';
 import { supabase } from '@/lib/supabase';
 import { ValidationError, AuthenticationError, AuthorizationError, DatabaseError } from '@/lib/errors';
 
@@ -89,7 +90,7 @@ describe('2. Pengambilan Katalog Template Aktif (getActiveTemplates)', () => {
     const templates = await getActiveTemplates();
 
     expect(supabase.from).toHaveBeenCalledWith('templates');
-    expect(mockSelect).toHaveBeenCalledWith('id, slug, name, category, description, thumbnail_url, default_theme, is_active');
+    expect(mockSelect).toHaveBeenCalledWith('id, slug, name, category, description, thumbnail_url, default_theme, default_sections, is_active');
     expect(mockEq).toHaveBeenCalledWith('is_active', true);
     expect(templates).toHaveLength(1);
     expect(templates[0]?.name).toBe('Classic Elegance');
@@ -330,5 +331,51 @@ describe('4. Penyimpanan Undangan Sebagai Draft (createInvitation persistence)',
         templateId: 'tpl-classic',
       })
     ).rejects.toThrow(AuthorizationError);
+  });
+});
+
+describe('5. Arsitektur Pratinjau Desain Template Lokal (Template Preview Experience)', () => {
+  it('menyelesaikan seksi pratinjau template dari default_sections tanpa query database', () => {
+    const rawTemplate = {
+      default_theme: {
+        font_heading: 'Cormorant Garamond',
+        font_body: 'Plus Jakarta Sans',
+        color_primary: '#292524',
+        color_background: '#FAF9F6',
+      },
+      default_sections: [
+        { type: 'hero', order: 0, enabled: true },
+        { type: 'hosts', order: 1, enabled: true },
+        { type: 'events', order: 2, enabled: true },
+      ],
+    };
+
+    const resolved = resolveTemplateConfig({
+      defaultThemeRaw: rawTemplate.default_theme,
+      defaultSectionsRaw: rawTemplate.default_sections,
+    });
+
+    expect(resolved.theme.fontHeading).toBe('Cormorant Garamond');
+    expect(resolved.theme.fontBody).toBe('Plus Jakarta Sans');
+    expect(resolved.sections).toHaveLength(3);
+    expect(resolved.sections[0]?.section_type).toBe('hero');
+  });
+
+  it('memvalidasi format slug secara lokal: hanya lowercase, angka, dan tanda hubung', () => {
+    const slugRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+    // Valid slugs
+    expect(slugRegex.test('sarah-rizky')).toBe(true);
+    expect(slugRegex.test('wedding2026')).toBe(true);
+    expect(slugRegex.test('the-wedding-of-sarah-and-rizky')).toBe(true);
+
+    // Invalid slugs
+    expect(slugRegex.test('Sarah-Rizky')).toBe(false); // uppercase
+    expect(slugRegex.test('sarah rizky')).toBe(false); // space
+    expect(slugRegex.test('sarah_rizky')).toBe(false); // underscore
+    expect(slugRegex.test('-sarah-rizky')).toBe(false); // leading dash
+    expect(slugRegex.test('sarah-rizky-')).toBe(false); // trailing dash
+    expect(slugRegex.test('sarah--rizky')).toBe(false); // double dash
+    expect(slugRegex.test('')).toBe(false); // empty
   });
 });

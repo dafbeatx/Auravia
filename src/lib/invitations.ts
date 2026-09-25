@@ -42,7 +42,7 @@ export type InvitationDetail = Pick<
 
 export type TemplateListItem = Pick<
   Tables<'templates'>,
-  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'default_theme' | 'is_active'
+  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'default_theme' | 'default_sections' | 'is_active'
 >;
 
 /**
@@ -52,7 +52,7 @@ export type TemplateListItem = Pick<
 export async function getActiveTemplates(): Promise<TemplateListItem[]> {
   const { data, error } = await supabase
     .from('templates')
-    .select('id, slug, name, category, description, thumbnail_url, default_theme, is_active')
+    .select('id, slug, name, category, description, thumbnail_url, default_theme, default_sections, is_active')
     .eq('is_active', true)
     .order('created_at', { ascending: true });
 
