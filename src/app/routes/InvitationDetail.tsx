@@ -1787,7 +1787,7 @@ export function InvitationDetail() {
                     : 'border-transparent text-text-muted hover:text-text-primary'
                 }`}
               >
-                Tamu {guestCount > 0 ? `(${guestCount})` : ''}
+                RSVP &amp; Tamu {guestCount > 0 ? `(${guestCount})` : ''}
               </button>
             </div>
 

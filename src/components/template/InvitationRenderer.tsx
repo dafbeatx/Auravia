@@ -139,6 +139,16 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
           </div>
         ) : (
           activeSections.map((section, idx) => {
+            // Guard: RSVP hanya dirender jika allowRsvp aktif
+            if (section.section_type === 'rsvp' && !normalizedInvitation.allowRsvp) {
+              return null;
+            }
+
+            // Guard: Doa & Ucapan hanya dirender jika showWishes aktif
+            if (section.section_type === 'wishes' && !normalizedInvitation.showWishes) {
+              return null;
+            }
+
             const SectionComponent = getSectionComponent(section.section_type);
             const sectionKey = section.id || `${section.section_type}-${idx}`;
 

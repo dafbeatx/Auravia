@@ -50,6 +50,9 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Sub-navigasi internal: Respons RSVP | Doa & Ucapan | Buku Tamu
+  const [subView, setSubView] = useState<'rsvp' | 'wishes' | 'guests'>('rsvp');
+
   // Filter & Search states
   const [guestSearch, setGuestSearch] = useState('');
   const [rsvpStatusFilter, setRsvpStatusFilter] = useState<RsvpStatus | 'all'>('all');
@@ -132,6 +135,22 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
       return matchStatus && matchSearch;
     });
   }, [rsvps, rsvpStatusFilter, rsvpSearch]);
+
+  // Daftar respons yang memiliki ucapan/doa
+  const wishesList = useMemo(
+    () => rsvps.filter((r) => Boolean(r.wishes && r.wishes.trim())),
+    [rsvps]
+  );
+
+  const filteredWishes = useMemo(() => {
+    const q = rsvpSearch.trim().toLowerCase();
+    return wishesList.filter(
+      (r) =>
+        !q ||
+        r.guest_name.toLowerCase().includes(q) ||
+        (r.wishes && r.wishes.toLowerCase().includes(q))
+    );
+  }, [wishesList, rsvpSearch]);
 
   // Handler modal tambah tamu
   const handleOpenAddGuestModal = () => {
@@ -394,277 +413,411 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
         </div>
       </div>
 
-      {/* 2. DAFTAR TAMU UNDANGAN (GUEST MANAGEMENT) */}
-      <div className="space-y-4 pt-4 border-t border-border">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
-              Daftar Tamu Undangan ({guests.length})
-            </h3>
-            <p className="text-[11px] text-text-subtle mt-0.5">
-              Kelola nama tamu dan bagikan tautan undangan personal untuk masing-masing kerabat.
-            </p>
-          </div>
-
+      {/* SUB-NAVIGASI TABEL: RSVP, UCAPAN, TAMU */}
+      <div className="pt-2 border-t border-border">
+        <div className="flex border-b border-border bg-surface-elevated text-xs font-semibold overflow-x-auto rounded-t">
           <button
             type="button"
-            onClick={handleOpenAddGuestModal}
-            className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer self-start sm:self-auto inline-flex items-center gap-1.5"
+            onClick={() => setSubView('rsvp')}
+            className={`py-2.5 px-4 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+              subView === 'rsvp'
+                ? 'border-primary text-primary bg-surface'
+                : 'border-transparent text-text-muted hover:text-text-primary'
+            }`}
           >
-            + Tambah Tamu
+            Tabel Respons RSVP ({rsvps.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubView('wishes')}
+            className={`py-2.5 px-4 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+              subView === 'wishes'
+                ? 'border-primary text-primary bg-surface'
+                : 'border-transparent text-text-muted hover:text-text-primary'
+            }`}
+          >
+            Doa &amp; Ucapan ({wishesList.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubView('guests')}
+            className={`py-2.5 px-4 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+              subView === 'guests'
+                ? 'border-primary text-primary bg-surface'
+                : 'border-transparent text-text-muted hover:text-text-primary'
+            }`}
+          >
+            Daftar Tamu Undangan ({guests.length})
           </button>
         </div>
 
-        {/* Input Pencarian Tamu */}
-        {guests.length > 0 && (
-          <div className="max-w-xs">
-            <input
-              type="text"
-              value={guestSearch}
-              onChange={(e) => setGuestSearch(e.target.value)}
-              placeholder="Cari nama atau telepon..."
-              className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-            />
+        {/* 1. TAMPILAN RESPONS RSVP */}
+        {subView === 'rsvp' && (
+          <div className="p-4 bg-surface border border-t-0 border-border rounded-b space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                  Daftar Konfirmasi Kehadiran
+                </h3>
+                <p className="text-[11px] text-text-subtle mt-0.5">
+                  Rekapitulasi resmi kehadiran para tamu undangan berdasarkan data langsung dari formulir RSVP.
+                </p>
+              </div>
+
+              {/* Filter Status */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    { label: 'Semua', val: 'all' },
+                    { label: 'Hadir', val: 'attending' },
+                    { label: 'Tidak Hadir', val: 'declined' },
+                    { label: 'Masih Ragu', val: 'tentative' },
+                  ] as const
+                ).map((filterOpt) => (
+                  <button
+                    key={filterOpt.val}
+                    type="button"
+                    onClick={() => setRsvpStatusFilter(filterOpt.val)}
+                    className={`py-1 px-2.5 rounded text-xs font-semibold transition-colors cursor-pointer border ${
+                      rsvpStatusFilter === filterOpt.val
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-surface text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    {filterOpt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input Pencarian RSVP */}
+            {rsvps.length > 0 && (
+              <div className="max-w-xs">
+                <input
+                  type="text"
+                  value={rsvpSearch}
+                  onChange={(e) => setRsvpSearch(e.target.value)}
+                  placeholder="Cari nama tamu atau kata dalam doa..."
+                  className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+            )}
+
+            {/* Tabel Minimal RSVP */}
+            {rsvps.length === 0 ? (
+              <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                <p className="text-xs text-text-muted font-medium">
+                  Belum ada respons RSVP dari tamu undangan.
+                </p>
+                <p className="text-[11px] text-text-subtle">
+                  Ketika tamu mengisi konfirmasi kehadiran pada tautan undangan publik, data akan dicatat secara otomatis.
+                </p>
+              </div>
+            ) : filteredRsvps.length === 0 ? (
+              <div className="p-6 border border-border rounded bg-surface-elevated/20 text-center text-xs text-text-muted">
+                Tidak ada data RSVP yang cocok dengan filter atau kata pencarian.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-border rounded-lg bg-surface">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-surface-elevated border-b border-border text-[11px] text-text-muted uppercase tracking-wider font-semibold">
+                      <th className="py-2.5 px-3">Nama Tamu</th>
+                      <th className="py-2.5 px-3">Kehadiran</th>
+                      <th className="py-2.5 px-3">Jumlah</th>
+                      <th className="py-2.5 px-3">Waktu Respons</th>
+                      <th className="py-2.5 px-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {filteredRsvps.map((rsvp) => {
+                      const statusBadge =
+                        rsvp.status === 'attending' ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-success/30 bg-success/10 text-success">
+                            Hadir
+                          </span>
+                        ) : rsvp.status === 'declined' ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-danger/30 bg-danger/10 text-danger">
+                            Tidak Hadir
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800">
+                            Masih Ragu
+                          </span>
+                        );
+
+                      return (
+                        <tr key={rsvp.id} className="hover:bg-surface-elevated/30 transition-colors">
+                          <td className="py-2.5 px-3">
+                            <div className="font-semibold text-text-primary">
+                              {rsvp.guest_name}
+                            </div>
+                            {rsvp.wishes ? (
+                              <p className="text-[11px] text-text-muted mt-0.5 line-clamp-1 italic max-w-xs">
+                                &quot;{rsvp.wishes}&quot;
+                              </p>
+                            ) : null}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            {statusBadge}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap font-mono text-text-primary">
+                            {rsvp.status === 'declined' ? '-' : `${rsvp.pax_count} pax`}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap text-[11px] text-text-subtle font-mono">
+                            {formatRelativeDate(rsvp.created_at)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRsvpToDelete(rsvp);
+                                setDeleteRsvpModalOpen(true);
+                              }}
+                              className="py-1 px-2.5 rounded text-xs font-semibold text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors cursor-pointer"
+                            >
+                              Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Daftar / Tabel Tamu */}
-        {guests.length === 0 ? (
-          <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
-            <p className="text-xs text-text-muted font-medium">
-              Belum ada tamu yang ditambahkan.
-            </p>
-            <p className="text-[11px] text-text-subtle">
-              Tambahkan nama tamu untuk mendapatkan tautan khusus personal dengan batas pax terkelola.
-            </p>
-          </div>
-        ) : filteredGuests.length === 0 ? (
-          <div className="p-6 border border-border rounded bg-surface-elevated/20 text-center text-xs text-text-muted">
-            Tidak ada tamu yang cocok dengan pencarian &quot;{guestSearch}&quot;.
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {filteredGuests.map((guest) => {
-              const isCopied = copiedGuestSlug === guest.slug;
-              return (
-                <div
-                  key={guest.id}
-                  className="p-3.5 border border-border rounded bg-surface hover:bg-surface-elevated/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-text-primary text-xs">
-                        {guest.name}
-                      </span>
-                      <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-surface-elevated border border-border font-mono">
-                        Batas {guest.pax_limit} pax
-                      </span>
-                    </div>
+        {/* 2. TAMPILAN DOA & UCAPAN (DENGAN MODERASI) */}
+        {subView === 'wishes' && (
+          <div className="p-4 bg-surface border border-t-0 border-border rounded-b space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                  Buku Doa &amp; Ucapan ({wishesList.length})
+                </h3>
+                <p className="text-[11px] text-text-subtle mt-0.5">
+                  Kelola dan moderasi doa restu tamu agar hanya ucapan yang pantas yang tampil di halaman publik undangan.
+                </p>
+              </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-text-subtle">
-                      {guest.phone && <span>WhatsApp: {guest.phone}</span>}
-                      <span className="font-mono text-[10px]">
-                        ?to={guest.slug}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyPersonalLink(guest.slug)}
-                      className="py-1 px-2.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-primary rounded transition-colors cursor-pointer"
-                    >
-                      {isCopied ? 'Tautan Disalin!' : 'Salin Tautan'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleShareWhatsApp(guest)}
-                      className="py-1 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold rounded transition-colors cursor-pointer"
-                    >
-                      WhatsApp
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditGuestModal(guest)}
-                      className="py-1 px-2 text-text-muted hover:text-text-primary rounded cursor-pointer"
-                      title="Edit Tamu"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGuestToDelete(guest);
-                        setDeleteGuestModalOpen(true);
-                      }}
-                      className="py-1 px-2 text-danger hover:bg-danger/10 rounded cursor-pointer"
-                      title="Hapus Tamu"
-                    >
-                      Hapus
-                    </button>
-                  </div>
+              {wishesList.length > 0 && (
+                <div className="max-w-xs">
+                  <input
+                    type="text"
+                    value={rsvpSearch}
+                    onChange={(e) => setRsvpSearch(e.target.value)}
+                    placeholder="Cari dalam ucapan..."
+                    className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  />
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
 
-      {/* 3. DAFTAR TANGGAPAN RSVP & MODERASI UCAPAN */}
-      <div className="space-y-4 pt-4 border-t border-border">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
-              Rekapitulasi &amp; Moderasi Ucapan RSVP ({rsvps.length})
-            </h3>
-            <p className="text-[11px] text-text-subtle mt-0.5">
-              Periksa kepastian kehadiran tamu dan sembunyikan ucapan yang tidak pantas dari halaman publik.
-            </p>
-          </div>
+            {wishesList.length === 0 ? (
+              <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                <p className="text-xs text-text-muted font-medium">
+                  Belum ada doa atau ucapan dari tamu undangan.
+                </p>
+                <p className="text-[11px] text-text-subtle">
+                  Ucapan yang dikirimkan oleh para tamu melalui halaman publik undangan akan muncul di sini.
+                </p>
+              </div>
+            ) : filteredWishes.length === 0 ? (
+              <div className="p-6 border border-border rounded bg-surface-elevated/20 text-center text-xs text-text-muted">
+                Tidak ada ucapan yang cocok dengan pencarian &quot;{rsvpSearch}&quot;.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredWishes.map((rsvp) => {
+                  const isToggling = togglingRsvpId === rsvp.id;
 
-          {/* Filter Status */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(
-              [
-                { label: 'Semua', val: 'all' },
-                { label: 'Hadir', val: 'attending' },
-                { label: 'Tidak Hadir', val: 'declined' },
-                { label: 'Masih Ragu', val: 'tentative' },
-              ] as const
-            ).map((filterOpt) => (
-              <button
-                key={filterOpt.val}
-                type="button"
-                onClick={() => setRsvpStatusFilter(filterOpt.val)}
-                className={`py-1 px-2.5 rounded text-xs font-semibold transition-colors cursor-pointer border ${
-                  rsvpStatusFilter === filterOpt.val
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-surface text-text-muted hover:text-text-primary'
-                }`}
-              >
-                {filterOpt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input Pencarian RSVP */}
-        {rsvps.length > 0 && (
-          <div className="max-w-xs">
-            <input
-              type="text"
-              value={rsvpSearch}
-              onChange={(e) => setRsvpSearch(e.target.value)}
-              placeholder="Cari nama tamu atau kata dalam ucapan..."
-              className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-            />
-          </div>
-        )}
-
-        {/* Daftar Kartu RSVP */}
-        {rsvps.length === 0 ? (
-          <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
-            <p className="text-xs text-text-muted font-medium">
-              Belum ada respons RSVP dari tamu undangan.
-            </p>
-            <p className="text-[11px] text-text-subtle">
-              Ketika tamu mengisi formulir RSVP di halaman publik, data kehadiran dan doa restu akan muncul di sini secara otomatis.
-            </p>
-          </div>
-        ) : filteredRsvps.length === 0 ? (
-          <div className="p-6 border border-border rounded bg-surface-elevated/20 text-center text-xs text-text-muted">
-            Tidak ada data RSVP yang sesuai dengan filter yang dipilih.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredRsvps.map((rsvp) => {
-              const statusBadge =
-                rsvp.status === 'attending' ? (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-success/30 bg-success/10 text-success">
-                    Hadir ({rsvp.pax_count} orang)
-                  </span>
-                ) : rsvp.status === 'declined' ? (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-danger/30 bg-danger/10 text-danger">
-                    Tidak Hadir
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800">
-                    Masih Ragu ({rsvp.pax_count} orang)
-                  </span>
-                );
-
-              const isToggling = togglingRsvpId === rsvp.id;
-
-              return (
-                <div
-                  key={rsvp.id}
-                  className="p-4 border border-border rounded bg-surface space-y-2.5"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-text-primary text-xs">
-                        {rsvp.guest_name}
-                      </span>
-                      {statusBadge}
-                      {rsvp.is_hidden && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 border border-neutral-300 text-neutral-600">
-                          Disembunyikan
+                  return (
+                    <div
+                      key={rsvp.id}
+                      className="p-4 border border-border rounded bg-surface space-y-2.5"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-text-primary text-xs">
+                            {rsvp.guest_name}
+                          </span>
+                          {rsvp.is_hidden ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-neutral-100 border border-neutral-300 text-neutral-600 font-medium">
+                              Disembunyikan dari Publik
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 border border-emerald-300 text-emerald-800 font-medium">
+                              Tampil di Publik
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-text-subtle font-mono">
+                          {formatRelativeDate(rsvp.created_at)}
                         </span>
-                      )}
+                      </div>
+
+                      <p className="text-xs text-text-primary/90 leading-relaxed whitespace-pre-wrap bg-surface-elevated/30 p-2.5 rounded border border-border/40">
+                        &quot;{rsvp.wishes}&quot;
+                      </p>
+
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleWishHidden(rsvp)}
+                          disabled={isToggling}
+                          className={`py-1 px-3 rounded text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
+                            rsvp.is_hidden
+                              ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                              : 'border-border bg-surface text-text-muted hover:text-text-primary'
+                          }`}
+                        >
+                          {isToggling
+                            ? 'Memproses...'
+                            : rsvp.is_hidden
+                            ? 'Tampilkan di Publik'
+                            : 'Sembunyikan dari Publik'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRsvpToDelete(rsvp);
+                            setDeleteRsvpModalOpen(true);
+                          }}
+                          className="py-1 px-2.5 rounded text-xs font-semibold text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors cursor-pointer"
+                        >
+                          Hapus
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-text-subtle font-mono">
-                      {formatRelativeDate(rsvp.created_at)}
-                    </span>
-                  </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
-                  {rsvp.wishes ? (
-                    <p className="text-xs text-text-primary/90 leading-relaxed whitespace-pre-wrap bg-surface-elevated/30 p-2.5 rounded border border-border/40">
-                      &quot;{rsvp.wishes}&quot;
-                    </p>
-                  ) : (
-                    <p className="text-[11px] text-text-subtle italic">
-                      Tidak menyertakan ucapan teks.
-                    </p>
-                  )}
+        {/* 3. TAMPILAN DAFTAR TAMU UNDANGAN */}
+        {subView === 'guests' && (
+          <div className="p-4 bg-surface border border-t-0 border-border rounded-b space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                  Daftar Tamu Undangan ({guests.length})
+                </h3>
+                <p className="text-[11px] text-text-subtle mt-0.5">
+                  Kelola nama tamu dan bagikan tautan undangan personal untuk masing-masing kerabat.
+                </p>
+              </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    {rsvp.wishes ? (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleWishHidden(rsvp)}
-                        disabled={isToggling}
-                        className={`py-1 px-2.5 rounded text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
-                          rsvp.is_hidden
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                            : 'border-border bg-surface text-text-muted hover:text-text-primary'
-                        }`}
-                      >
-                        {isToggling
-                          ? 'Memproses...'
-                          : rsvp.is_hidden
-                          ? 'Tampilkan di Publik'
-                          : 'Sembunyikan dari Publik'}
-                      </button>
-                    ) : null}
+              <button
+                type="button"
+                onClick={handleOpenAddGuestModal}
+                className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer self-start sm:self-auto inline-flex items-center gap-1.5"
+              >
+                + Tambah Tamu
+              </button>
+            </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRsvpToDelete(rsvp);
-                        setDeleteRsvpModalOpen(true);
-                      }}
-                      className="py-1 px-2.5 rounded text-xs font-semibold text-danger hover:bg-danger/10 border border-transparent hover:border-danger/20 transition-colors cursor-pointer"
+            {/* Input Pencarian Tamu */}
+            {guests.length > 0 && (
+              <div className="max-w-xs">
+                <input
+                  type="text"
+                  value={guestSearch}
+                  onChange={(e) => setGuestSearch(e.target.value)}
+                  placeholder="Cari nama atau telepon..."
+                  className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+            )}
+
+            {/* Daftar / Tabel Tamu */}
+            {guests.length === 0 ? (
+              <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                <p className="text-xs text-text-muted font-medium">
+                  Belum ada tamu yang ditambahkan.
+                </p>
+                <p className="text-[11px] text-text-subtle">
+                  Tambahkan nama tamu untuk mendapatkan tautan khusus personal dengan batas pax terkelola.
+                </p>
+              </div>
+            ) : filteredGuests.length === 0 ? (
+              <div className="p-6 border border-border rounded bg-surface-elevated/20 text-center text-xs text-text-muted">
+                Tidak ada tamu yang cocok dengan pencarian &quot;{guestSearch}&quot;.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {filteredGuests.map((guest) => {
+                  const isCopied = copiedGuestSlug === guest.slug;
+                  return (
+                    <div
+                      key={guest.id}
+                      className="p-3.5 border border-border rounded bg-surface hover:bg-surface-elevated/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
-                      Hapus
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-text-primary text-xs">
+                            {guest.name}
+                          </span>
+                          <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-surface-elevated border border-border font-mono">
+                            Batas {guest.pax_limit} pax
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-text-subtle">
+                          {guest.phone && <span>WhatsApp: {guest.phone}</span>}
+                          <span className="font-mono text-[10px]">
+                            ?to={guest.slug}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPersonalLink(guest.slug)}
+                          className="py-1 px-2.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-primary rounded transition-colors cursor-pointer"
+                        >
+                          {isCopied ? 'Tautan Disalin!' : 'Salin Tautan'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleShareWhatsApp(guest)}
+                          className="py-1 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold rounded transition-colors cursor-pointer"
+                        >
+                          WhatsApp
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditGuestModal(guest)}
+                          className="py-1 px-2 text-text-muted hover:text-text-primary rounded cursor-pointer"
+                          title="Edit Tamu"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGuestToDelete(guest);
+                            setDeleteGuestModalOpen(true);
+                          }}
+                          className="py-1 px-2 text-danger hover:bg-danger/10 rounded cursor-pointer"
+                          title="Hapus Tamu"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

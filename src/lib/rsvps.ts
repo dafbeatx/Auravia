@@ -78,28 +78,39 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<RsvpItem> {
   const trimmedWishes = input.wishes?.trim() || null;
   const paxCount = input.status === 'declined' ? 1 : (input.pax_count ?? 1);
 
-  // Column-level security and RLS enforce is_hidden = false for public insertions.
-  const payload: RsvpInsert = {
+  // Column-level security and RLS enforce is_hidden = false by table DEFAULT and policy WITH CHECK.
+  // We do not include is_hidden in payload because anon role does not have INSERT privilege on is_hidden.
+  const payload = {
     invitation_id: input.invitation_id,
     guest_name: trimmedName,
     status: input.status,
     pax_count: paxCount,
     wishes: trimmedWishes,
-    is_hidden: false,
     guest_id: input.guest_id || null,
   };
 
+  // Anon has SELECT privilege on (id, invitation_id, guest_name, wishes, created_at)
   const { data, error } = await supabase
     .from('rsvps')
     .insert(payload)
-    .select('id, invitation_id, guest_id, guest_name, status, pax_count, wishes, is_hidden, created_at')
+    .select('id, invitation_id, guest_name, wishes, created_at')
     .single();
 
   if (error) {
     throw new DatabaseError('Gagal mengirimkan konfirmasi kehadiran RSVP.', error);
   }
 
-  return data;
+  return {
+    id: data.id,
+    invitation_id: data.invitation_id,
+    guest_id: input.guest_id || null,
+    guest_name: data.guest_name,
+    status: input.status,
+    pax_count: paxCount,
+    wishes: data.wishes,
+    is_hidden: false,
+    created_at: data.created_at,
+  };
 }
 
 export async function getPublicWishes(
