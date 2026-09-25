@@ -42,17 +42,17 @@ export type InvitationDetail = Pick<
 
 export type TemplateListItem = Pick<
   Tables<'templates'>,
-  'id' | 'slug' | 'name' | 'category' | 'description' | 'default_theme'
+  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'default_theme' | 'is_active'
 >;
 
 /**
  * Mengambil daftar template aktif dari katalog untuk pemilihan pembuatan undangan.
- * Mengambil hanya kolom-kolom yang diperlukan untuk efisiensi egress.
+ * Mengambil hanya template dengan status aktif (is_active = true) dalam satu query.
  */
 export async function getActiveTemplates(): Promise<TemplateListItem[]> {
   const { data, error } = await supabase
     .from('templates')
-    .select('id, slug, name, category, description, default_theme')
+    .select('id, slug, name, category, description, thumbnail_url, default_theme, is_active')
     .eq('is_active', true)
     .order('created_at', { ascending: true });
 
@@ -61,6 +61,22 @@ export async function getActiveTemplates(): Promise<TemplateListItem[]> {
   }
 
   return data ?? [];
+}
+
+/**
+ * Menghasilkan saran slug ramah URL dari judul undangan secara lokal.
+ * Mengubah huruf besar ke kecil, mengganti karakter khusus dengan tanda hubung (-).
+ * Contoh: "Rizky & Aulia Wedding" -> "rizky-aulia-wedding"
+ */
+export function suggestSlugFromTitle(title: string): string {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (!base) return '';
+  return base.slice(0, 60).replace(/^-+|-+$/g, '');
 }
 
 /**
@@ -79,15 +95,42 @@ export function generateSlug(title: string): string {
   return `${cleanBase}-${suffix}`;
 }
 
+export interface CreateInvitationParams {
+  title: string;
+  templateId: string;
+  slug?: string;
+  eventType?: string;
+}
+
 /**
  * Membuat draft undangan baru untuk pengguna terautentikasi dengan template pilihan.
  * Sesi pengguna diverifikasi langsung dari Supabase Auth untuk mencegah pemalsuan user_id.
+ * Mendukung parameter terstruktur (title, templateId, slug, eventType) maupun argumen posisi klasik.
  */
 export async function createInvitation(
-  title: string,
-  templateId: string
+  paramsOrTitle: string | CreateInvitationParams,
+  legacyTemplateId?: string,
+  legacySlug?: string,
+  legacyEventType?: string
 ): Promise<InvitationListItem> {
-  const trimmedTitle = title.trim();
+  let title: string;
+  let templateId: string;
+  let customSlug: string | undefined;
+  let eventType: string | undefined;
+
+  if (typeof paramsOrTitle === 'object' && paramsOrTitle !== null) {
+    title = paramsOrTitle.title;
+    templateId = paramsOrTitle.templateId;
+    customSlug = paramsOrTitle.slug;
+    eventType = paramsOrTitle.eventType;
+  } else {
+    title = paramsOrTitle;
+    templateId = legacyTemplateId || '';
+    customSlug = legacySlug;
+    eventType = legacyEventType;
+  }
+
+  const trimmedTitle = (title || '').trim();
   if (!trimmedTitle) {
     throw new ValidationError('Judul undangan wajib diisi.');
   }
@@ -96,7 +139,7 @@ export async function createInvitation(
     throw new ValidationError('Judul undangan maksimal 120 karakter.');
   }
 
-  const trimmedTemplateId = templateId.trim();
+  const trimmedTemplateId = (templateId || '').trim();
   if (!trimmedTemplateId) {
     throw new ValidationError('Silakan pilih salah satu template yang tersedia.');
   }
@@ -111,10 +154,41 @@ export async function createInvitation(
     throw new AuthenticationError('Sesi pengguna tidak valid. Silakan masuk kembali.');
   }
 
-  // 1. Buat slug URL-safe
-  const slug = generateSlug(trimmedTitle);
+  // 1. Verifikasi template aktif dari database
+  const { data: templateRecord, error: templateError } = await supabase
+    .from('templates')
+    .select('id, is_active')
+    .eq('id', trimmedTemplateId)
+    .maybeSingle();
 
-  // 2. Simpan draft undangan ke Supabase
+  if (templateError || !templateRecord) {
+    throw new ValidationError('Template yang dipilih tidak ditemukan.');
+  }
+
+  if (!templateRecord.is_active) {
+    throw new ValidationError('Template yang dipilih sedang tidak aktif.');
+  }
+
+  // 2. Tentukan dan validasi slug
+  let slug: string;
+  const slugRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+  if (customSlug && customSlug.trim()) {
+    const cleanCustomSlug = customSlug.trim().toLowerCase();
+    if (cleanCustomSlug.length < 3 || cleanCustomSlug.length > 60 || !slugRegex.test(cleanCustomSlug)) {
+      throw new ValidationError(
+        'Format tautan (slug) harus berupa huruf kecil, angka, dan tanda hubung (-) dengan panjang 3 sampai 60 karakter.'
+      );
+    }
+    slug = cleanCustomSlug;
+  } else {
+    const suggested = suggestSlugFromTitle(trimmedTitle);
+    slug = suggested.length >= 3 && slugRegex.test(suggested) ? suggested : generateSlug(trimmedTitle);
+  }
+
+  const cleanEventType = (eventType || 'Pernikahan').trim();
+
+  // 3. Simpan draft undangan ke Supabase
   const { data: newInvitation, error: insertError } = await supabase
     .from('invitations')
     .insert({
@@ -122,6 +196,7 @@ export async function createInvitation(
       template_id: trimmedTemplateId,
       title: trimmedTitle,
       slug,
+      event_type: cleanEventType,
       status: 'draft',
     })
     .select('id, slug, title, event_type, status, template_id, created_at, updated_at')
@@ -130,23 +205,15 @@ export async function createInvitation(
   if (insertError) {
     // Penanganan tabrakan slug (unique constraint violation 23505)
     if (insertError.code === '23505') {
-      const fallbackSlug = `${generateSlug(trimmedTitle)}-${Date.now().toString(36).slice(-4)}`;
-      const { data: retryInv, error: retryError } = await supabase
-        .from('invitations')
-        .insert({
-          user_id: user.id,
-          template_id: trimmedTemplateId,
-          title: trimmedTitle,
-          slug: fallbackSlug,
-          status: 'draft',
-        })
-        .select('id, slug, title, event_type, status, template_id, created_at, updated_at')
-        .single();
-
-      if (retryError) {
-        throw new DatabaseError('Gagal membuat draft undangan.', retryError);
-      }
-      return retryInv;
+      throw new ValidationError(
+        'Tautan (slug) undangan sudah digunakan oleh undangan lain. Silakan pilih tautan yang berbeda.'
+      );
+    }
+    if (
+      insertError.message.includes('row-level security') ||
+      insertError.message.includes('permission denied')
+    ) {
+      throw new AuthorizationError('Anda tidak memiliki hak akses untuk membuat undangan.');
     }
     throw new DatabaseError('Gagal membuat draft undangan.', insertError);
   }
