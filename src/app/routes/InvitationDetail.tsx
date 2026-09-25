@@ -34,6 +34,8 @@ import type {
   InvitationContent,
   InvitationContentStoryItem,
   InvitationContentHost,
+  InvitationContentGiftAccount,
+  InvitationContentGiftAddress,
 } from '@/lib/template/types';
 import { getInvitationGuests } from '@/lib/guests';
 import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
@@ -116,6 +118,18 @@ export function InvitationDetail() {
     storyJson: '[]',
     closingNotes: '',
     sectionsJson: '',
+    giftEnabled: true,
+    giftTitle: 'Kirim Hadiah',
+    giftDescription:
+      'Doa restu Anda merupakan karunia terindah bagi kami. Namun jika Anda hendak memberikan tanda kasih, Anda dapat menyalurkannya melalui:',
+    giftAccountsJson: '[]',
+    giftAddressJson: JSON.stringify({
+      recipient_name: '',
+      address: '',
+      phone: '',
+      notes: '',
+      is_enabled: false,
+    }),
   });
 
   // State Formulir Pengaturan Umum (General Settings)
@@ -179,9 +193,48 @@ export function InvitationDetail() {
   // State Galeri Foto (gallery_items)
   const [draftGallery, setDraftGallery] = useState<InvitationGalleryItem[]>([]);
 
+  // State Pengaturan Hadiah & Amplop Digital (Gift)
+  const [draftGiftEnabled, setDraftGiftEnabled] = useState(true);
+  const [draftGiftTitle, setDraftGiftTitle] = useState('Kirim Hadiah');
+  const [draftGiftDescription, setDraftGiftDescription] = useState(
+    'Doa restu Anda merupakan karunia terindah bagi kami. Namun jika Anda hendak memberikan tanda kasih, Anda dapat menyalurkannya melalui:'
+  );
+  const [draftGiftAccounts, setDraftGiftAccounts] = useState<InvitationContentGiftAccount[]>([]);
+  const [draftGiftAddress, setDraftGiftAddress] = useState<InvitationContentGiftAddress>({
+    recipient_name: '',
+    address: '',
+    phone: '',
+    notes: '',
+    is_enabled: false,
+  });
+
+  // Modal Tambah / Edit Rekening & E-Wallet
+  const [giftAccountModalOpen, setGiftAccountModalOpen] = useState(false);
+  const [editingGiftAccountId, setEditingGiftAccountId] = useState<string | null>(null);
+  const [giftAccountForm, setGiftAccountForm] = useState<{
+    type: 'bank' | 'ewallet';
+    provider: string;
+    account_number: string;
+    holder_name: string;
+    label: string;
+    is_enabled: boolean;
+  }>({
+    type: 'bank',
+    provider: '',
+    account_number: '',
+    holder_name: '',
+    label: '',
+    is_enabled: true,
+  });
+  const [giftAccountError, setGiftAccountError] = useState<string | null>(null);
+
+  // Modal Konfirmasi Hapus Rekening Gift
+  const [deleteGiftAccountModalOpen, setDeleteGiftAccountModalOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<InvitationContentGiftAccount | null>(null);
+
   // Tampilan antarmuka
   const [activeTab, setActiveTab] = useState<
-    'settings' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'sections' | 'guests'
+    'settings' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'gift' | 'sections' | 'guests'
   >('settings');
   const [guestCount, setGuestCount] = useState(0);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
@@ -323,6 +376,19 @@ export function InvitationDetail() {
       let initialRsvpAllowTentative = true;
       let initialRsvpAllowNotes = true;
 
+      let initialGiftEnabled = true;
+      let initialGiftTitle = 'Kirim Hadiah';
+      let initialGiftDescription =
+        'Doa restu Anda merupakan karunia terindah bagi kami. Namun jika Anda hendak memberikan tanda kasih, Anda dapat menyalurkannya melalui:';
+      let initialGiftAccounts: InvitationContentGiftAccount[] = [];
+      let initialGiftAddress: InvitationContentGiftAddress = {
+        recipient_name: '',
+        address: '',
+        phone: '',
+        notes: '',
+        is_enabled: false,
+      };
+
       if (contentRecord?.content) {
         const c = contentRecord.content;
         if (c.hero) {
@@ -370,6 +436,46 @@ export function InvitationDetail() {
           initialRsvpAllowTentative = c.rsvp.allow_tentative !== false;
           initialRsvpAllowNotes = c.rsvp.allow_notes !== false;
         }
+
+        if (c.gift) {
+          initialGiftEnabled = c.gift.is_enabled !== false;
+          if (typeof c.gift.title === 'string') initialGiftTitle = c.gift.title;
+          if (typeof c.gift.description === 'string') initialGiftDescription = c.gift.description;
+          if (Array.isArray(c.gift.accounts)) {
+            initialGiftAccounts = c.gift.accounts;
+          }
+          if (c.gift.physical_address) {
+            initialGiftAddress = {
+              recipient_name:
+                typeof c.gift.physical_address.recipient_name === 'string'
+                  ? c.gift.physical_address.recipient_name
+                  : '',
+              address:
+                typeof c.gift.physical_address.address === 'string'
+                  ? c.gift.physical_address.address
+                  : '',
+              phone:
+                typeof c.gift.physical_address.phone === 'string'
+                  ? c.gift.physical_address.phone
+                  : '',
+              notes:
+                typeof c.gift.physical_address.notes === 'string'
+                  ? c.gift.physical_address.notes
+                  : '',
+              is_enabled: Boolean(c.gift.physical_address.is_enabled),
+            };
+          }
+        } else if (Array.isArray(c.financial_accounts)) {
+          initialGiftAccounts = c.financial_accounts.map((acc, idx) => ({
+            id: `legacy-${idx}`,
+            type: 'bank' as const,
+            provider: acc.bank_name || 'Bank Transfer',
+            account_number: acc.account_number || '',
+            holder_name: acc.holder_name || '',
+            display_order: idx,
+            is_enabled: true,
+          }));
+        }
       }
 
       setDraftHeroHeadline(initialHeroHeadline);
@@ -399,6 +505,12 @@ export function InvitationDetail() {
       setDraftRsvpMaxPax(initialRsvpMaxPax);
       setDraftRsvpAllowTentative(initialRsvpAllowTentative);
       setDraftRsvpAllowNotes(initialRsvpAllowNotes);
+
+      setDraftGiftEnabled(initialGiftEnabled);
+      setDraftGiftTitle(initialGiftTitle);
+      setDraftGiftDescription(initialGiftDescription);
+      setDraftGiftAccounts(initialGiftAccounts);
+      setDraftGiftAddress(initialGiftAddress);
 
       // Muat template config & pastikan seksi terinisialisasi
       const config = await getInvitationTemplateConfig(id);
@@ -431,6 +543,8 @@ export function InvitationDetail() {
         initialSections.map((s) => ({ id: s.id, order: s.display_order, enabled: s.is_enabled }))
       );
       const initialStoryJson = JSON.stringify(initialStory);
+      const initialGiftAccountsJson = JSON.stringify(initialGiftAccounts);
+      const initialGiftAddressJson = JSON.stringify(initialGiftAddress);
 
       setSavedSnapshot({
         title: initialTitle,
@@ -443,6 +557,11 @@ export function InvitationDetail() {
         rsvpMaxPax: initialRsvpMaxPax,
         rsvpAllowTentative: initialRsvpAllowTentative,
         rsvpAllowNotes: initialRsvpAllowNotes,
+        giftEnabled: initialGiftEnabled,
+        giftTitle: initialGiftTitle,
+        giftDescription: initialGiftDescription,
+        giftAccountsJson: initialGiftAccountsJson,
+        giftAddressJson: initialGiftAddressJson,
         heroHeadline: initialHeroHeadline,
         heroOpeningText: initialHeroOpeningText,
         heroCoupleNames: initialHeroCoupleNames,
@@ -482,6 +601,8 @@ export function InvitationDetail() {
   }, [draftSections]);
 
   const currentStoryJson = useMemo(() => JSON.stringify(draftStory), [draftStory]);
+  const currentGiftAccountsJson = useMemo(() => JSON.stringify(draftGiftAccounts), [draftGiftAccounts]);
+  const currentGiftAddressJson = useMemo(() => JSON.stringify(draftGiftAddress), [draftGiftAddress]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!invitation) return false;
@@ -496,6 +617,11 @@ export function InvitationDetail() {
       draftRsvpMaxPax !== savedSnapshot.rsvpMaxPax ||
       draftRsvpAllowTentative !== savedSnapshot.rsvpAllowTentative ||
       draftRsvpAllowNotes !== savedSnapshot.rsvpAllowNotes ||
+      draftGiftEnabled !== savedSnapshot.giftEnabled ||
+      draftGiftTitle !== savedSnapshot.giftTitle ||
+      draftGiftDescription !== savedSnapshot.giftDescription ||
+      currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
+      currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
       draftHeroHeadline !== savedSnapshot.heroHeadline ||
       draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
       draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
@@ -528,6 +654,11 @@ export function InvitationDetail() {
     draftRsvpMaxPax,
     draftRsvpAllowTentative,
     draftRsvpAllowNotes,
+    draftGiftEnabled,
+    draftGiftTitle,
+    draftGiftDescription,
+    currentGiftAccountsJson,
+    currentGiftAddressJson,
     draftHeroHeadline,
     draftHeroOpeningText,
     draftHeroCoupleNames,
@@ -606,6 +737,13 @@ export function InvitationDetail() {
         allow_tentative: draftRsvpAllowTentative,
         allow_notes: draftRsvpAllowNotes,
       },
+      gift: {
+        is_enabled: draftGiftEnabled,
+        title: draftGiftTitle.trim() || undefined,
+        description: draftGiftDescription.trim() || undefined,
+        accounts: draftGiftAccounts,
+        physical_address: draftGiftAddress,
+      },
     };
   }, [
     draftHeroHeadline,
@@ -631,6 +769,11 @@ export function InvitationDetail() {
     draftRsvpMaxPax,
     draftRsvpAllowTentative,
     draftRsvpAllowNotes,
+    draftGiftEnabled,
+    draftGiftTitle,
+    draftGiftDescription,
+    draftGiftAccounts,
+    draftGiftAddress,
   ]);
 
   // Handler simpan satu tombol untuk form pengaturan, hero, mempelai, dan cerita
@@ -716,7 +859,12 @@ export function InvitationDetail() {
         draftRsvpDescription !== savedSnapshot.rsvpDescription ||
         draftRsvpMaxPax !== savedSnapshot.rsvpMaxPax ||
         draftRsvpAllowTentative !== savedSnapshot.rsvpAllowTentative ||
-        draftRsvpAllowNotes !== savedSnapshot.rsvpAllowNotes;
+        draftRsvpAllowNotes !== savedSnapshot.rsvpAllowNotes ||
+        draftGiftEnabled !== savedSnapshot.giftEnabled ||
+        draftGiftTitle !== savedSnapshot.giftTitle ||
+        draftGiftDescription !== savedSnapshot.giftDescription ||
+        currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
+        currentGiftAddressJson !== savedSnapshot.giftAddressJson;
 
       if (isContentChanged) {
         updateTasks.push(upsertInvitationData(id, liveContent));
@@ -752,6 +900,11 @@ export function InvitationDetail() {
         rsvpMaxPax: draftRsvpMaxPax,
         rsvpAllowTentative: draftRsvpAllowTentative,
         rsvpAllowNotes: draftRsvpAllowNotes,
+        giftEnabled: draftGiftEnabled,
+        giftTitle: draftGiftTitle,
+        giftDescription: draftGiftDescription,
+        giftAccountsJson: currentGiftAccountsJson,
+        giftAddressJson: currentGiftAddressJson,
         heroHeadline: draftHeroHeadline,
         heroOpeningText: draftHeroOpeningText,
         heroCoupleNames: draftHeroCoupleNames,
@@ -1560,6 +1713,149 @@ export function InvitationDetail() {
     );
   }
 
+  // ============================================================
+  // HANDLER: KELOLA REKENING & DOMPET DIGITAL (GIFT)
+  // ============================================================
+  const handleOpenAddGiftAccountModal = () => {
+    setEditingGiftAccountId(null);
+    setGiftAccountForm({
+      type: 'bank',
+      provider: '',
+      account_number: '',
+      holder_name: '',
+      label: '',
+      is_enabled: true,
+    });
+    setGiftAccountError(null);
+    setGiftAccountModalOpen(true);
+  };
+
+  const handleOpenEditGiftAccountModal = (acc: InvitationContentGiftAccount) => {
+    setEditingGiftAccountId(acc.id);
+    setGiftAccountForm({
+      type: acc.type || 'bank',
+      provider: acc.provider || '',
+      account_number: acc.account_number || '',
+      holder_name: acc.holder_name || '',
+      label: acc.label || '',
+      is_enabled: acc.is_enabled !== false,
+    });
+    setGiftAccountError(null);
+    setGiftAccountModalOpen(true);
+  };
+
+  const handleSaveGiftAccount = (e: FormEvent) => {
+    e.preventDefault();
+    setGiftAccountError(null);
+
+    const cleanProvider = giftAccountForm.provider.trim();
+    const cleanNumber = giftAccountForm.account_number.trim();
+    const cleanHolder = giftAccountForm.holder_name.trim();
+    const cleanLabel = giftAccountForm.label.trim();
+
+    if (!cleanProvider) {
+      setGiftAccountError('Nama bank atau penyedia dompet digital wajib diisi.');
+      return;
+    }
+    if (cleanProvider.length > 50) {
+      setGiftAccountError('Nama bank atau penyedia maksimal 50 karakter.');
+      return;
+    }
+    if (!cleanNumber) {
+      setGiftAccountError('Nomor rekening atau nomor akun e-wallet wajib diisi.');
+      return;
+    }
+    if (cleanNumber.length > 50) {
+      setGiftAccountError('Nomor rekening atau nomor akun maksimal 50 karakter.');
+      return;
+    }
+    if (!cleanHolder) {
+      setGiftAccountError('Nama pemilik rekening atau akun wajib diisi.');
+      return;
+    }
+    if (cleanHolder.length > 100) {
+      setGiftAccountError('Nama pemilik rekening maksimal 100 karakter.');
+      return;
+    }
+
+    if (editingGiftAccountId) {
+      setDraftGiftAccounts((prev) =>
+        prev.map((acc) =>
+          acc.id === editingGiftAccountId
+            ? {
+                ...acc,
+                type: giftAccountForm.type,
+                provider: cleanProvider,
+                account_number: cleanNumber,
+                holder_name: cleanHolder,
+                label: cleanLabel || undefined,
+                is_enabled: giftAccountForm.is_enabled,
+              }
+            : acc
+        )
+      );
+    } else {
+      const newAccount: InvitationContentGiftAccount = {
+        id: `gift-${Date.now()}`,
+        type: giftAccountForm.type,
+        provider: cleanProvider,
+        account_number: cleanNumber,
+        holder_name: cleanHolder,
+        label: cleanLabel || undefined,
+        display_order: draftGiftAccounts.length,
+        is_enabled: giftAccountForm.is_enabled,
+      };
+      setDraftGiftAccounts((prev) => [...prev, newAccount]);
+    }
+
+    setGiftAccountModalOpen(false);
+  };
+
+  const handleConfirmDeleteGiftAccount = () => {
+    if (!accountToDelete) return;
+    setDraftGiftAccounts((prev) =>
+      prev
+        .filter((acc) => acc.id !== accountToDelete.id)
+        .map((acc, idx) => ({ ...acc, display_order: idx }))
+    );
+    setDeleteGiftAccountModalOpen(false);
+    setAccountToDelete(null);
+  };
+
+  const handleMoveGiftAccountUp = (index: number) => {
+    if (index <= 0) return;
+    setDraftGiftAccounts((prev) => {
+      const copy = [...prev];
+      const prevItem = copy[index - 1];
+      const currItem = copy[index];
+      if (!prevItem || !currItem) return prev;
+      copy[index - 1] = currItem;
+      copy[index] = prevItem;
+      return copy.map((acc, idx) => ({ ...acc, display_order: idx }));
+    });
+  };
+
+  const handleMoveGiftAccountDown = (index: number) => {
+    if (index >= draftGiftAccounts.length - 1) return;
+    setDraftGiftAccounts((prev) => {
+      const copy = [...prev];
+      const currItem = copy[index];
+      const nextItem = copy[index + 1];
+      if (!currItem || !nextItem) return prev;
+      copy[index] = nextItem;
+      copy[index + 1] = currItem;
+      return copy.map((acc, idx) => ({ ...acc, display_order: idx }));
+    });
+  };
+
+  const handleToggleGiftAccountEnabled = (idToToggle: string) => {
+    setDraftGiftAccounts((prev) =>
+      prev.map((acc) =>
+        acc.id === idToToggle ? { ...acc, is_enabled: !acc.is_enabled } : acc
+      )
+    );
+  };
+
   return (
     <div className="py-6 max-w-7xl mx-auto space-y-6">
       {/* 1. Header Toolbar Editor */}
@@ -1835,6 +2131,17 @@ export function InvitationDetail() {
                 }`}
               >
                 Galeri ({draftGallery.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('gift')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'gift'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Hadiah ({draftGiftAccounts.length})
               </button>
               <button
                 type="button"
@@ -2901,6 +3208,299 @@ export function InvitationDetail() {
               </div>
             )}
 
+            {/* TAB: PENGELOLAAN HADIAH & AMPLOP DIGITAL */}
+            {activeTab === 'gift' && (
+              <div className="p-5 space-y-6 text-xs">
+                {/* 1. Pengaturan Utama Fitur Hadiah */}
+                <div className="p-4 border border-border rounded bg-surface space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                        Fitur Tanda Kasih / Amplop Digital
+                      </h3>
+                      <p className="text-[11px] text-text-subtle mt-0.5">
+                        Izinkan kerabat dan sahabat mengirimkan tanda kasih berupa transfer bank, e-wallet, atau kado fisik.
+                      </p>
+                    </div>
+
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={draftGiftEnabled}
+                        onChange={(e) => setDraftGiftEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-surface-elevated border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-subtle peer-checked:after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+
+                  {draftGiftEnabled && (
+                    <div className="pt-3 border-t border-border/50 space-y-3">
+                      <div className="space-y-1">
+                        <label htmlFor="gift-title-input" className="font-medium text-text-primary block">
+                          Judul Seksi Hadiah
+                        </label>
+                        <input
+                          id="gift-title-input"
+                          type="text"
+                          value={draftGiftTitle}
+                          onChange={(e) => setDraftGiftTitle(e.target.value)}
+                          placeholder="Kirim Hadiah"
+                          maxLength={60}
+                          className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label htmlFor="gift-desc-input" className="font-medium text-text-primary block">
+                          Pesan Pengantar / Instruksi
+                        </label>
+                        <textarea
+                          id="gift-desc-input"
+                          rows={2}
+                          value={draftGiftDescription}
+                          onChange={(e) => setDraftGiftDescription(e.target.value)}
+                          placeholder="Tuliskan ucapan atau pengantar untuk para tamu..."
+                          maxLength={300}
+                          className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Daftar Rekening Bank & E-Wallet */}
+                {draftGiftEnabled && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                          Rekening Bank &amp; Dompet Digital ({draftGiftAccounts.length})
+                        </h3>
+                        <p className="text-[11px] text-text-subtle mt-0.5">
+                          Tamu dapat langsung menyalin nomor rekening dengan satu klik.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleOpenAddGiftAccountModal}
+                        className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        + Tambah Rekening
+                      </button>
+                    </div>
+
+                    {draftGiftAccounts.length === 0 ? (
+                      <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                        <p className="text-xs text-text-muted font-medium">
+                          Belum ada rekening atau dompet digital yang ditambahkan.
+                        </p>
+                        <p className="text-[11px] text-text-subtle">
+                          Tambahkan nomor rekening BCA, Mandiri, BRI, BNI, GoPay, OVO, atau lainnya.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {draftGiftAccounts.map((acc, index) => (
+                          <div
+                            key={acc.id}
+                            className={`p-3.5 border rounded bg-surface transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                              acc.is_enabled ? 'border-border' : 'border-border/60 opacity-60 bg-surface-elevated/20'
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-text-primary text-xs">
+                                  {acc.provider}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-surface-elevated text-text-subtle font-medium uppercase">
+                                  {acc.type === 'ewallet' ? 'E-Wallet' : 'Bank'}
+                                </span>
+                                {acc.label ? (
+                                  <span className="text-[11px] text-text-muted">
+                                    ({acc.label})
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="font-mono text-xs font-bold text-text-primary tracking-wider">
+                                {acc.account_number}
+                              </div>
+                              {acc.holder_name ? (
+                                <div className="text-[11px] text-text-subtle">
+                                  a.n. {acc.holder_name}
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                              {/* Urutan Naik / Turun */}
+                              <div className="flex items-center border border-border rounded overflow-hidden mr-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveGiftAccountUp(index)}
+                                  disabled={index === 0}
+                                  className="py-1 px-2 text-[11px] hover:bg-surface-elevated transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-text-muted"
+                                  title="Pindah ke atas"
+                                >
+                                  &uarr;
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveGiftAccountDown(index)}
+                                  disabled={index === draftGiftAccounts.length - 1}
+                                  className="py-1 px-2 text-[11px] hover:bg-surface-elevated transition-colors cursor-pointer border-l border-border disabled:opacity-30 disabled:cursor-not-allowed text-text-muted"
+                                  title="Pindah ke bawah"
+                                >
+                                  &darr;
+                                </button>
+                              </div>
+
+                              {/* Toggle Aktif / Nonaktif */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleGiftAccountEnabled(acc.id)}
+                                className={`py-1 px-2.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer ${
+                                  acc.is_enabled
+                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                    : 'border-border bg-surface text-text-subtle'
+                                }`}
+                              >
+                                {acc.is_enabled ? 'Aktif' : 'Nonaktif'}
+                              </button>
+
+                              {/* Edit */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditGiftAccountModal(acc)}
+                                className="py-1 px-2 rounded text-xs font-semibold text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
+                              >
+                                Edit
+                              </button>
+
+                              {/* Hapus */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAccountToDelete(acc);
+                                  setDeleteGiftAccountModalOpen(true);
+                                }}
+                                className="py-1 px-2 rounded text-xs font-semibold text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. Pengiriman Hadiah Fisik */}
+                {draftGiftEnabled && (
+                  <div className="p-4 border border-border rounded bg-surface space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-text-primary text-xs uppercase tracking-wider">
+                          Alamat Pengiriman Kado Fisik
+                        </h3>
+                        <p className="text-[11px] text-text-subtle mt-0.5">
+                          Tampilkan alamat rumah bagi tamu yang ingin mengirimkan kado fisik via kurir atau pos.
+                        </p>
+                      </div>
+
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={draftGiftAddress.is_enabled}
+                          onChange={(e) =>
+                            setDraftGiftAddress((prev) => ({ ...prev, is_enabled: e.target.checked }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-surface-elevated border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-subtle peer-checked:after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
+
+                    {draftGiftAddress.is_enabled && (
+                      <div className="pt-3 border-t border-border/50 space-y-3">
+                        <div className="space-y-1">
+                          <label htmlFor="gift-recipient-name" className="font-medium text-text-primary block">
+                            Nama Penerima
+                          </label>
+                          <input
+                            id="gift-recipient-name"
+                            type="text"
+                            value={draftGiftAddress.recipient_name}
+                            onChange={(e) =>
+                              setDraftGiftAddress((prev) => ({ ...prev, recipient_name: e.target.value }))
+                            }
+                            placeholder="Contoh: Romeo & Juliet"
+                            maxLength={100}
+                            className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label htmlFor="gift-address-text" className="font-medium text-text-primary block">
+                            Alamat Lengkap Pengiriman
+                          </label>
+                          <textarea
+                            id="gift-address-text"
+                            rows={3}
+                            value={draftGiftAddress.address}
+                            onChange={(e) =>
+                              setDraftGiftAddress((prev) => ({ ...prev, address: e.target.value }))
+                            }
+                            placeholder="Jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota/kabupaten, kode pos"
+                            maxLength={300}
+                            className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label htmlFor="gift-phone-input" className="font-medium text-text-primary block">
+                              Nomor Telepon / WhatsApp (Opsional)
+                            </label>
+                            <input
+                              id="gift-phone-input"
+                              type="text"
+                              value={draftGiftAddress.phone || ''}
+                              onChange={(e) =>
+                                setDraftGiftAddress((prev) => ({ ...prev, phone: e.target.value }))
+                              }
+                              placeholder="081234567890"
+                              maxLength={30}
+                              className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label htmlFor="gift-notes-input" className="font-medium text-text-primary block">
+                              Catatan Pengiriman (Opsional)
+                            </label>
+                            <input
+                              id="gift-notes-input"
+                              type="text"
+                              value={draftGiftAddress.notes || ''}
+                              onChange={(e) =>
+                                setDraftGiftAddress((prev) => ({ ...prev, notes: e.target.value }))
+                              }
+                              placeholder="Contoh: Titipkan ke satpam perumahan"
+                              maxLength={100}
+                              className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* TAB 5: KELOLA SEKSI */}
             {activeTab === 'sections' && (
               <div className="p-5 space-y-4 text-xs">
@@ -3952,6 +4552,203 @@ export function InvitationDetail() {
           </div>
         </div>
       )}
+
+      {/* 11. Modal Tambah / Edit Rekening & E-Wallet (Gift) */}
+      {giftAccountModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
+            <h2 className="font-serif text-xl font-bold text-primary">
+              {editingGiftAccountId ? 'Edit Rekening / E-Wallet' : 'Tambah Rekening / E-Wallet'}
+            </h2>
+
+            {giftAccountError && (
+              <div className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+                {giftAccountError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveGiftAccount} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-semibold text-text-primary block">
+                  Jenis Akun
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGiftAccountForm({ ...giftAccountForm, type: 'bank' })}
+                    className={`py-2 px-3 border rounded text-xs font-semibold cursor-pointer text-center transition-colors ${
+                      giftAccountForm.type === 'bank'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-surface text-text-muted border-border hover:bg-surface-elevated'
+                    }`}
+                  >
+                    Rekening Bank
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGiftAccountForm({ ...giftAccountForm, type: 'ewallet' })}
+                    className={`py-2 px-3 border rounded text-xs font-semibold cursor-pointer text-center transition-colors ${
+                      giftAccountForm.type === 'ewallet'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-surface text-text-muted border-border hover:bg-surface-elevated'
+                    }`}
+                  >
+                    Dompet Digital (E-Wallet)
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="giftAccProvider" className="font-semibold text-text-primary block">
+                  {giftAccountForm.type === 'bank' ? 'Nama Bank' : 'Penyedia E-Wallet'}
+                </label>
+                <input
+                  id="giftAccProvider"
+                  type="text"
+                  required
+                  maxLength={50}
+                  value={giftAccountForm.provider}
+                  onChange={(e) => setGiftAccountForm({ ...giftAccountForm, provider: e.target.value })}
+                  placeholder={giftAccountForm.type === 'bank' ? 'Contoh: BCA, Mandiri, BRI, BNI' : 'Contoh: GoPay, OVO, Dana, ShopeePay'}
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="giftAccNumber" className="font-semibold text-text-primary block">
+                  {giftAccountForm.type === 'bank' ? 'Nomor Rekening' : 'Nomor Handphone / Akun'}
+                </label>
+                <input
+                  id="giftAccNumber"
+                  type="text"
+                  required
+                  maxLength={50}
+                  value={giftAccountForm.account_number}
+                  onChange={(e) => setGiftAccountForm({ ...giftAccountForm, account_number: e.target.value })}
+                  placeholder="Contoh: 1234567890"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="giftAccHolder" className="font-semibold text-text-primary block">
+                  Nama Pemilik Akun
+                </label>
+                <input
+                  id="giftAccHolder"
+                  type="text"
+                  required
+                  maxLength={100}
+                  value={giftAccountForm.holder_name}
+                  onChange={(e) => setGiftAccountForm({ ...giftAccountForm, holder_name: e.target.value })}
+                  placeholder="Contoh: Muhammad Raditya"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="giftAccLabel" className="font-semibold text-text-primary block">
+                  Label Rekening (Opsional)
+                </label>
+                <input
+                  id="giftAccLabel"
+                  type="text"
+                  maxLength={50}
+                  value={giftAccountForm.label}
+                  onChange={(e) => setGiftAccountForm({ ...giftAccountForm, label: e.target.value })}
+                  placeholder="Contoh: Rekening Mempelai Pria"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="giftAccEnabled"
+                  type="checkbox"
+                  checked={giftAccountForm.is_enabled}
+                  onChange={(e) => setGiftAccountForm({ ...giftAccountForm, is_enabled: e.target.checked })}
+                  className="rounded border-border text-primary focus:ring-primary"
+                />
+                <label htmlFor="giftAccEnabled" className="text-xs text-text-primary cursor-pointer select-none">
+                  Aktifkan rekening ini pada undangan publik
+                </label>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGiftAccountModalOpen(false);
+                    setGiftAccountError(null);
+                  }}
+                  className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer min-h-[36px]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer min-h-[36px]"
+                >
+                  {editingGiftAccountId ? 'Perbarui Rekening' : 'Tambahkan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 12. Modal Konfirmasi Hapus Rekening (Gift) */}
+      {deleteGiftAccountModalOpen && accountToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
+            <h2 className="font-serif text-xl font-bold text-danger">
+              Hapus Rekening Hadiah?
+            </h2>
+
+            <div className="p-3 bg-surface-elevated border border-border rounded text-xs space-y-1">
+              <p className="font-semibold text-text-primary">
+                {accountToDelete.provider} - {accountToDelete.account_number}
+              </p>
+              <p className="text-text-muted">
+                a.n. {accountToDelete.holder_name}
+              </p>
+            </div>
+
+            <p className="text-xs text-text-muted leading-relaxed">
+              Data rekening ini akan dihapus dari daftar amplop digital Anda. Klik Simpan Perubahan di toolbar setelah ini untuk menyimpan konfigurasi secara permanen.
+            </p>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteGiftAccountModalOpen(false);
+                  setAccountToDelete(null);
+                }}
+                className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer min-h-[36px]"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteGiftAccount}
+                className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer min-h-[36px]"
+              >
+                Ya, Hapus Rekening
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

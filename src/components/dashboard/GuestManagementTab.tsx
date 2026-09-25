@@ -59,6 +59,7 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
     'all' | 'unconfirmed' | 'attending' | 'declined' | 'tentative'
   >('all');
   const [rsvpStatusFilter, setRsvpStatusFilter] = useState<RsvpStatus | 'all'>('all');
+  const [wishVisibilityFilter, setWishVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const [rsvpSearch, setRsvpSearch] = useState('');
 
   // Modal Tambah / Edit Tamu
@@ -135,13 +136,18 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
 
   const filteredWishes = useMemo(() => {
     const q = rsvpSearch.trim().toLowerCase();
-    return wishesList.filter(
-      (r) =>
+    return wishesList.filter((r) => {
+      const matchVisibility =
+        wishVisibilityFilter === 'all' ||
+        (wishVisibilityFilter === 'visible' && !r.is_hidden) ||
+        (wishVisibilityFilter === 'hidden' && r.is_hidden);
+      const matchSearch =
         !q ||
         r.guest_name.toLowerCase().includes(q) ||
-        (r.wishes && r.wishes.toLowerCase().includes(q))
-    );
-  }, [wishesList, rsvpSearch]);
+        (r.wishes && r.wishes.toLowerCase().includes(q));
+      return matchVisibility && matchSearch;
+    });
+  }, [wishesList, wishVisibilityFilter, rsvpSearch]);
 
   // Peta tamu terdaftar untuk resolusi cepat di tabel RSVP
   const registeredGuestMap = useMemo(
@@ -672,17 +678,42 @@ export const GuestManagementTab: React.FC<GuestManagementTabProps> = ({
                 </p>
               </div>
 
-              {wishesList.length > 0 && (
-                <div className="max-w-xs">
-                  <input
-                    type="text"
-                    value={rsvpSearch}
-                    onChange={(e) => setRsvpSearch(e.target.value)}
-                    placeholder="Cari dalam ucapan..."
-                    className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                  />
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {(
+                    [
+                      { label: 'Semua', val: 'all' },
+                      { label: 'Tampil di Publik', val: 'visible' },
+                      { label: 'Disembunyikan', val: 'hidden' },
+                    ] as const
+                  ).map((filterOpt) => (
+                    <button
+                      key={filterOpt.val}
+                      type="button"
+                      onClick={() => setWishVisibilityFilter(filterOpt.val)}
+                      className={`py-1 px-2.5 rounded text-xs font-semibold transition-colors cursor-pointer border ${
+                        wishVisibilityFilter === filterOpt.val
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-surface text-text-muted hover:text-text-primary'
+                      }`}
+                    >
+                      {filterOpt.label}
+                    </button>
+                  ))}
                 </div>
-              )}
+
+                {wishesList.length > 0 && (
+                  <div className="max-w-xs w-full sm:w-auto">
+                    <input
+                      type="text"
+                      value={rsvpSearch}
+                      onChange={(e) => setRsvpSearch(e.target.value)}
+                      placeholder="Cari dalam ucapan..."
+                      className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {wishesList.length === 0 ? (

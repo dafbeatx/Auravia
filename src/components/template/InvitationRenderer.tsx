@@ -149,6 +149,25 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
               return null;
             }
 
+            // Guard: Hadiah hanya dirender jika fitur aktif dan ada data rekening / alamat
+            if (section.section_type === 'gift') {
+              const giftConfig = content?.gift;
+              const isGiftExplicitlyDisabled = giftConfig?.is_enabled === false;
+              const hasLegacyAccounts =
+                Array.isArray(content?.financial_accounts) && content.financial_accounts.length > 0;
+              const hasAccounts =
+                Array.isArray(giftConfig?.accounts) &&
+                giftConfig.accounts.some((a) => a.is_enabled !== false);
+              const hasAddress = Boolean(
+                giftConfig?.physical_address?.is_enabled &&
+                  giftConfig?.physical_address?.address?.trim()
+              );
+
+              if (isGiftExplicitlyDisabled || (!hasAccounts && !hasAddress && !hasLegacyAccounts)) {
+                return null;
+              }
+            }
+
             const SectionComponent = getSectionComponent(section.section_type);
             const sectionKey = section.id || `${section.section_type}-${idx}`;
 

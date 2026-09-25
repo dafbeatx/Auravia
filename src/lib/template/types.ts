@@ -83,6 +83,33 @@ export interface InvitationContentRsvp {
   allow_notes?: boolean;
 }
 
+export interface InvitationContentGiftAccount {
+  id: string;
+  type: 'bank' | 'ewallet';
+  provider: string;
+  account_number: string;
+  holder_name: string;
+  label?: string;
+  display_order: number;
+  is_enabled: boolean;
+}
+
+export interface InvitationContentGiftAddress {
+  recipient_name: string;
+  address: string;
+  phone?: string;
+  notes?: string;
+  is_enabled: boolean;
+}
+
+export interface InvitationContentGift {
+  is_enabled: boolean;
+  title?: string;
+  description?: string;
+  accounts?: InvitationContentGiftAccount[];
+  physical_address?: InvitationContentGiftAddress;
+}
+
 export interface InvitationContent {
   hero?: InvitationContentHero;
   hosts?: InvitationContentHost[];
@@ -90,6 +117,7 @@ export interface InvitationContent {
   financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;
   closing_notes?: string;
   rsvp?: InvitationContentRsvp;
+  gift?: InvitationContentGift;
   [key: string]: unknown;
 }
 
