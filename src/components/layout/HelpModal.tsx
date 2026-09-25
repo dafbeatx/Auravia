@@ -88,7 +88,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
               Membuat Undangan Baru
             </h3>
             <p className="pl-7">
-              Klik tombol <strong>+ Buat Undangan</strong> di dashboard, tentukan judul undangan, dan pilih salah satu template desain yang tersedia. Draf baru akan otomatis disiapkan untuk diedit.
+              Klik tombol <strong>Buat Undangan</strong> di dashboard, tentukan judul undangan, dan pilih salah satu template desain yang tersedia. Draf baru akan otomatis disiapkan untuk diedit.
             </p>
           </section>
 

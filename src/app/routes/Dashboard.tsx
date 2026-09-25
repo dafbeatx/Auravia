@@ -142,7 +142,16 @@ export function Dashboard() {
             onClick={() => setShowCreateModal(true)}
             className="self-start md:self-auto inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[40px]"
           >
-            <span>+ Buat Undangan</span>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Buat Undangan</span>
           </button>
         </div>
 
@@ -310,7 +319,16 @@ export function Dashboard() {
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer min-h-[44px]"
             >
-              <span>+ Buat Undangan</span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Buat Undangan</span>
             </button>
           </div>
         ) : filteredInvitations.length === 0 ? (
