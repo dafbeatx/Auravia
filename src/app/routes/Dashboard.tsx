@@ -1,32 +1,32 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getMyInvitations,
-  getActiveTemplates,
-  createInvitation,
   deleteMyInvitation,
   type InvitationListItem,
-  type TemplateListItem,
 } from '@/lib/invitations';
+import { DashboardHero } from '@/components/dashboard/DashboardHero';
+import { DashboardStats } from '@/components/dashboard/DashboardStats';
+import { InvitationCard } from '@/components/dashboard/InvitationCard';
+import { CreateInvitationModal } from '@/components/dashboard/CreateInvitationModal';
+import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal';
 
 export function Dashboard() {
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const [invitations, setInvitations] = useState<InvitationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // State form pembuatan undangan baru & pemilihan template
-  const [newTitle, setNewTitle] = useState('');
-  const [templates, setTemplates] = useState<TemplateListItem[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const [templatesLoaded, setTemplatesLoaded] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  // Search & Filter (Local in-memory, no Supabase requests on typing)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Modal Dialogs
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deletingInvitation, setDeletingInvitation] = useState<InvitationListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchInvitations = useCallback(async () => {
     setLoading(true);
@@ -45,331 +45,323 @@ export function Dashboard() {
     fetchInvitations();
   }, [fetchInvitations]);
 
-  // Muat katalog template aktif saat pengguna membuka formulir buat undangan (hanya sekali, tanpa polling)
-  useEffect(() => {
-    if (showCreateForm && !templatesLoaded) {
-      let isMounted = true;
-      setLoadingTemplates(true);
-      getActiveTemplates()
-        .then((data) => {
-          if (isMounted) {
-            setTemplates(data);
-            const firstTemplate = data[0];
-            if (firstTemplate) {
-              setSelectedTemplateId(firstTemplate.id);
-            }
-            setTemplatesLoaded(true);
-          }
-        })
-        .catch(() => {
-          if (isMounted) {
-            setCreateError('Gagal memuat katalog template. Silakan coba kembali.');
-          }
-        })
-        .finally(() => {
-          if (isMounted) {
-            setLoadingTemplates(false);
-          }
-        });
+  // Statistics derived purely from actual database data
+  const totalCount = invitations.length;
+  const draftCount = useMemo(
+    () => invitations.filter((inv) => inv.status === 'draft').length,
+    [invitations]
+  );
+  const publishedCount = useMemo(
+    () => invitations.filter((inv) => inv.status === 'published').length,
+    [invitations]
+  );
 
-      return () => {
-        isMounted = false;
-      };
-    }
-  }, [showCreateForm, templatesLoaded]);
-
-  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setCreateError(null);
-
-    const title = newTitle.trim();
-    if (!title) {
-      setCreateError('Judul undangan wajib diisi.');
-      return;
-    }
-
-    if (!selectedTemplateId) {
-      setCreateError('Silakan pilih salah satu template sebelum melanjutkan.');
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      const created = await createInvitation(title, selectedTemplateId);
-      setNewTitle('');
-      setShowCreateForm(false);
-      navigate(`/dashboard/invitations/${created.id}`);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setCreateError(err.message);
-      } else {
-        setCreateError('Gagal membuat undangan. Silakan coba lagi.');
+  // In-memory filtered list
+  const filteredInvitations = useMemo(() => {
+    return invitations.filter((inv) => {
+      if (statusFilter !== 'all' && inv.status !== statusFilter) {
+        return false;
       }
-    } finally {
-      setIsCreating(false);
-    }
-  };
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchTitle = inv.title.toLowerCase().includes(q);
+        const matchSlug = inv.slug.toLowerCase().includes(q);
+        return matchTitle || matchSlug;
+      }
+      return true;
+    });
+  }, [invitations, statusFilter, searchQuery]);
 
-  const handleDelete = async (id: string, title: string) => {
-    const confirmed = window.confirm(
-      `Apakah Anda yakin ingin menghapus undangan "${title}"? Tindakan ini tidak dapat dibatalkan.`
-    );
-    if (!confirmed) return;
-
+  const handleConfirmDelete = async () => {
+    if (!deletingInvitation) return;
+    setIsDeleting(true);
     try {
-      await deleteMyInvitation(id);
-      setInvitations((prev) => prev.filter((item) => item.id !== id));
+      await deleteMyInvitation(deletingInvitation.id);
+      setInvitations((prev) => prev.filter((item) => item.id !== deletingInvitation.id));
+      setDeletingInvitation(null);
     } catch {
       alert('Gagal menghapus undangan. Silakan coba kembali.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/login');
+  const handleResetSearch = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
   };
 
   return (
-    <div className="py-8 max-w-4xl mx-auto space-y-6">
-      {/* Header Info Sesi */}
-      <div className="bg-surface border border-border rounded p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary mb-1">
-            Dasbor Undangan
-          </h1>
-          <p className="text-xs text-text-muted">
-            Masuk sebagai <strong className="text-text-primary">{user?.email}</strong>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setShowCreateForm((prev) => !prev)}
-            className="py-1.5 px-3 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer"
-          >
-            {showCreateForm ? 'Tutup Formulir' : '+ Buat Undangan'}
-          </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="py-1.5 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted hover:text-danger rounded transition-colors cursor-pointer"
-          >
-            Keluar
-          </button>
-        </div>
-      </div>
+    <div className="space-y-8 sm:space-y-10 pb-12">
+      {/* Welcome / Editorial Hero */}
+      <DashboardHero onCreateClick={() => setShowCreateModal(true)} />
 
-      {/* Form Buat Undangan */}
-      {showCreateForm && (
-        <div className="bg-surface border border-border rounded p-6 shadow-sm">
-          <h2 className="font-serif text-lg font-bold text-primary mb-1">
-            Buat Undangan Baru
-          </h2>
-          <p className="text-xs text-text-muted mb-4">
-            Masukkan judul untuk memulai draf undangan.
-          </p>
+      {/* Actual Statistics Cards */}
+      <DashboardStats
+        totalCount={totalCount}
+        draftCount={draftCount}
+        publishedCount={publishedCount}
+      />
 
-          {createError && (
-            <div
-              role="alert"
-              aria-live="polite"
-              className="mb-4 p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger font-medium leading-relaxed"
+      {/* Section "Undangan Saya" */}
+      <section
+        id="undangan-saya"
+        aria-labelledby="undangan-saya-heading"
+        className="space-y-6 pt-2"
+      >
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-4">
+          <div>
+            <h2
+              id="undangan-saya-heading"
+              className="font-serif text-2xl sm:text-3xl font-bold text-primary"
             >
-              {createError}
-            </div>
-          )}
+              Undangan Saya
+            </h2>
+            <p className="text-xs sm:text-sm text-text-muted mt-1">
+              Daftar undangan digital yang telah Anda buat dan kelola.
+            </p>
+          </div>
 
-          <form onSubmit={handleCreate} className="space-y-4 max-w-lg">
-            <div>
-              <label
-                htmlFor="invitation-title"
-                className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1"
-              >
-                Judul Undangan
-              </label>
-              <input
-                id="invitation-title"
-                type="text"
-                required
-                maxLength={120}
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                disabled={isCreating}
-                placeholder="Contoh: Pernikahan Kami"
-                className="w-full px-3 py-2 bg-background border border-border rounded text-sm text-text-primary placeholder:text-text-subtle/50 focus:border-primary focus:outline-none transition-colors disabled:opacity-60"
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="self-start md:self-auto inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+          >
+            <span>+ Buat Undangan</span>
+          </button>
+        </div>
+
+        {/* Search, Filter, and View Mode Toolbar */}
+        <div className="bg-surface border border-border rounded-xl p-3.5 sm:p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+          {/* Left: Search input */}
+          <div className="relative flex-1 max-w-md">
+            <svg
+              className="w-4 h-4 text-text-subtle absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
-                Pilih Template
-              </label>
-
-              {loadingTemplates ? (
-                <div
-                  className="p-4 border border-border rounded bg-surface-elevated text-xs text-text-muted text-center"
-                  role="status"
-                >
-                  Memuat katalog template...
-                </div>
-              ) : templates.length === 0 ? (
-                <div
-                  className="p-4 border border-border rounded bg-surface-elevated text-xs text-text-muted text-center"
-                  role="alert"
-                >
-                  Belum ada template yang tersedia.
-                </div>
-              ) : (
-                <div
-                  className="space-y-2"
-                  role="radiogroup"
-                  aria-label="Pilihan template undangan"
-                >
-                  {templates.map((tpl) => {
-                    const isSelected = selectedTemplateId === tpl.id;
-                    return (
-                      <label
-                        key={tpl.id}
-                        className={`flex items-start gap-3 p-3.5 border rounded cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'border-primary bg-surface-elevated ring-1 ring-primary'
-                            : 'border-border bg-surface hover:border-border-strong'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="template-selection"
-                          value={tpl.id}
-                          checked={isSelected}
-                          onChange={() => setSelectedTemplateId(tpl.id)}
-                          className="mt-0.5 text-primary focus:ring-primary h-4 w-4 border-border"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-semibold text-sm text-text-primary">
-                              {tpl.name}
-                            </span>
-                            <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded border border-border bg-background text-text-muted">
-                              {tpl.category}
-                            </span>
-                          </div>
-                          <p className="text-xs text-text-muted leading-relaxed">
-                            {tpl.description}
-                          </p>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 pt-2">
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari berdasarkan judul atau slug..."
+              className="w-full pl-9 pr-8 py-2 bg-background border border-border rounded-lg text-xs sm:text-sm text-text-primary placeholder:text-text-subtle/60 focus:border-primary focus:outline-none transition-colors"
+            />
+            {searchQuery && (
               <button
-                type="submit"
-                disabled={isCreating || loadingTemplates || templates.length === 0}
-                className="py-2 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Bersihkan pencarian"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-subtle hover:text-text-primary p-0.5 rounded cursor-pointer"
               >
-                {isCreating ? 'Menyimpan Draf...' : 'Buat Draf Undangan'}
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Center / Right: Filter tabs & View Mode toggles */}
+          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+            {/* Status Filter Segmented Control */}
+            <div
+              className="inline-flex rounded-lg border border-border p-0.5 bg-surface-elevated text-xs font-medium"
+              role="group"
+              aria-label="Filter status undangan"
+            >
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-surface text-primary font-semibold shadow-xs'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Semua ({totalCount})
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setCreateError(null);
-                  setNewTitle('');
-                }}
-                disabled={isCreating}
-                className="py-2 px-3 border border-border hover:bg-surface-elevated text-text-muted text-xs font-semibold rounded transition-colors cursor-pointer"
+                onClick={() => setStatusFilter('draft')}
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  statusFilter === 'draft'
+                    ? 'bg-surface text-primary font-semibold shadow-xs'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
               >
-                Batal
+                Draft ({draftCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('published')}
+                className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  statusFilter === 'published'
+                    ? 'bg-surface text-primary font-semibold shadow-xs'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Dipublikasikan ({publishedCount})
               </button>
             </div>
-          </form>
+
+            {/* View Mode Toggle: Grid vs List */}
+            <div
+              className="inline-flex rounded-lg border border-border p-0.5 bg-surface-elevated"
+              role="group"
+              aria-label="Pilihan tampilan"
+            >
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                aria-label="Tampilan Grid"
+                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-surface text-primary shadow-xs'
+                    : 'text-text-subtle hover:text-text-primary'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                aria-label="Tampilan Daftar"
+                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                  viewMode === 'list'
+                    ? 'bg-surface text-primary shadow-xs'
+                    : 'text-text-subtle hover:text-text-primary'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Konten Daftar Undangan */}
-      <div className="bg-surface border border-border rounded p-6 shadow-sm">
-        <h2 className="font-serif text-lg font-bold text-primary mb-4 pb-2 border-b border-border">
-          Daftar Undangan Saya
-        </h2>
-
+        {/* Content Area */}
         {loading ? (
-          <p className="text-xs text-text-muted py-8 text-center" role="status">
-            Memuat daftar undangan...
-          </p>
+          <div
+            className="py-16 text-center space-y-3 bg-surface border border-border rounded-xl"
+            role="status"
+          >
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-text-muted">Memuat daftar undangan...</p>
+          </div>
         ) : error ? (
           <div
             role="alert"
-            className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger text-center"
+            className="p-6 bg-danger/10 border border-danger/30 rounded-xl text-center space-y-3"
           >
-            {error}
+            <p className="text-xs text-danger font-medium">{error}</p>
+            <button
+              type="button"
+              onClick={fetchInvitations}
+              className="px-4 py-1.5 bg-surface border border-danger/40 text-danger text-xs font-semibold rounded-lg hover:bg-surface-elevated transition-colors cursor-pointer"
+            >
+              Coba Lagi
+            </button>
           </div>
         ) : invitations.length === 0 ? (
-          /* Empty State yang Jujur */
-          <div className="py-12 text-center max-w-sm mx-auto space-y-3">
-            <p className="text-sm font-medium text-text-muted">
-              Belum ada undangan.
+          /* Empty State (User has no invitations yet) */
+          <div className="bg-surface border border-border rounded-xl p-8 sm:p-12 text-center max-w-md mx-auto space-y-4 shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-surface-elevated border border-border flex items-center justify-center mx-auto text-primary">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-serif text-xl font-bold text-primary">
+                Belum ada undangan
+              </h3>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Mulai buat undangan digital pertama Anda. Pilih template yang sesuai dan publikasikan momen bahagia Anda.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+            >
+              <span>+ Buat Undangan</span>
+            </button>
+          </div>
+        ) : filteredInvitations.length === 0 ? (
+          /* No Search Results */
+          <div className="bg-surface border border-border rounded-xl p-8 text-center space-y-3 max-w-sm mx-auto shadow-sm">
+            <p className="font-serif text-lg font-semibold text-primary">
+              Tidak ada undangan yang cocok
             </p>
-            <p className="text-xs text-text-subtle leading-relaxed">
-              Anda belum membuat draf undangan digital apa pun. Klik tombol di bawah untuk memulai.
+            <p className="text-xs text-text-muted">
+              Tidak ditemukan undangan yang sesuai dengan kata kunci atau filter status yang dipilih.
             </p>
             <button
               type="button"
-              onClick={() => setShowCreateForm(true)}
-              className="mt-2 inline-block py-2 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer"
+              onClick={handleResetSearch}
+              className="px-3.5 py-1.5 border border-border hover:bg-surface-elevated text-xs font-semibold text-primary rounded-lg transition-colors cursor-pointer"
             >
-              Mulai Buat Undangan
+              Atur Ulang Pencarian
             </button>
           </div>
-        ) : (
-          /* Daftar Undangan Riil */
-          <div className="divide-y divide-border">
-            {invitations.map((inv) => (
-              <div
+        ) : viewMode === 'grid' ? (
+          /* Grid View */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            {filteredInvitations.map((inv) => (
+              <InvitationCard
                 key={inv.id}
-                className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Link
-                      to={`/dashboard/invitations/${inv.id}`}
-                      className="font-semibold text-sm text-text-primary hover:text-primary hover:underline transition-colors"
-                    >
-                      {inv.title}
-                    </Link>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded border border-border bg-surface-elevated text-text-muted">
-                      {inv.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-text-subtle font-mono">
-                    <span>slug: {inv.slug}</span>
-                    <span>&bull;</span>
-                    <span>{new Date(inv.created_at).toLocaleDateString('id-ID')}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <Link
-                    to={`/dashboard/invitations/${inv.id}`}
-                    className="py-1 px-2.5 border border-border hover:bg-surface-elevated text-xs font-semibold text-text-primary rounded transition-colors"
-                  >
-                    Buka
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(inv.id, inv.title)}
-                    className="py-1 px-2.5 border border-border hover:border-danger/30 hover:bg-danger/10 text-xs font-semibold text-danger rounded transition-colors cursor-pointer"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              </div>
+                invitation={inv}
+                viewMode="grid"
+                onDeleteClick={(target) => setDeletingInvitation(target)}
+              />
+            ))}
+          </div>
+        ) : (
+          /* List View */
+          <div className="space-y-3">
+            {filteredInvitations.map((inv) => (
+              <InvitationCard
+                key={inv.id}
+                invitation={inv}
+                viewMode="list"
+                onDeleteClick={(target) => setDeletingInvitation(target)}
+              />
             ))}
           </div>
         )}
-      </div>
+      </section>
+
+      {/* Create Invitation Modal */}
+      <CreateInvitationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={(id) => {
+          setShowCreateModal(false);
+          navigate(`/dashboard/invitations/${id}`);
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        invitation={deletingInvitation}
+        isDeleting={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingInvitation(null)}
+      />
     </div>
   );
 }

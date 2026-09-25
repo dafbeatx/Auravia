@@ -6,7 +6,17 @@ import type { InvitationContent } from '@/lib/template/types';
 export type InvitationListItem = Pick<
   Tables<'invitations'>,
   'id' | 'slug' | 'title' | 'event_type' | 'status' | 'created_at' | 'updated_at'
->;
+> & {
+  data?:
+    | { content: import('@/types/database').Json }
+    | Array<{ content: import('@/types/database').Json }>
+    | null;
+  gallery?: Array<{
+    id: string;
+    storage_path: string;
+    thumbnail_path: string | null;
+  }> | null;
+};
 
 export type InvitationDetail = Pick<
   Tables<'invitations'>,
@@ -140,19 +150,35 @@ export async function createInvitation(
 
 /**
  * Mengambil daftar undangan milik pengguna saat ini (terisolasi otomatis oleh RLS).
- * Mengambil hanya 7 kolom yang diperlukan untuk menghemat egress.
+ * Mengambil kolom utama serta relasi data konten dan galeri untuk visual preview card.
  */
 export async function getMyInvitations(): Promise<InvitationListItem[]> {
   const { data, error } = await supabase
     .from('invitations')
-    .select('id, slug, title, event_type, status, created_at, updated_at')
+    .select(`
+      id,
+      slug,
+      title,
+      event_type,
+      status,
+      created_at,
+      updated_at,
+      data:invitation_data (
+        content
+      ),
+      gallery:gallery_items (
+        id,
+        storage_path,
+        thumbnail_path
+      )
+    `)
     .order('created_at', { ascending: false });
 
   if (error) {
     throw new DatabaseError('Gagal memuat daftar undangan.', error);
   }
 
-  return data ?? [];
+  return (data as unknown as InvitationListItem[]) ?? [];
 }
 
 /**
