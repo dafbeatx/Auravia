@@ -36,7 +36,14 @@ import type {
   InvitationContentHost,
   InvitationContentGiftAccount,
   InvitationContentGiftAddress,
+  InvitationContentMusic,
 } from '@/lib/template/types';
+import {
+  isValidAudioUrl,
+  validateMusicConfig,
+  sanitizeMusicConfig,
+  DEFAULT_MUSIC_CONFIG,
+} from '@/lib/music';
 import { getInvitationGuests } from '@/lib/guests';
 import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
 import { InvitationRenderer } from '@/components/template';
@@ -130,6 +137,7 @@ export function InvitationDetail() {
       notes: '',
       is_enabled: false,
     }),
+    musicJson: JSON.stringify(DEFAULT_MUSIC_CONFIG),
   });
 
   // State Formulir Pengaturan Umum (General Settings)
@@ -232,9 +240,17 @@ export function InvitationDetail() {
   const [deleteGiftAccountModalOpen, setDeleteGiftAccountModalOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<InvitationContentGiftAccount | null>(null);
 
+  // State Pengaturan Musik Latar (Music)
+  const [draftMusic, setDraftMusic] = useState<InvitationContentMusic>({
+    ...DEFAULT_MUSIC_CONFIG,
+  });
+  const [musicPreviewPlaying, setMusicPreviewPlaying] = useState(false);
+  const [musicPreviewAudio, setMusicPreviewAudio] = useState<HTMLAudioElement | null>(null);
+  const [musicPreviewError, setMusicPreviewError] = useState<string | null>(null);
+
   // Tampilan antarmuka
   const [activeTab, setActiveTab] = useState<
-    'settings' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'gift' | 'sections' | 'guests'
+    'settings' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'gift' | 'music' | 'sections' | 'guests'
   >('settings');
   const [guestCount, setGuestCount] = useState(0);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
@@ -388,6 +404,7 @@ export function InvitationDetail() {
         notes: '',
         is_enabled: false,
       };
+      let initialMusic: InvitationContentMusic = { ...DEFAULT_MUSIC_CONFIG };
 
       if (contentRecord?.content) {
         const c = contentRecord.content;
@@ -476,6 +493,10 @@ export function InvitationDetail() {
             is_enabled: true,
           }));
         }
+
+        if (c.music) {
+          initialMusic = sanitizeMusicConfig(c.music);
+        }
       }
 
       setDraftHeroHeadline(initialHeroHeadline);
@@ -511,6 +532,7 @@ export function InvitationDetail() {
       setDraftGiftDescription(initialGiftDescription);
       setDraftGiftAccounts(initialGiftAccounts);
       setDraftGiftAddress(initialGiftAddress);
+      setDraftMusic(initialMusic);
 
       // Muat template config & pastikan seksi terinisialisasi
       const config = await getInvitationTemplateConfig(id);
@@ -545,6 +567,7 @@ export function InvitationDetail() {
       const initialStoryJson = JSON.stringify(initialStory);
       const initialGiftAccountsJson = JSON.stringify(initialGiftAccounts);
       const initialGiftAddressJson = JSON.stringify(initialGiftAddress);
+      const initialMusicJson = JSON.stringify(initialMusic);
 
       setSavedSnapshot({
         title: initialTitle,
@@ -562,6 +585,7 @@ export function InvitationDetail() {
         giftDescription: initialGiftDescription,
         giftAccountsJson: initialGiftAccountsJson,
         giftAddressJson: initialGiftAddressJson,
+        musicJson: initialMusicJson,
         heroHeadline: initialHeroHeadline,
         heroOpeningText: initialHeroOpeningText,
         heroCoupleNames: initialHeroCoupleNames,
@@ -593,6 +617,14 @@ export function InvitationDetail() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    return () => {
+      if (musicPreviewAudio) {
+        musicPreviewAudio.pause();
+      }
+    };
+  }, [musicPreviewAudio]);
+
   // Evaluasi apakah ada perubahan form lokal yang belum disimpan ke database
   const currentSectionsJson = useMemo(() => {
     return JSON.stringify(
@@ -603,6 +635,7 @@ export function InvitationDetail() {
   const currentStoryJson = useMemo(() => JSON.stringify(draftStory), [draftStory]);
   const currentGiftAccountsJson = useMemo(() => JSON.stringify(draftGiftAccounts), [draftGiftAccounts]);
   const currentGiftAddressJson = useMemo(() => JSON.stringify(draftGiftAddress), [draftGiftAddress]);
+  const currentMusicJson = useMemo(() => JSON.stringify(draftMusic), [draftMusic]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!invitation) return false;
@@ -622,6 +655,7 @@ export function InvitationDetail() {
       draftGiftDescription !== savedSnapshot.giftDescription ||
       currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
       currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
+      currentMusicJson !== savedSnapshot.musicJson ||
       draftHeroHeadline !== savedSnapshot.heroHeadline ||
       draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
       draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
@@ -659,6 +693,7 @@ export function InvitationDetail() {
     draftGiftDescription,
     currentGiftAccountsJson,
     currentGiftAddressJson,
+    currentMusicJson,
     draftHeroHeadline,
     draftHeroOpeningText,
     draftHeroCoupleNames,
@@ -744,6 +779,7 @@ export function InvitationDetail() {
         accounts: draftGiftAccounts,
         physical_address: draftGiftAddress,
       },
+      music: draftMusic,
     };
   }, [
     draftHeroHeadline,
@@ -774,6 +810,7 @@ export function InvitationDetail() {
     draftGiftDescription,
     draftGiftAccounts,
     draftGiftAddress,
+    draftMusic,
   ]);
 
   // Handler simpan satu tombol untuk form pengaturan, hero, mempelai, dan cerita
@@ -802,6 +839,19 @@ export function InvitationDetail() {
         'Format tautan (slug) harus berupa huruf kecil, angka, dan tanda hubung (-) dengan panjang 3 sampai 60 karakter.'
       );
       return;
+    }
+
+    if (draftMusic.enabled) {
+      try {
+        validateMusicConfig(draftMusic);
+      } catch (err: unknown) {
+        if (err instanceof ValidationError) {
+          setSaveErrorMessage(err.message);
+        } else {
+          setSaveErrorMessage('Konfigurasi musik tidak valid.');
+        }
+        return;
+      }
     }
 
     // Jika tidak ada perubahan, hentikan tanpa request
@@ -864,7 +914,8 @@ export function InvitationDetail() {
         draftGiftTitle !== savedSnapshot.giftTitle ||
         draftGiftDescription !== savedSnapshot.giftDescription ||
         currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
-        currentGiftAddressJson !== savedSnapshot.giftAddressJson;
+        currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
+        currentMusicJson !== savedSnapshot.musicJson;
 
       if (isContentChanged) {
         updateTasks.push(upsertInvitationData(id, liveContent));
@@ -905,6 +956,7 @@ export function InvitationDetail() {
         giftDescription: draftGiftDescription,
         giftAccountsJson: currentGiftAccountsJson,
         giftAddressJson: currentGiftAddressJson,
+        musicJson: currentMusicJson,
         heroHeadline: draftHeroHeadline,
         heroOpeningText: draftHeroOpeningText,
         heroCoupleNames: draftHeroCoupleNames,
@@ -1856,6 +1908,72 @@ export function InvitationDetail() {
     );
   };
 
+  // ============================================================
+  // HANDLER: PENGATURAN MUSIK LATAR (MUSIC)
+  // ============================================================
+  const handleToggleMusicPreview = () => {
+    if (musicPreviewPlaying && musicPreviewAudio) {
+      musicPreviewAudio.pause();
+      setMusicPreviewPlaying(false);
+      return;
+    }
+
+    if (!isValidAudioUrl(draftMusic.audio_url)) {
+      setMusicPreviewError('Tautan audio tidak valid. Harap gunakan alamat URL dengan protokol http:// atau https://.');
+      return;
+    }
+
+    setMusicPreviewError(null);
+
+    try {
+      let audio = musicPreviewAudio;
+      if (!audio || audio.src !== draftMusic.audio_url) {
+        if (audio) {
+          audio.pause();
+        }
+        audio = new Audio(draftMusic.audio_url);
+        setMusicPreviewAudio(audio);
+      }
+
+      audio.volume = draftMusic.volume;
+      audio.loop = draftMusic.loop;
+
+      audio.onended = () => {
+        if (!draftMusic.loop) {
+          setMusicPreviewPlaying(false);
+        }
+      };
+
+      audio.onerror = () => {
+        setMusicPreviewError('Gagal memuat berkas audio dari tautan tersebut. Harap pastikan tautan dapat diakses publik.');
+        setMusicPreviewPlaying(false);
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setMusicPreviewPlaying(true);
+          })
+          .catch((err: unknown) => {
+            setMusicPreviewPlaying(false);
+            if (err instanceof Error) {
+              setMusicPreviewError(`Pemutaran dicegah: ${err.message}`);
+            } else {
+              setMusicPreviewError('Berkas audio tidak dapat diputar.');
+            }
+          });
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setMusicPreviewError(err.message);
+      } else {
+        setMusicPreviewError('Kendala saat memutar audio.');
+      }
+      setMusicPreviewPlaying(false);
+    }
+  };
+
   return (
     <div className="py-6 max-w-7xl mx-auto space-y-6">
       {/* 1. Header Toolbar Editor */}
@@ -2142,6 +2260,17 @@ export function InvitationDetail() {
                 }`}
               >
                 Hadiah ({draftGiftAccounts.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('music')}
+                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'music'
+                    ? 'border-primary text-primary bg-surface'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                Musik {draftMusic.enabled ? '✓' : ''}
               </button>
               <button
                 type="button"
@@ -3496,6 +3625,244 @@ export function InvitationDetail() {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: PENGATURAN MUSIK LATAR */}
+            {activeTab === 'music' && (
+              <div className="p-5 space-y-5 text-xs">
+                {/* Header Tab & Sakelar Aktif */}
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div>
+                    <h3 className="font-semibold text-text-primary text-sm">
+                      Pengaturan Musik Latar
+                    </h3>
+                    <p className="text-text-muted mt-0.5">
+                      Atur alunan musik pengiring yang akan diputar sebagai latar saat undangan dibuka.
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0" aria-label="Sakelar aktifkan musik latar">
+                    <input
+                      type="checkbox"
+                      checked={draftMusic.enabled}
+                      onChange={(e) => {
+                        const nextEnabled = e.target.checked;
+                        setDraftMusic((prev) => ({ ...prev, enabled: nextEnabled }));
+                        if (!nextEnabled && musicPreviewPlaying && musicPreviewAudio) {
+                          musicPreviewAudio.pause();
+                          setMusicPreviewPlaying(false);
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-surface-elevated border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-subtle peer-checked:after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                {draftMusic.enabled ? (
+                  <div className="space-y-4">
+                    {/* Tautan Audio (URL) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="music-audio-url" className="font-semibold text-text-primary">
+                          Tautan Berkas Audio (URL) <span className="text-danger">*</span>
+                        </label>
+                        {draftMusic.audio_url && (
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                              isValidAudioUrl(draftMusic.audio_url)
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                : 'border-danger/30 bg-danger/10 text-danger'
+                            }`}
+                          >
+                            {isValidAudioUrl(draftMusic.audio_url) ? 'URL Valid' : 'Format Tidak Didukung'}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        id="music-audio-url"
+                        type="url"
+                        required
+                        value={draftMusic.audio_url}
+                        onChange={(e) => {
+                          setDraftMusic((prev) => ({ ...prev, audio_url: e.target.value }));
+                          setMusicPreviewError(null);
+                        }}
+                        placeholder="Contoh: https://assets.example.com/audio/wedding-melody.mp3"
+                        className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs font-mono"
+                      />
+                      <p className="text-[11px] text-text-subtle">
+                        Gunakan tautan langsung ke berkas audio (format .mp3 atau .aac) dengan protokol https://.
+                      </p>
+                    </div>
+
+                    {/* Judul / Label Lagu (Opsional) */}
+                    <div className="space-y-1">
+                      <label htmlFor="music-title" className="font-semibold text-text-primary block">
+                        Judul / Label Lagu (Opsional)
+                      </label>
+                      <input
+                        id="music-title"
+                        type="text"
+                        maxLength={100}
+                        value={draftMusic.title || ''}
+                        onChange={(e) => setDraftMusic((prev) => ({ ...prev, title: e.target.value }))}
+                        placeholder="Contoh: Canon in D - Johann Pachelbel"
+                        className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      />
+                      <p className="text-[11px] text-text-subtle">
+                        Judul ini akan ditampilkan pada widget pemutar musik di halaman undangan tamu.
+                      </p>
+                    </div>
+
+                    {/* Panel Uji Coba Audio (Live Preview Audio di Dashboard) */}
+                    <div className="p-3.5 bg-surface-elevated border border-border rounded-lg space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-text-primary text-xs">
+                          Uji Coba Pemutaran Audio
+                        </span>
+                        <span className="text-[11px] text-text-muted">
+                          {musicPreviewPlaying ? 'Sedang Diputar' : 'Dijeda'}
+                        </span>
+                      </div>
+
+                      {musicPreviewError && (
+                        <div className="p-2.5 bg-danger/10 border border-danger/30 rounded text-[11px] text-danger">
+                          {musicPreviewError}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={!isValidAudioUrl(draftMusic.audio_url)}
+                          onClick={handleToggleMusicPreview}
+                          className={`py-1.5 px-3.5 rounded text-xs font-semibold border transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 ${
+                            musicPreviewPlaying
+                              ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
+                              : 'bg-primary text-primary-foreground border-primary hover:bg-primary-hover'
+                          }`}
+                        >
+                          {musicPreviewPlaying ? (
+                            <>
+                              <span>&#10074;&#10074;</span>
+                              <span>Hentikan Pratinjau</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>&#9658;</span>
+                              <span>Uji Putar Musik</span>
+                            </>
+                          )}
+                        </button>
+
+                        <span className="text-[11px] text-text-subtle">
+                          Pastikan audio dapat terdengar sebelum menyimpan perubahan.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Pengaturan Pemutaran: Autoplay & Loop */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="p-3 border border-border rounded bg-surface space-y-1">
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="music-autoplay"
+                            type="checkbox"
+                            checked={draftMusic.autoplay}
+                            onChange={(e) => setDraftMusic((prev) => ({ ...prev, autoplay: e.target.checked }))}
+                            className="rounded border-border text-primary focus:ring-primary"
+                          />
+                          <label htmlFor="music-autoplay" className="font-semibold text-text-primary text-xs cursor-pointer select-none">
+                            Putar Otomatis (Autoplay)
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-text-subtle pl-5 leading-relaxed">
+                          Mencoba memutar audio saat halaman terbuka (mengikuti kebijakan browser tamu).
+                        </p>
+                      </div>
+
+                      <div className="p-3 border border-border rounded bg-surface space-y-1">
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="music-loop"
+                            type="checkbox"
+                            checked={draftMusic.loop}
+                            onChange={(e) => setDraftMusic((prev) => ({ ...prev, loop: e.target.checked }))}
+                            className="rounded border-border text-primary focus:ring-primary"
+                          />
+                          <label htmlFor="music-loop" className="font-semibold text-text-primary text-xs cursor-pointer select-none">
+                            Putar Berulang (Loop)
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-text-subtle pl-5 leading-relaxed">
+                          Memutar kembali lagu dari awal secara berulang saat durasi selesai.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Tingkat Volume */}
+                    <div className="space-y-1.5 p-3 border border-border rounded bg-surface">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="music-volume" className="font-semibold text-text-primary text-xs">
+                          Tingkat Volume Awal
+                        </label>
+                        <span className="font-mono text-xs font-semibold text-text-primary">
+                          {Math.round(draftMusic.volume * 100)}%
+                        </span>
+                      </div>
+                      <input
+                        id="music-volume"
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={Math.round(draftMusic.volume * 100)}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) / 100;
+                          setDraftMusic((prev) => ({ ...prev, volume: val }));
+                          if (musicPreviewAudio) {
+                            musicPreviewAudio.volume = val;
+                          }
+                        }}
+                        className="w-full accent-primary cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-text-subtle">
+                        <span>Senyap (0%)</span>
+                        <span>Sedang (50%)</span>
+                        <span>Maksimal (100%)</span>
+                      </div>
+                    </div>
+
+                    {/* Tombol Reset / Nonaktifkan */}
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (musicPreviewAudio) {
+                            musicPreviewAudio.pause();
+                            setMusicPreviewPlaying(false);
+                          }
+                          setDraftMusic({
+                            ...DEFAULT_MUSIC_CONFIG,
+                          });
+                          setMusicPreviewError(null);
+                        }}
+                        className="py-1.5 px-3 border border-danger/30 text-danger hover:bg-danger/10 rounded text-xs font-medium transition-colors cursor-pointer"
+                      >
+                        Hapus / Reset Konfigurasi Musik
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 border border-dashed border-border rounded text-center space-y-2">
+                    <p className="font-medium text-text-primary">Fitur Musik Latar Dinonaktifkan</p>
+                    <p className="text-text-subtle text-[11px] max-w-sm mx-auto">
+                      Aktifkan sakelar di kanan atas untuk menyematkan musik pengiring pada undangan publik Anda.
+                    </p>
                   </div>
                 )}
               </div>

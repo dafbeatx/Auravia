@@ -110,6 +110,17 @@ export interface InvitationContentGift {
   physical_address?: InvitationContentGiftAddress;
 }
 
+export interface InvitationContentMusic {
+  enabled: boolean;
+  title?: string;
+  audio_url: string;
+  autoplay: boolean;
+  loop: boolean;
+  volume: number; // 0.0 - 1.0
+  start_time?: number; // detik
+  source_type?: 'url' | 'storage';
+}
+
 export interface InvitationContent {
   hero?: InvitationContentHero;
   hosts?: InvitationContentHost[];
@@ -118,6 +129,7 @@ export interface InvitationContent {
   closing_notes?: string;
   rsvp?: InvitationContentRsvp;
   gift?: InvitationContentGift;
+  music?: InvitationContentMusic;
   [key: string]: unknown;
 }
 

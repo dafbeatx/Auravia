@@ -5,6 +5,7 @@ import { resolveTemplateConfig } from '@/lib/template/resolution';
 import { getSectionComponent } from '@/lib/template/SectionRegistry';
 import { ThemeInjector } from './ThemeInjector';
 import { UnknownSectionFallback } from './sections/UnknownSectionFallback';
+import { MusicPlayer } from './MusicPlayer';
 
 export interface InvitationRendererProps {
   invitation: {
@@ -199,6 +200,9 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
           })
         )}
       </main>
+
+      {/* Floating Background Music Player */}
+      <MusicPlayer music={content?.music} />
     </ThemeInjector>
   );
 };
