@@ -11,7 +11,7 @@ export function AdminLayout() {
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/login');
+    navigate('/admin/login');
   };
 
   // Tentukan judul dan breadcrumb berdasarkan pathname saat ini
@@ -31,6 +31,9 @@ export function AdminLayout() {
     }
     if (path === '/admin/users') {
       return { title: 'Manajemen Pengguna', breadcrumbs: ['Admin', 'Pengguna'] };
+    }
+    if (path === '/admin/settings/security') {
+      return { title: 'Keamanan Akun Admin', breadcrumbs: ['Admin', 'Pengaturan', 'Keamanan'] };
     }
     if (path === '/admin/settings') {
       return { title: 'Pengaturan Sistem', breadcrumbs: ['Admin', 'Pengaturan'] };
@@ -236,6 +239,18 @@ export function AdminLayout() {
                 </div>
 
                 <div className="py-1">
+                  <Link
+                    to="/admin/settings/security"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-xs text-gray-600 hover:text-[#006A71] hover:bg-[#F2FEF7] min-h-[44px]"
+                    role="menuitem"
+                  >
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>Keamanan Akun Admin</span>
+                  </Link>
+
                   <Link
                     to="/dashboard"
                     onClick={() => setUserDropdownOpen(false)}

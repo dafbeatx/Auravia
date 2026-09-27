@@ -16,9 +16,9 @@ export function AdminRoute() {
     );
   }
 
-  // Jika belum login, redirect ke login dengan query redirect
+  // Jika belum login, redirect ke login admin khusus (/admin/login)
   if (!user) {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to={`/admin/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Jika sudah login tetapi bukan administrator
@@ -49,10 +49,10 @@ export function AdminRoute() {
               Ke Dashboard Pengguna
             </Link>
             <Link
-              to="/"
+              to="/admin/login"
               className="flex-1 py-2.5 px-4 bg-white border border-[#9ACBD0] text-[#006A71] hover:bg-[#F2FEF7] text-xs font-semibold rounded-xl transition-all min-h-[44px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#006A71]"
             >
-              Beranda Utama
+              Ganti Akun Admin
             </Link>
           </div>
         </div>

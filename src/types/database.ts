@@ -484,11 +484,64 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_identities: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          id: string
+          role: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_admin_login_email: {
+        Args: {
+          p_username: string
+        }
+        Returns: string | null
+      }
+      get_admin_identity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          username: string | null
+          role: string
+          email: string | null
+          created_at: string
+          updated_at: string
+        }
+      }
+      update_admin_username: {
+        Args: {
+          p_new_username: string
+        }
+        Returns: {
+          success: boolean
+          username: string
+        }
+      }
       get_admin_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: {

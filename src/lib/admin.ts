@@ -272,3 +272,157 @@ export function getTemplateAssetPublicUrl(path: string | null | undefined): stri
   const { data } = supabase.storage.from('template-assets').getPublicUrl(path);
   return data.publicUrl;
 }
+
+export interface AdminIdentity {
+  id?: string;
+  username: string | null;
+  role: string;
+  email: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Autentikasi Admin via Username dan Password.
+ * Melakukan resolusi username -> auth email di server-side secara aman,
+ * lalu memvalidasi credential via Supabase Auth signInWithPassword.
+ * Mengembalikan pesan generik 'Username atau password salah.' pada semua kegagalan
+ * guna mencegah user enumeration.
+ */
+export async function loginAdminWithUsername(
+  usernameInput: string,
+  passwordInput: string
+): Promise<{ success: boolean; error?: string }> {
+  const cleanUsername = usernameInput.trim();
+  if (!cleanUsername || !passwordInput) {
+    return { success: false, error: 'Username atau password salah.' };
+  }
+
+  try {
+    // 1. Resolve username to admin email via secure Postgres function
+    const { data: adminEmail, error: rpcError } = await supabase.rpc('get_admin_login_email', {
+      p_username: cleanUsername,
+    });
+
+    if (rpcError || !adminEmail) {
+      // Delay konsisten untuk mencegah timing attack
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return { success: false, error: 'Username atau password salah.' };
+    }
+
+    // 2. Autentikasi password via Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: adminEmail,
+      password: passwordInput,
+    });
+
+    if (authError || !authData.user) {
+      return { success: false, error: 'Username atau password salah.' };
+    }
+
+    // 3. Verifikasi role admin secara langsung dari profiles
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .single();
+
+    if (profileError || profileData?.role !== 'admin') {
+      // Jika bukan admin, segera cabut sesi Supabase Auth
+      await supabase.auth.signOut();
+      return { success: false, error: 'Username atau password salah.' };
+    }
+
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Username atau password salah.' };
+  }
+}
+
+/**
+ * Mengambil identitas admin yang sedang login (username, email, role).
+ */
+export async function getAdminIdentity(): Promise<AdminIdentity> {
+  const { data, error } = await supabase.rpc('get_admin_identity');
+  if (error) {
+    throw new DatabaseError('Gagal memuat identitas admin.', error);
+  }
+  return data as unknown as AdminIdentity;
+}
+
+/**
+ * Mengubah username admin yang sedang login.
+ */
+export async function updateAdminUsername(newUsername: string): Promise<string> {
+  const cleaned = newUsername.trim().toLowerCase();
+  if (cleaned.length < 3 || cleaned.length > 30) {
+    throw new Error('Username harus memiliki panjang antara 3 sampai 30 karakter.');
+  }
+  if (!/^[a-zA-Z0-9_.-]+$/.test(cleaned)) {
+    throw new Error('Username hanya boleh mengandung huruf, angka, underscore (_), titik (.), dan strip (-).');
+  }
+
+  const { data, error } = await supabase.rpc('update_admin_username', {
+    p_new_username: cleaned,
+  });
+
+  if (error) {
+    throw new DatabaseError(error.message || 'Gagal memperbarui username admin.', error);
+  }
+
+  const result = data as { success: boolean; username: string };
+  return result.username;
+}
+
+/**
+ * Mengubah password admin dengan verifikasi password lama terlebih dahulu.
+ * Setelah password berhasil diubah, seluruh sesi lama di-sign out untuk keamanan.
+ */
+export async function updateAdminPassword(
+  oldPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!oldPassword) {
+    return { success: false, error: 'Password lama wajib diisi.' };
+  }
+  if (!newPassword) {
+    return { success: false, error: 'Password baru wajib diisi.' };
+  }
+  if (newPassword.length < 8) {
+    return { success: false, error: 'Password baru minimal 8 karakter.' };
+  }
+  if (newPassword !== confirmPassword) {
+    return { success: false, error: 'Password baru dan konfirmasi password tidak cocok.' };
+  }
+
+  // 1. Dapatkan pengguna saat ini
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user?.email) {
+    return { success: false, error: 'Sesi admin tidak ditemukan. Silakan login kembali.' };
+  }
+
+  // 2. Verifikasi kecocokan password lama dengan autentikasi ulang
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: userData.user.email,
+    password: oldPassword,
+  });
+
+  if (reauthError) {
+    return { success: false, error: 'Password lama tidak sesuai.' };
+  }
+
+  // 3. Update password via Supabase Auth (server-side hashing bcrypt)
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    return { success: false, error: updateError.message || 'Gagal memperbarui password.' };
+  }
+
+  // 4. Logout untuk menginvalidasi sesi lama
+  await supabase.auth.signOut();
+
+  return { success: true };
+}

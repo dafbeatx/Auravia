@@ -195,10 +195,107 @@ describe('Admin, Template Management & Analytics System', () => {
       expect(content).toContain('AdminRoute');
       expect(content).toContain('AdminLayout');
       expect(content).toContain('path: \'admin\'');
+      expect(content).toContain('path: \'admin/login\'');
+      expect(content).toContain('path: \'settings/security\'');
       expect(content).toContain('path: \'templates\'');
       expect(content).toContain('path: \'templates/:id\'');
       expect(content).toContain('path: \'analytics\'');
       expect(content).toContain('path: \'users\'');
     });
+
+    it('AdminLogin dan AdminSecuritySettings tersedia di src/app/routes/admin/', () => {
+      const adminDir = path.resolve(__dirname, '../../app/routes/admin');
+      expect(fs.existsSync(path.join(adminDir, 'AdminLogin.tsx'))).toBe(true);
+      expect(fs.existsSync(path.join(adminDir, 'AdminSecuritySettings.tsx'))).toBe(true);
+    });
+  });
+
+  describe('5. Admin Authentication & Security Specifications', () => {
+    const adminLoginPath = path.resolve(__dirname, '../../app/routes/admin/AdminLogin.tsx');
+    const adminSecurityPath = path.resolve(__dirname, '../../app/routes/admin/AdminSecuritySettings.tsx');
+    const adminRoutePath = path.resolve(__dirname, '../../components/auth/AdminRoute.tsx');
+
+    it('AdminLogin HANYA menggunakan Username dan Password (TIDAK ADA Google/Apple/OAuth)', () => {
+      const content = fs.readFileSync(adminLoginPath, 'utf-8');
+      expect(content).toContain('admin-username-input');
+      expect(content).toContain('admin-password-input');
+      expect(content).toContain('Masuk sebagai Admin');
+
+      // Pastikan tidak ada tombol atau teks OAuth di login admin
+      expect(content).not.toContain('Google');
+      expect(content).not.toContain('Apple');
+      expect(content).not.toContain('signInWithOAuth');
+    });
+
+    it('AdminLogin menggunakan pesan error generik untuk mencegah user enumeration', () => {
+      const content = fs.readFileSync(adminLoginPath, 'utf-8');
+      expect(content).toContain('Username atau password salah.');
+      expect(content).not.toContain('Username benar');
+      expect(content).not.toContain('Username tersebut tidak ditemukan');
+    });
+
+    it('AdminRoute mengarahkan pengguna anonim langsung ke /admin/login', () => {
+      const content = fs.readFileSync(adminRoutePath, 'utf-8');
+      expect(content).toContain('/admin/login');
+      expect(content).toContain('isAdmin');
+    });
+
+    it('AdminSecuritySettings menyediakan fitur ubah username dan ubah password dengan validasi', () => {
+      const content = fs.readFileSync(adminSecurityPath, 'utf-8');
+      expect(content).toContain('change-username-input');
+      expect(content).toContain('change-old-password-input');
+      expect(content).toContain('change-new-password-input');
+      expect(content).toContain('change-confirm-password-input');
+      expect(content).toContain('Password baru minimal 8 karakter');
+    });
+
+    it('DILARANG hardcode credential admin default seperti admin123 atau VITE_ADMIN_PASSWORD', () => {
+      const srcDir = path.resolve(__dirname, '../../');
+      const forbiddenTerms = [
+        'VITE_ADMIN_PASSWORD',
+        'VITE_ADMIN_USERNAME',
+        'ADMIN_PASSWORD',
+        'admin123',
+      ];
+
+      function checkDir(dir: string) {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = path.join(dir, file);
+          const stat = fs.statSync(fullPath);
+          if (stat.isDirectory()) {
+            if (file !== 'node_modules' && file !== '.git' && file !== 'dist') {
+              checkDir(fullPath);
+            }
+          } else if (file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.env')) {
+            const content = fs.readFileSync(fullPath, 'utf-8');
+            for (const term of forbiddenTerms) {
+              if (fullPath.includes('admin_and_analytics_system.test.ts')) continue;
+              expect(content.includes(term), `Ditemukan kredensial terlarang '${term}' di: ${fullPath}`).toBe(false);
+            }
+          }
+        }
+      }
+
+      checkDir(srcDir);
+    });
+
+    it('Memastikan migrasi database mematuhi arsitektur keamanan identitas admin', () => {
+      const migrationPath = path.resolve(__dirname, '../../../supabase/migrations/20260928010000_admin_identity_and_security.sql');
+      expect(fs.existsSync(migrationPath)).toBe(true);
+
+      const sql = fs.readFileSync(migrationPath, 'utf-8');
+      // Tidak boleh ada kolom password di tabel public.admin_identities
+      expect(sql).not.toContain('password TEXT');
+      expect(sql).not.toContain('admin_password');
+      expect(sql).not.toContain('password_plain');
+
+      // Memastikan RLS diaktifkan
+      expect(sql).toContain('ENABLE ROW LEVEL SECURITY');
+      expect(sql).toContain('is_admin()');
+      expect(sql).toContain('get_admin_login_email');
+      expect(sql).toContain('update_admin_username');
+    });
   });
 });
+

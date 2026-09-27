@@ -10,6 +10,26 @@ export function AdminSettings() {
         </p>
       </div>
 
+      {/* Kartu Keamanan Akun Admin */}
+      <div className="bg-white p-6 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="font-serif text-base font-bold text-[#006A71]">
+              Keamanan Kredensial Administrator
+            </h3>
+            <p className="text-xs text-gray-600 leading-relaxed max-w-xl">
+              Atur username khusus dan perbarui password autentikasi admin. Password dikelola dan dienkripsi secara aman oleh Supabase Auth.
+            </p>
+          </div>
+          <a
+            href="/admin/settings/security"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-[#006A71] hover:bg-[#00575d] text-white text-xs font-semibold shadow-xs min-h-[44px] transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-[#006A71]"
+          >
+            Kelola Username &amp; Password
+          </a>
+        </div>
+      </div>
+
       {/* Kartu Status Sistem */}
       <div className="bg-white p-6 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-4">
         <h3 className="font-serif text-base font-bold text-[#006A71] border-b border-[#9ACBD0]/30 pb-3">

@@ -312,12 +312,13 @@ function LayoutContent() {
     );
   }
 
-  // Halaman publik landing, autentikasi, dan demo mengelola tampilan penuh tanpa chrome dashboard
+  // Halaman publik landing, autentikasi, demo, dan admin mengelola tampilan khusus tanpa chrome dashboard pengguna
   const isPublicChromeFree =
     location.pathname === '/' ||
     location.pathname === '/login' ||
     location.pathname === '/register' ||
-    location.pathname.startsWith('/templates/');
+    location.pathname.startsWith('/templates/') ||
+    location.pathname.startsWith('/admin');
 
   if (isPublicChromeFree) {
     return (

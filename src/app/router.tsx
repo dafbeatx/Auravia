@@ -20,11 +20,14 @@ const AdminTemplateDetail = lazy(() => import('@/app/routes/admin/AdminTemplateD
 const AdminAnalytics = lazy(() => import('@/app/routes/admin/AdminAnalytics').then((m) => ({ default: m.AdminAnalytics })));
 const AdminUsers = lazy(() => import('@/app/routes/admin/AdminUsers').then((m) => ({ default: m.AdminUsers })));
 const AdminSettings = lazy(() => import('@/app/routes/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })));
+const AdminSecuritySettings = lazy(() => import('@/app/routes/admin/AdminSecuritySettings').then((m) => ({ default: m.AdminSecuritySettings })));
+const AdminLogin = lazy(() => import('@/app/routes/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })));
 
 /**
  * Konfigurasi rute Aurovia.
  * Mendaftarkan rute publik (landing, login, register, public invitation),
  * rute pengguna terproteksi (dashboard, editor undangan, template demo),
+ * rute autentikasi admin khusus (/admin/login),
  * serta rute administrator terproteksi (/admin/*).
  */
 export const router = createBrowserRouter([
@@ -69,6 +72,12 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      // Rute Login Khusus Admin (Username + Password, tanpa OAuth)
+      {
+        path: 'admin/login',
+        element: <AdminLogin />,
+      },
+      // Rute Administrasi Terproteksi (Hanya Role Admin)
       {
         path: 'admin',
         element: <AdminRoute />,
@@ -99,6 +108,10 @@ export const router = createBrowserRouter([
               {
                 path: 'settings',
                 element: <AdminSettings />,
+              },
+              {
+                path: 'settings/security',
+                element: <AdminSecuritySettings />,
               },
             ],
           },
