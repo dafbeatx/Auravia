@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
+import { DecorativeDivider } from '@/components/template/ornaments';
 
 export const ClosingSection: React.FC<SectionRendererProps> = ({ content }) => {
   const note = typeof content?.closing_notes === 'string' ? content.closing_notes.trim() : '';
@@ -13,12 +14,7 @@ export const ClosingSection: React.FC<SectionRendererProps> = ({ content }) => {
         >
           Terima Kasih
         </p>
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
-        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+        <DecorativeDivider variant="diamond" />
       </div>
 
       {note ? (

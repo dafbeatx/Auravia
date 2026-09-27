@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { RegisteredSection, SectionRendererProps, SectionConfig } from './types';
+import type { RegisteredSection, SectionRendererProps, SectionConfig, TemplateDefinition } from './types';
 import { HeroSection } from '@/components/template/sections/HeroSection';
 import { CoupleSection } from '@/components/template/sections/CoupleSection';
 import { EventSection } from '@/components/template/sections/EventSection';
@@ -31,7 +31,7 @@ export function normalizeSectionType(type: string): string {
 }
 
 /**
- * Registri Seksi Bawaan MVP Aurovia
+ * Registri Seksi Bawaan Aurovia (Multi-Variant)
  */
 const registry: Map<string, RegisteredSection> = new Map();
 
@@ -43,6 +43,12 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['editorial', 'centered', 'minimal'],
     defaultVariant: 'editorial',
     component: HeroSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: HeroSection as ComponentType<SectionRendererProps>,
+      editorial: HeroSection as ComponentType<SectionRendererProps>,
+      centered: HeroSection as ComponentType<SectionRendererProps>,
+      minimal: HeroSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'quote',
@@ -51,6 +57,12 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['islamic', 'minimal', 'card'],
     defaultVariant: 'islamic',
     component: QuoteSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: QuoteSection as ComponentType<SectionRendererProps>,
+      islamic: QuoteSection as ComponentType<SectionRendererProps>,
+      minimal: QuoteSection as ComponentType<SectionRendererProps>,
+      card: QuoteSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'couple',
@@ -59,6 +71,12 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['cards', 'split', 'stacked'],
     defaultVariant: 'cards',
     component: CoupleSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: CoupleSection as ComponentType<SectionRendererProps>,
+      cards: CoupleSection as ComponentType<SectionRendererProps>,
+      split: CoupleSection as ComponentType<SectionRendererProps>,
+      stacked: CoupleSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'event',
@@ -67,6 +85,12 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['cards', 'timeline', 'classic'],
     defaultVariant: 'cards',
     component: EventSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: EventSection as ComponentType<SectionRendererProps>,
+      cards: EventSection as ComponentType<SectionRendererProps>,
+      timeline: EventSection as ComponentType<SectionRendererProps>,
+      classic: EventSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'story',
@@ -75,6 +99,11 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['timeline', 'cards'],
     defaultVariant: 'timeline',
     component: StorySection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: StorySection as ComponentType<SectionRendererProps>,
+      timeline: StorySection as ComponentType<SectionRendererProps>,
+      cards: StorySection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'gallery',
@@ -83,6 +112,12 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['grid', 'masonry', 'carousel'],
     defaultVariant: 'grid',
     component: GallerySection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: GallerySection as ComponentType<SectionRendererProps>,
+      grid: GallerySection as ComponentType<SectionRendererProps>,
+      masonry: GallerySection as ComponentType<SectionRendererProps>,
+      carousel: GallerySection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'rsvp',
@@ -91,6 +126,11 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['standard', 'minimal'],
     defaultVariant: 'standard',
     component: RsvpSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: RsvpSection as ComponentType<SectionRendererProps>,
+      standard: RsvpSection as ComponentType<SectionRendererProps>,
+      minimal: RsvpSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'wishes',
@@ -99,6 +139,11 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['list', 'wall'],
     defaultVariant: 'list',
     component: WishesSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: WishesSection as ComponentType<SectionRendererProps>,
+      list: WishesSection as ComponentType<SectionRendererProps>,
+      wall: WishesSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'gift',
@@ -107,6 +152,11 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['cards', 'simple'],
     defaultVariant: 'cards',
     component: GiftSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: GiftSection as ComponentType<SectionRendererProps>,
+      cards: GiftSection as ComponentType<SectionRendererProps>,
+      simple: GiftSection as ComponentType<SectionRendererProps>,
+    },
   },
   {
     type: 'closing',
@@ -115,6 +165,10 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['simple'],
     defaultVariant: 'simple',
     component: ClosingSection as ComponentType<SectionRendererProps>,
+    variants: {
+      default: ClosingSection as ComponentType<SectionRendererProps>,
+      simple: ClosingSection as ComponentType<SectionRendererProps>,
+    },
   },
 ];
 
@@ -127,7 +181,41 @@ INITIAL_SECTIONS.forEach((section) => {
  * Mendaftarkan seksi baru atau memperbarui seksi yang ada (extensible).
  */
 export function registerSection(section: RegisteredSection): void {
-  registry.set(normalizeSectionType(section.type), section);
+  const normalized = normalizeSectionType(section.type);
+  registry.set(normalized, section);
+}
+
+/**
+ * Mendaftarkan varian komponen spesifik ke dalam tipe seksi yang sudah ada.
+ */
+export function registerSectionVariant(
+  type: string,
+  variantName: string,
+  component: ComponentType<SectionRendererProps>
+): void {
+  const normalized = normalizeSectionType(type);
+  const cleanVariant = variantName.trim().toLowerCase();
+  const existing = registry.get(normalized);
+
+  if (existing) {
+    existing.variants[cleanVariant] = component;
+    if (!existing.availableVariants.includes(cleanVariant)) {
+      existing.availableVariants.push(cleanVariant);
+    }
+  } else {
+    registry.set(normalized, {
+      type: normalized,
+      name: normalized,
+      description: `Seksi kustom ${normalized}`,
+      availableVariants: [cleanVariant],
+      defaultVariant: cleanVariant,
+      component,
+      variants: {
+        default: component,
+        [cleanVariant]: component,
+      },
+    });
+  }
 }
 
 /**
@@ -139,12 +227,94 @@ export function getRegisteredSection(type: string): RegisteredSection | undefine
 }
 
 /**
- * Mengambil komponen renderer seksi berdasarkan tipe.
- * Mengembalikan UnknownSectionFallback secara aman jika seksi belum terdaftar.
+ * Mengambil komponen renderer seksi berdasarkan tipe dan varian spesifik (Multi-Variant Engine).
+ *
+ * Alur Fallback Deterministik:
+ * 1. requested variant (jika ada dan cocok di dictionary variants)
+ * 2. fallbackDefaultVariant (dari TemplateDefinition aktif)
+ * 3. section defaultVariant (bawaan registrasi seksi)
+ * 4. variant 'default'
+ * 5. first available variant di dictionary
+ * 6. UnknownSectionFallback jika seksi tidak dikenal
  */
-export function getSectionComponent(type: string): ComponentType<SectionRendererProps> {
+export function getSectionVariantComponent(
+  type: string,
+  variant?: string,
+  templateDefinitionOrFallback?: TemplateDefinition | string
+): ComponentType<SectionRendererProps> {
   const section = getRegisteredSection(type);
-  return section?.component ?? (UnknownSectionFallback as ComponentType<SectionRendererProps>);
+  if (!section) {
+    return UnknownSectionFallback as ComponentType<SectionRendererProps>;
+  }
+
+  // 1. Requested variant
+  if (variant) {
+    const cleanVariant = variant.trim().toLowerCase();
+    const candidate = section.variants[cleanVariant];
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  // 2. Fallback default variant dari TemplateDefinition aktif
+  let fallbackDefaultVariant: string | undefined;
+  if (typeof templateDefinitionOrFallback === 'string') {
+    fallbackDefaultVariant = templateDefinitionOrFallback;
+  } else if (templateDefinitionOrFallback && typeof templateDefinitionOrFallback === 'object') {
+    const normType = normalizeSectionType(type);
+    fallbackDefaultVariant =
+      templateDefinitionOrFallback.sectionVariants?.[type] ||
+      templateDefinitionOrFallback.sectionVariants?.[normType] ||
+      templateDefinitionOrFallback.defaultVariants?.[type] ||
+      templateDefinitionOrFallback.defaultVariants?.[normType] ||
+      templateDefinitionOrFallback.sections?.find(
+        (s) => s.type === type || normalizeSectionType(s.type) === normType
+      )?.variant;
+  }
+
+  if (fallbackDefaultVariant) {
+    const cleanFallback = fallbackDefaultVariant.trim().toLowerCase();
+    const candidate = section.variants[cleanFallback];
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  // 3. Section defaultVariant (bawaan registrasi seksi)
+  const defaultCandidate = section.variants[section.defaultVariant];
+  if (defaultCandidate) {
+    return defaultCandidate;
+  }
+
+  // 4. Variant 'default'
+  const fallbackCandidate = section.variants['default'];
+  if (fallbackCandidate) {
+    return fallbackCandidate;
+  }
+
+  // 5. First available variant di dictionary
+  const firstAvailable = Object.values(section.variants)[0];
+  if (firstAvailable) {
+    return firstAvailable;
+  }
+
+  // 6. Existing fallback component
+  if (section.component) {
+    return section.component;
+  }
+
+  return UnknownSectionFallback as ComponentType<SectionRendererProps>;
+}
+
+/**
+ * Mengambil komponen renderer seksi berdasarkan tipe (backward-compatible).
+ * Mendukung parameter opsional variant.
+ */
+export function getSectionComponent(
+  type: string,
+  variant?: string
+): ComponentType<SectionRendererProps> {
+  return getSectionVariantComponent(type, variant);
 }
 
 /**

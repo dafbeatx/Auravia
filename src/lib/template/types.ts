@@ -46,9 +46,13 @@ export interface InvitationThemeOverride {
   accent?: string;
   color_accent_soft?: string;
   accent_soft?: string;
+  color_muted?: string;
+  colorMuted?: string;
   button_radius?: ButtonRadiusStyle;
   card_radius?: CardRadiusStyle;
   decorative_style?: DecorativeStyle;
+  container_width?: string;
+  containerWidth?: string;
 }
 
 /**
@@ -70,10 +74,17 @@ export interface NormalizedTheme {
   colorBorder: string;
   colorAccent: string;
   colorAccentSoft?: string;
+  colorMuted?: string;
   buttonRadius: ButtonRadiusStyle;
   cardRadius: CardRadiusStyle;
   decorativeStyle: DecorativeStyle;
+  containerWidth?: string;
 }
+
+/**
+ * Alias kontrak tema definisi template
+ */
+export type TemplateThemeDefinition = NormalizedTheme;
 
 /**
  * Konfigurasi terpadu untuk satu seksi undangan
@@ -239,7 +250,106 @@ export interface SectionRendererProps<TConfig = Record<string, unknown>> {
 }
 
 /**
- * Kontrak seksi yang terdaftar dalam Section Registry
+ * Kategori template master Aurovia
+ */
+export type TemplateCategory = 'wedding' | 'birthday' | 'corporate' | 'general';
+
+/**
+ * Tipe seksi kanonikal yang didukung oleh platform
+ */
+export type CanonicalSectionType =
+  | 'hero'
+  | 'quote'
+  | 'couple'
+  | 'event'
+  | 'story'
+  | 'gallery'
+  | 'gift'
+  | 'rsvp'
+  | 'wishes'
+  | 'closing';
+
+/**
+ * Peta varian seksi: tipe seksi -> nama varian (misal: { hero: 'editorial', couple: 'cards' })
+ */
+export type SectionVariantMap = Record<string, string>;
+
+/**
+ * Konfigurasi sistem dekorasi bawaan template
+ */
+export interface TemplateDecorativeConfig {
+  divider: 'diamond' | 'line' | 'minimal' | 'none';
+  monogramFrame: 'classic-ring' | 'none';
+}
+
+/**
+ * Kapabilitas fungsional yang didukung oleh template
+ */
+export interface TemplateCapabilities {
+  supportsCoverEnvelope: boolean;
+  supportsMonogram: boolean;
+  supportsCountdown: boolean;
+  supportsMusic: boolean;
+  bottomNavStyle: 'floating' | 'docked' | 'none';
+}
+
+/**
+ * Konfigurasi tata letak keseluruhan template
+ */
+export interface TemplateLayoutConfig {
+  maxWidth: '2xl' | '3xl' | '4xl';
+  bottomNavStyle: 'floating' | 'docked' | 'none';
+}
+
+/**
+ * Konfigurasi seksi default dalam template definition
+ */
+export interface TemplateSectionConfig {
+  type: string;
+  variant: string;
+  order: number;
+  enabled: boolean;
+  config?: Record<string, unknown>;
+}
+
+/**
+ * Alias kontrak definisi seksi bawaan
+ */
+export type SectionDefinition = TemplateSectionConfig;
+
+/**
+ * Kontrak terpadu Definisi Template (TemplateDefinition)
+ * Menjadi source of truth deklaratif untuk setiap template di Aurovia
+ */
+export interface TemplateDefinition {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  category: TemplateCategory;
+  defaultTheme: NormalizedTheme;
+  sections: TemplateSectionConfig[];
+  capabilities: TemplateCapabilities;
+  sectionVariants: SectionVariantMap;
+  defaultSectionOrder: string[];
+
+  // Backward-compatible structured metadata
+  identity: {
+    slug: string;
+    name: string;
+    category: TemplateCategory;
+    description: string;
+    thumbnailUrl: string;
+    version: string;
+  };
+  theme: NormalizedTheme;
+  decorative: TemplateDecorativeConfig;
+  layout: TemplateLayoutConfig;
+  defaultVariants: SectionVariantMap;
+}
+
+/**
+ * Kontrak seksi yang terdaftar dalam Section Registry (Multi-Variant)
  */
 export interface RegisteredSection<TConfig = Record<string, unknown>> {
   type: string;
@@ -248,6 +358,7 @@ export interface RegisteredSection<TConfig = Record<string, unknown>> {
   availableVariants: string[];
   defaultVariant: string;
   component: ComponentType<SectionRendererProps<TConfig>>;
+  variants: Record<string, ComponentType<SectionRendererProps<TConfig>>>;
 }
 
 /**

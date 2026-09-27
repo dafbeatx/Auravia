@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
+import { DecorativeDivider } from '@/components/template/ornaments';
 
 export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
   const eventList = events && events.length > 0 ? events : [];
@@ -14,12 +15,7 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
         >
           Agenda Acara
         </h2>
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
-        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+        <DecorativeDivider variant="diamond" />
       </div>
 
       {eventList.length === 0 ? (

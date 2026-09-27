@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import type { SectionConfig } from '@/lib/template/types';
 import type { Json } from '@/types/database';
 import { resolveTemplateConfig } from '@/lib/template/resolution';
-import { getSectionComponent } from '@/lib/template/SectionRegistry';
+import { getSectionVariantComponent } from '@/lib/template/SectionRegistry';
+import { getTemplateDefinition } from '@/lib/template/definitions';
 import { ThemeInjector } from './ThemeInjector';
 import { UnknownSectionFallback } from './sections/UnknownSectionFallback';
 import { MusicPlayer } from './MusicPlayer';
@@ -151,6 +152,11 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
     sections,
   ]);
 
+  // Resolusi TemplateDefinition aktif di memori (in-memory manifest catalog)
+  const templateDefinition = useMemo(() => {
+    return getTemplateDefinition(template?.slug);
+  }, [template?.slug]);
+
   return (
     <ThemeInjector theme={theme} className={`relative ${className}`} as="article">
       {/* Cover Envelope Experience */}
@@ -204,7 +210,11 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
               }
             }
 
-            const SectionComponent = getSectionComponent(section.section_type);
+            const SectionComponent = getSectionVariantComponent(
+              section.section_type,
+              section.variant,
+              templateDefinition
+            );
             const sectionKey = section.id || `${section.section_type}-${idx}`;
 
             if (!SectionComponent) {
@@ -237,7 +247,9 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
       </main>
 
       {/* Floating Mobile Bottom Navigation Bar */}
-      {(!isCoverActive || isCoverOpen) && activeSections.length > 1 && (
+      {templateDefinition.capabilities.bottomNavStyle !== 'none' &&
+        (!isCoverActive || isCoverOpen) &&
+        activeSections.length > 1 && (
         <nav
           aria-label="Navigasi Seksi Undangan"
           className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-sm md:hidden bg-[var(--theme-color-surface)]/95 backdrop-blur-md border border-[var(--theme-color-border)]/40 rounded-full shadow-lg px-2 py-1 flex items-center justify-around select-none"

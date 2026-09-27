@@ -13,4 +13,5 @@ export * from './sections/ClosingSection';
 export * from './sections/UnknownSectionFallback';
 export * from './MusicPlayer';
 export * from './CoverEnvelope';
+export * from './ornaments';
 

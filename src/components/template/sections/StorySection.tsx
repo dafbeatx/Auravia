@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
+import { DecorativeDivider } from '@/components/template/ornaments';
 
 export const StorySection: React.FC<SectionRendererProps> = ({ content }) => {
   const rawStoryList = Array.isArray(content?.story) ? content.story : [];
@@ -19,12 +20,7 @@ export const StorySection: React.FC<SectionRendererProps> = ({ content }) => {
         >
           Kisah Kami
         </h2>
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
-        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+        <DecorativeDivider variant="diamond" />
       </div>
 
       {visibleStories.length === 0 ? (

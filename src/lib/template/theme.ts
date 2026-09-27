@@ -16,9 +16,11 @@ export const DEFAULT_THEME_FALLBACK: NormalizedTheme = {
   colorSurface: '#FFFFFF',
   colorBorder: '#E7E5E0',
   colorAccent: '#292524',
+  colorMuted: '#78716C',
   buttonRadius: 'pill',
   cardRadius: 'rounded',
   decorativeStyle: 'classic',
+  containerWidth: '48rem',
 };
 
 /**
@@ -176,6 +178,23 @@ export function normalizeTheme(
     defaultObj.accent_soft;
   const colorAccentSoft = rawColorAccentSoft ? sanitizeColor(rawColorAccentSoft, '#F6E09C') : '#F6E09C';
 
+  const rawColorMuted =
+    overrideObj.color_muted ||
+    overrideObj.colorMuted ||
+    defaultObj.color_muted ||
+    defaultObj.colorMuted;
+  const colorMuted = rawColorMuted ? sanitizeColor(rawColorMuted, DEFAULT_THEME_FALLBACK.colorMuted || '#78716C') : DEFAULT_THEME_FALLBACK.colorMuted;
+
+  const rawContainerWidth =
+    overrideObj.container_width ||
+    overrideObj.containerWidth ||
+    defaultObj.container_width ||
+    defaultObj.containerWidth;
+  const containerWidth =
+    typeof rawContainerWidth === 'string' && rawContainerWidth.trim()
+      ? rawContainerWidth.trim()
+      : DEFAULT_THEME_FALLBACK.containerWidth;
+
   const rawButtonRadius = overrideObj.button_radius || defaultObj.button_radius;
   const buttonRadius = sanitizeButtonRadius(rawButtonRadius, DEFAULT_THEME_FALLBACK.buttonRadius);
 
@@ -199,9 +218,11 @@ export function normalizeTheme(
     colorBorder,
     colorAccent,
     colorAccentSoft,
+    colorMuted,
     buttonRadius,
     cardRadius,
     decorativeStyle,
+    containerWidth,
   };
 }
 
@@ -227,6 +248,9 @@ export function createThemeStyleVariables(theme: NormalizedTheme): CSSProperties
     '--theme-color-border': theme.colorBorder,
     '--theme-color-accent': theme.colorAccent || theme.colorPrimary,
     '--theme-color-accent-soft': theme.colorAccentSoft || '#F6E09C',
+    '--theme-color-muted': theme.colorMuted || '#78716C',
+    '--theme-container-width': theme.containerWidth || '48rem',
+    '--theme-max-width': theme.containerWidth || '48rem',
     '--theme-radius-button': buttonRadiusValue,
     '--theme-radius-card': cardRadiusValue,
     '--theme-border-style': borderStyleValue,

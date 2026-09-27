@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
+import { SectionEyebrow, DecorativeDivider } from '@/components/template/ornaments';
 
 interface TimeLeft {
   days: number;
@@ -87,16 +88,8 @@ export const HeroSection: React.FC<SectionRendererProps> = ({
   return (
     <header id="hero" className="py-20 sm:py-28 px-6 text-center max-w-3xl mx-auto space-y-6">
       <div className="space-y-3">
-        <div className="inline-block px-3.5 py-1 text-xs uppercase tracking-widest font-semibold rounded-[var(--theme-radius-button)] border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)] text-[var(--theme-color-primary)]/80">
-          {invitation.eventType}
-        </div>
-
-        {/* Ornamen Klasik Diamond */}
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
+        <SectionEyebrow>{invitation.eventType}</SectionEyebrow>
+        <DecorativeDivider variant="diamond" withLine={false} />
       </div>
 
       {openingText ? (

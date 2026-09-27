@@ -3,6 +3,7 @@ import type {
   SectionRendererProps,
   InvitationContentGiftAccount,
 } from '@/lib/template/types';
+import { DecorativeDivider } from '@/components/template/ornaments';
 
 export const GiftSection: React.FC<SectionRendererProps> = ({ content }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -99,12 +100,7 @@ export const GiftSection: React.FC<SectionRendererProps> = ({ content }) => {
         >
           {title}
         </h2>
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
-        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+        <DecorativeDivider variant="diamond" />
 
         {description ? (
           <p className="text-xs sm:text-sm text-[var(--theme-color-primary)]/80 leading-relaxed max-w-md mx-auto pt-1">

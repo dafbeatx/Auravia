@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
 import { getGalleryPublicUrl } from '@/lib/invitations';
+import { DecorativeDivider, MonogramFrame } from '@/components/template/ornaments';
 
 export const CoupleSection: React.FC<SectionRendererProps> = ({ content }) => {
   const hosts = Array.isArray(content?.hosts) ? content.hosts : [];
@@ -15,12 +16,7 @@ export const CoupleSection: React.FC<SectionRendererProps> = ({ content }) => {
         >
           Kedua Mempelai
         </h2>
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
-        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+        <DecorativeDivider variant="diamond" />
       </div>
 
       {hosts.length === 0 ? (
@@ -45,30 +41,12 @@ export const CoupleSection: React.FC<SectionRendererProps> = ({ content }) => {
                 className="p-6 sm:p-8 border border-[var(--theme-color-border)] rounded-[var(--theme-radius-card)] bg-[var(--theme-color-surface)] text-center flex flex-col items-center space-y-5 shadow-xs transition-all hover:border-[var(--theme-color-accent)] group"
               >
                 {/* Foto atau Monogram Fallback */}
-                <div className="relative">
-                  {photoUrl ? (
-                    <img
-                      src={photoUrl}
-                      alt={name ? `Foto ${name}` : 'Foto mempelai'}
-                      loading="lazy"
-                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-[var(--theme-color-border)] shadow-sm transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div
-                      className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-[var(--theme-color-border)] bg-[var(--theme-color-surface)] flex items-center justify-center shadow-xs transition-transform duration-300 group-hover:scale-105 select-none"
-                      aria-label="Monogram mempelai"
-                    >
-                      {/* Inner Dashed Ring */}
-                      <div className="absolute inset-1.5 rounded-full border border-dashed border-[var(--theme-color-border)]/40 pointer-events-none" />
-                      <span
-                        className="text-3xl sm:text-4xl font-normal text-[var(--theme-color-accent)] pt-0.5"
-                        style={{ fontFamily: 'var(--theme-font-heading)' }}
-                      >
-                        {initial}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <MonogramFrame
+                  photoUrl={photoUrl}
+                  alt={name ? `Foto ${name}` : 'Foto mempelai'}
+                  initials={initial}
+                  variant="classic-ring"
+                />
 
                 <div className="space-y-1.5 w-full">
                   <h3

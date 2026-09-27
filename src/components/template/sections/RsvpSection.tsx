@@ -2,6 +2,7 @@ import React, { useState, type FormEvent } from 'react';
 import type { SectionRendererProps } from '@/lib/template/types';
 import { submitRsvp, type RsvpStatus } from '@/lib/rsvps';
 import { ValidationError, DatabaseError } from '@/lib/errors';
+import { DecorativeDivider } from '@/components/template/ornaments';
 
 export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest, content }) => {
   const rsvpConfig = content?.rsvp;
@@ -140,12 +141,7 @@ export const RsvpSection: React.FC<SectionRendererProps> = ({ invitation, guest,
         >
           {displayTitle}
         </h2>
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
-        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+        <DecorativeDivider variant="diamond" />
 
         <p className="text-xs sm:text-sm text-[var(--theme-color-primary)]/80 leading-relaxed max-w-md mx-auto pt-1">
           {displayDescription}
