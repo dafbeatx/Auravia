@@ -8,17 +8,13 @@ export default {
     extend: {
       colors: {
         background: 'var(--color-background)',
-        surface: {
-          DEFAULT: 'var(--color-surface)',
-          muted: 'var(--color-surface-muted)',
-          elevated: 'var(--color-surface-elevated)',
-        },
-        border: {
-          DEFAULT: 'var(--color-border)',
-          strong: 'var(--color-border-strong)',
-        },
+        bg: 'var(--color-background)',
+        surface: 'var(--color-surface)',
+        'surface-muted': 'var(--color-surface-muted)',
+        'surface-elevated': 'var(--color-surface-elevated)',
+        border: 'var(--color-border)',
+        'border-strong': 'var(--color-border-strong)',
         text: {
-          DEFAULT: 'var(--color-text)',
           primary: 'var(--color-text-primary)',
           muted: 'var(--color-text-muted)',
           subtle: 'var(--color-text-subtle)',
@@ -32,11 +28,13 @@ export default {
         secondary: {
           DEFAULT: 'var(--color-secondary)',
           hover: 'var(--color-secondary-hover)',
+          soft: 'var(--color-secondary-soft)',
           foreground: 'var(--color-secondary-foreground)',
         },
-        'accent-light': {
-          DEFAULT: 'var(--color-accent-light)',
-          soft: 'var(--color-accent-soft)',
+        accent: {
+          light: 'var(--color-accent-light)',
+          'light-soft': 'var(--color-accent-light-soft)',
+          'light-foreground': 'var(--color-accent-light-foreground)',
         },
         danger: {
           DEFAULT: 'var(--color-danger)',
@@ -48,7 +46,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'Outfit', 'Inter', 'system-ui', 'sans-serif'],
         serif: ['Cormorant Garamond', 'Playfair Display', 'Georgia', 'serif'],
       },
       borderRadius: {
@@ -57,7 +55,7 @@ export default {
         md: '8px',
         lg: '12px',
         xl: '16px',
-        '2xl': '20px',
+        '2xl': '24px',
       },
     },
   },

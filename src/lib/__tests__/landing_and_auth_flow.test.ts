@@ -44,8 +44,7 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Masuk');
 
       // Section 2: Hero
-      expect(landingSource).toContain('Undangan Digital yang Dibuat untuk Momen yang Berarti.');
-      expect(landingSource).toContain('Tanpa instalasi');
+      expect(landingSource).toContain('Undangan Digital yang Dibuat untuk Momen yang Berarti');
       expect(landingSource).toContain('Gratis untuk mulai membuat');
 
       // Section 3: Value Strip
@@ -55,8 +54,11 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Dibagikan Secara Digital');
       expect(landingSource).toContain('Terintegrasi RSVP');
 
-      // Section 4: Kenapa Aurovia
-      expect(landingSource).toContain('Kenapa Memilih Aurovia?');
+      // Section 4: Template Showcase
+      expect(landingSource).toContain('Pilih Gaya Undanganmu');
+      expect(landingSource).toContain('Classic Elegance');
+      expect(landingSource).toContain('Royal Navy & Gold');
+      expect(landingSource).toContain('Lihat Demo');
 
       // Section 5: Fitur Utama
       expect(landingSource).toContain('Semua yang Dibutuhkan untuk Satu Undangan');
@@ -70,36 +72,37 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Amplop Digital');
       expect(landingSource).toContain('Musik Latar');
 
-      // Section 6: Template Showcase
-      expect(landingSource).toContain('Pilih Gaya Undanganmu');
-      expect(landingSource).toContain('Classic Elegance');
-      expect(landingSource).toContain('Royal Navy & Gold');
-      expect(landingSource).toContain('Lihat Demo');
+      // Section 6: Preview Smartphone
+      expect(landingSource).toContain('Pengalaman Responsif di Genggaman Tamu');
+      expect(landingSource).toContain('Lihat Semua Template');
 
-      // Section 7: Cara Kerja 3 Langkah
-      expect(landingSource).toContain('Cara Kerja Sederhana 3 Langkah');
+      // Section 7: Cara Kerja
       expect(landingSource).toContain('01');
       expect(landingSource).toContain('Pilih Desain');
       expect(landingSource).toContain('02');
-      expect(landingSource).toContain('Isi Informasi');
+      expect(landingSource).toContain('Personalisasi Konten');
       expect(landingSource).toContain('03');
+      expect(landingSource).toContain('Terbitkan & Bagikan');
 
-      // Section 8: Preview Smartphone
-      expect(landingSource).toContain('Pengalaman Responsif di Genggaman Tamu');
+      // Section 8: Personalisasi
+      expect(landingSource).toContain('Template adalah awal. Cerita Anda yang membuatnya berbeda.');
 
-      // Section 9: Fitur Lengkap
-      expect(landingSource).toContain('Integrasi Komplit dalam Satu Undangan');
+      // Section 9: Trust & Security
+      expect(landingSource).toContain('Data Undangan Anda Tetap Terjaga');
+      expect(landingSource).toContain('Autentikasi Akun');
+      expect(landingSource).toContain('Isolasi Data RLS');
+      expect(landingSource).toContain('Penyimpanan Aman');
+      expect(landingSource).toContain('Draft Bersifat Privat');
 
-      // Section 10: Mobile-First
-      expect(landingSource).toContain('Dioptimalkan Khusus untuk Layar Seluler');
-
-      // Section 11: FAQ
+      // Section 10: FAQ
       expect(landingSource).toContain('Pertanyaan yang Sering Diajukan');
       expect(landingSource).toContain('Apa itu Aurovia?');
       expect(landingSource).toContain('Apakah saya harus membuat akun?');
 
-      // Section 12: Final CTA & Footer
+      // Section 11: Final CTA
       expect(landingSource).toContain('Siap Membuat Undangan Anda?');
+
+      // Section 12: Footer
       expect(landingSource).toContain('Platform undangan digital terstruktur.');
       expect(landingSource).toContain('2026 Aurovia');
     });
@@ -125,6 +128,22 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
     });
   });
 
+  describe('Verifikasi Global Design Tokens Palette (#006A71, #48A6A7, #9ACBD0, #F2EFE7)', () => {
+    const tokensPath = path.resolve(__dirname, '../../styles/tokens.css');
+    const tokensSource = fs.readFileSync(tokensPath, 'utf-8');
+
+    it('tokens.css memiliki nilai palet terpusat yang diwajibkan', () => {
+      expect(tokensSource).toContain('--color-primary: #006A71');
+      expect(tokensSource).toContain('--color-secondary: #48A6A7');
+      expect(tokensSource).toContain('--color-accent-light: #9ACBD0');
+      expect(tokensSource).toContain('--color-background: #F2EFE7');
+      expect(tokensSource).toContain('--color-surface');
+      expect(tokensSource).toContain('--color-border');
+      expect(tokensSource).toContain('--color-text');
+      expect(tokensSource).toContain('--color-focus');
+    });
+  });
+
   describe('Verifikasi Login & Register Sesuai Pedoman', () => {
     const loginPath = path.resolve(__dirname, '../../app/routes/Login.tsx');
     const registerPath = path.resolve(__dirname, '../../app/routes/Register.tsx');
@@ -136,7 +155,7 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(loginSource).toContain('login-email');
       expect(loginSource).toContain('login-password');
       expect(loginSource).toContain('Lupa password?');
-      expect(loginSource).toContain('Masuk dengan Kode Akses');
+      expect(loginSource).toContain('Masuk dengan kode akses');
       expect(loginSource).toContain('Masuk dengan Google');
       expect(loginSource).toContain('Buat Akun Baru');
       expect(loginSource).toContain('getSafeRedirectUrl');

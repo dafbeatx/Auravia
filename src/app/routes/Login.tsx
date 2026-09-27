@@ -107,7 +107,7 @@ export function Login() {
       return;
     }
     setInfoMessage(
-      'Kode akses saat ini hanya berlaku untuk verifikasi tamu undangan privat. Untuk mengelola dan membuat undangan, silakan masuk menggunakan email dan kata sandi.'
+      'Kode akses saat ini hanya berlaku untuk verifikasi tamu undangan privat. Untuk mengelola dan membuat undangan, silakan masuk menggunakan akun email.'
     );
   };
 
@@ -138,7 +138,7 @@ export function Login() {
     : '/register';
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-accent-light/30">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-accent-light/40">
       <div className="w-full max-w-[420px]">
         {/* Brand Header */}
         <div className="text-center mb-8">
@@ -149,11 +149,11 @@ export function Login() {
           >
             <img src="/logo.svg" alt="Aurovia" className="h-9 sm:h-10 w-auto object-contain" />
           </Link>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
             Masuk ke Aurovia
           </h1>
           <p className="text-xs sm:text-sm text-text-muted mt-1.5">
-            Masuk untuk melanjutkan ke pengelolaan undangan digital.
+            Masuk untuk melanjutkan ke pengelolaan undangan digital Anda.
           </p>
         </div>
 
@@ -163,7 +163,7 @@ export function Login() {
             <div
               role="alert"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-xl text-xs text-danger font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-medium leading-relaxed"
             >
               {errorMessage}
             </div>
@@ -173,7 +173,7 @@ export function Login() {
             <div
               role="status"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium leading-relaxed"
             >
               {infoMessage}
             </div>
@@ -198,7 +198,7 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting || isGoogleSubmitting}
                   placeholder="nama@domain.com"
-                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
                 />
               </div>
 
@@ -218,7 +218,7 @@ export function Login() {
                       setErrorMessage(null);
                       setInfoMessage(null);
                     }}
-                    className="text-xs font-medium text-secondary hover:text-primary transition-colors cursor-pointer"
+                    className="text-xs font-medium text-text-muted hover:text-primary transition-colors cursor-pointer"
                   >
                     Lupa password?
                   </button>
@@ -232,14 +232,14 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting || isGoogleSubmitting}
                   placeholder="Masukkan kata sandi Anda"
-                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting || isGoogleSubmitting}
-                className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
+                className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
               >
                 {isSubmitting ? 'Memproses...' : 'Masuk'}
               </button>
@@ -264,7 +264,7 @@ export function Login() {
                       setErrorMessage(null);
                       setInfoMessage(null);
                     }}
-                    className="text-xs text-secondary hover:text-primary underline cursor-pointer"
+                    className="text-xs text-text-muted hover:text-primary underline cursor-pointer"
                   >
                     Gunakan Email
                   </button>
@@ -276,13 +276,13 @@ export function Login() {
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                   placeholder="Contoh: AUR-7890"
-                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary font-mono tracking-wider placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary font-mono tracking-wider placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-h-[44px]"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px]"
+                className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-sm cursor-pointer min-h-[44px]"
               >
                 Verifikasi Kode Akses
               </button>
@@ -307,7 +307,7 @@ export function Login() {
                       setErrorMessage(null);
                       setInfoMessage(null);
                     }}
-                    className="text-xs text-secondary hover:text-primary underline cursor-pointer"
+                    className="text-xs text-text-muted hover:text-primary underline cursor-pointer"
                   >
                     Kembali ke Login
                   </button>
@@ -320,14 +320,14 @@ export function Login() {
                   onChange={(e) => setResetEmail(e.target.value)}
                   placeholder="nama@domain.com"
                   disabled={resetSent}
-                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-h-[44px]"
                 />
               </div>
 
               {!resetSent && (
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px]"
+                  className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-sm cursor-pointer min-h-[44px]"
                 >
                   Kirim Tautan Pemulihan
                 </button>
@@ -359,9 +359,9 @@ export function Login() {
                   setErrorMessage(null);
                   setInfoMessage(null);
                 }}
-                className="w-full py-2.5 px-4 rounded-xl border border-secondary text-primary bg-primary-soft hover:bg-secondary/15 text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl border border-border bg-surface-elevated hover:bg-surface-muted text-text-primary text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer"
               >
-                Masuk dengan Kode Akses
+                Masuk dengan kode akses
               </button>
             )}
 
@@ -393,10 +393,10 @@ export function Login() {
               <span>{isGoogleSubmitting ? 'Menghubungkan...' : 'Masuk dengan Google'}</span>
             </button>
 
-            {/* CTA Daftar / Buat Akun Baru */}
+            {/* Tombol Buat Akun Baru */}
             <Link
               to={registerLink}
-              className="w-full py-2.5 px-4 rounded-xl border border-border bg-surface hover:bg-surface-elevated text-text-muted hover:text-text-primary text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer text-center"
+              className="w-full py-2.5 px-4 rounded-xl border border-secondary/40 bg-secondary/10 hover:bg-secondary/20 text-primary text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer"
             >
               Buat Akun Baru
             </Link>
@@ -410,7 +410,7 @@ export function Login() {
             to={registerLink}
             className="text-primary font-semibold hover:underline"
           >
-            Daftar Sekarang
+            Daftar di sini
           </Link>
         </div>
       </div>

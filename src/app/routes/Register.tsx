@@ -120,7 +120,7 @@ export function Register() {
     : '/login';
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-accent-light/30">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-accent-light/40">
       <div className="w-full max-w-[420px]">
         {/* Brand Header */}
         <div className="text-center mb-8">
@@ -131,7 +131,7 @@ export function Register() {
           >
             <img src="/logo.svg" alt="Aurovia" className="h-9 sm:h-10 w-auto object-contain" />
           </Link>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">
             Buat Undangan Anda
           </h1>
           <p className="text-xs sm:text-sm text-text-muted mt-1.5">
@@ -145,7 +145,7 @@ export function Register() {
             <div
               role="alert"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-xl text-xs text-danger font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-medium leading-relaxed"
             >
               {errorMessage}
             </div>
@@ -155,7 +155,7 @@ export function Register() {
             <div
               role="status"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-success/10 border border-success/30 rounded-xl text-xs text-success font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium leading-relaxed"
             >
               {successNotice}
             </div>
@@ -178,7 +178,7 @@ export function Register() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting || isGoogleSubmitting}
                 placeholder="nama@domain.com"
-                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
               />
             </div>
 
@@ -198,7 +198,7 @@ export function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isSubmitting || isGoogleSubmitting}
                 placeholder="Minimal 6 karakter"
-                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
               />
             </div>
 
@@ -218,14 +218,14 @@ export function Register() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isSubmitting || isGoogleSubmitting}
                 placeholder="Ulangi kata sandi"
-                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                className="w-full px-3.5 py-2.5 bg-background/50 border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting || isGoogleSubmitting}
-              className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
+              className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
             >
               {isSubmitting ? 'Mendaftarkan...' : 'Daftar'}
             </button>

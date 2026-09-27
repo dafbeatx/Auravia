@@ -1,39 +1,45 @@
 :root {
-  /* Core Brand Tokens (Aurovia Palette) */
+  /* Core Brand Palette (Aurovia Global) */
   --color-primary: #006A71;
-  --color-primary-hover: #00565C;
-  --color-primary-soft: #E6F3F4;
-  --color-primary-foreground: #FFFFFF;
-
   --color-secondary: #48A6A7;
-  --color-secondary-hover: #3D9192;
-  --color-secondary-foreground: #FFFFFF;
-
   --color-accent-light: #9ACBD0;
-  --color-accent-soft: #EBF5F6;
-
-  /* Global Surface & Background */
   --color-background: #F2EFE7;
-  --color-bg: #F2EFE7;               /* Alias for backward compatibility */
-  --color-surface: #FFFFFF;          /* Pure White Card Surface */
-  --color-surface-muted: #F8F6F0;    /* Soft Warm Surface */
-  --color-surface-elevated: #F8F6F0;
+
+  /* Aliases & Surface Tokens */
+  --color-bg: var(--color-background);
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #EAE6DC;
+  --color-surface-elevated: #FAF8F3;
 
   /* Borders */
-  --color-border: #DFDCD3;           /* Warm Neutral Border */
-  --color-border-strong: #9ACBD0;    /* Accent Border */
+  --color-border: #DED9CD;
+  --color-border-strong: #C8C2B3;
 
-  /* Typography / Text (WCAG AA Compliant) */
-  --color-text: #1C2826;             /* Deep Charcoal-Teal Neutral */
-  --color-text-primary: #1C2826;
-  --color-text-muted: #4B5E5B;       /* Muted Dark Sage Neutral */
-  --color-text-subtle: #687D7A;      /* Secondary Sage Neutral */
+  /* Typography / Text Colors (Harmonious Dark Neutral & WCAG AA Compliant) */
+  --color-text: #1A2E30;
+  --color-text-primary: #1A2E30;
+  --color-text-muted: #4A6062;
+  --color-text-subtle: #6D8284;
 
-  /* Focus & Functional States */
-  --color-focus: #006A71;
-  --color-focus-ring: #006A71;
+  /* Brand States & Variations */
+  --color-primary-hover: #00545A;
+  --color-primary-soft: rgba(0, 106, 113, 0.08);
+  --color-primary-foreground: #FFFFFF;
+
+  --color-secondary-hover: #3B8E8F;
+  --color-secondary-soft: rgba(72, 166, 167, 0.12);
+  --color-secondary-foreground: #FFFFFF;
+
+  --color-accent-light-soft: rgba(154, 203, 208, 0.25);
+  --color-accent-light-foreground: #1A2E30;
+
+  /* Status Colors */
   --color-danger: #991B1B;
   --color-danger-foreground: #FEF2F2;
   --color-success: #166534;
   --color-success-foreground: #F0FDF4;
+
+  /* Focus Indicator for Accessibility */
+  --color-focus: #006A71;
+  --color-focus-ring: #006A71;
 }
