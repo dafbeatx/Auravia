@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getActiveTemplates, type TemplateListItem } from '@/lib/templates';
 import { getAllTemplateDefinitions } from '@/lib/template/definitions';
-import { DecorativeDivider, MonogramFrame } from '@/components/template/ornaments';
+import { MonogramFrame } from '@/components/template/ornaments';
 
 interface TemplateCarouselProps {
   className?: string;
@@ -136,82 +136,154 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
     touchStartXRef.current = null;
   };
 
-  // Render visual preview berbasis CSS sesuai konfigurasi template
-  const renderTemplateVisual = (slug: string) => {
+  // Render visual preview berbentuk smartphone frame realistis (seperti pada referensi Foto 2)
+  const renderPhoneMockup = (slug: string) => {
+    let screenContent;
+
     switch (slug) {
       case 'royal-navy-gold':
-        return (
-          <div className="w-full h-full bg-[#0A1324] text-[#F8FAFC] p-4 flex flex-col items-center justify-center text-center space-y-2 border border-[#D4AF37]/30 transition-transform duration-300 group-hover:scale-105">
-            <span className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-mono">
-              Walimatul Ursy
-            </span>
-            <MonogramFrame initials="R & D" variant="royal-circle" />
-            <h4 className="font-serif text-lg sm:text-xl text-[#D4AF37] font-normal tracking-wide">
-              Rika &amp; Dani
-            </h4>
-            <DecorativeDivider variant="royal" />
-            <p className="text-[10px] text-[#F8FAFC]/80">
-              Sabtu, 24 Oktober 2026
-            </p>
+        screenContent = (
+          <div className="w-full h-full bg-[#0A1324] text-[#F8FAFC] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+            {/* Background Accent Shimmer */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14)_0%,transparent_75%)] pointer-events-none" />
+            <div className="space-y-1 relative z-10">
+              <span className="text-[7px] uppercase tracking-widest text-[#D4AF37] font-mono block">
+                Walimatul Ursy
+              </span>
+              <div className="py-0.5">
+                <MonogramFrame initials="R & D" variant="royal-circle" />
+              </div>
+            </div>
+
+            <div className="space-y-1 my-auto relative z-10">
+              <h4 className="font-serif text-sm sm:text-base text-[#D4AF37] font-normal tracking-wide">
+                Rika &amp; Dani
+              </h4>
+              <p className="text-[8px] text-[#F8FAFC]/80 font-sans">
+                Sabtu, 24 Oktober 2026
+              </p>
+            </div>
+
+            <div className="w-full relative z-10 pb-2">
+              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#132238] border border-[#D4AF37]/50 text-[#D4AF37] text-[8px] font-medium shadow-xs">
+                <span>✉</span>
+                <span>Buka Undangan</span>
+              </div>
+            </div>
           </div>
         );
+        break;
 
       case 'botanical-garden':
-        return (
-          <div className="w-full h-full bg-[#F4F6F0] text-[#1E3A2F] p-4 flex flex-col items-center justify-center text-center space-y-2 border border-[#D3DDD3] transition-transform duration-300 group-hover:scale-105">
-            <span className="text-[9px] uppercase tracking-widest text-[#2D4F3F] font-sans font-semibold">
-              The Wedding Celebration
-            </span>
-            <div className="w-8 h-8 rounded-full border border-[#7A9A7B] bg-[#E2ECE2] flex items-center justify-center text-[#2D4F3F] text-xs font-serif font-bold">
-              A &amp; F
+        screenContent = (
+          <div className="w-full h-full bg-[#F4F6F0] text-[#1E3A2F] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(122,154,123,0.18)_0%,transparent_70%)] pointer-events-none" />
+            <div className="space-y-1 relative z-10">
+              <span className="text-[7px] uppercase tracking-widest text-[#2D4F3F] font-sans font-semibold block">
+                The Wedding Of
+              </span>
+              <div className="w-7 h-7 mx-auto rounded-full border border-[#7A9A7B] bg-[#E2ECE2] flex items-center justify-center text-[#2D4F3F] text-[9px] font-serif font-bold">
+                A &amp; F
+              </div>
             </div>
-            <h4 className="font-serif text-lg sm:text-xl text-[#2D4F3F] font-normal tracking-wide">
-              Amira &amp; Fajar
-            </h4>
-            <DecorativeDivider variant="diamond" />
-            <p className="text-[10px] text-[#526A5E]">
-              Minggu, 12 Desember 2026
-            </p>
+
+            <div className="space-y-1 my-auto relative z-10">
+              <h4 className="font-serif text-sm sm:text-base text-[#2D4F3F] font-normal tracking-wide">
+                Amira &amp; Fajar
+              </h4>
+              <p className="text-[8px] text-[#526A5E] font-sans">
+                Minggu, 12 Desember 2026
+              </p>
+            </div>
+
+            <div className="w-full relative z-10 pb-2">
+              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#2D4F3F] text-white text-[8px] font-medium shadow-xs">
+                <span>✉</span>
+                <span>Buka Undangan</span>
+              </div>
+            </div>
           </div>
         );
+        break;
 
       case 'modern-minimal':
-        return (
-          <div className="w-full h-full bg-[#F8F9FA] text-[#0F172A] p-4 flex flex-col items-center justify-center text-center space-y-2 border border-[#E2E8F0] transition-transform duration-300 group-hover:scale-105">
-            <span className="text-[9px] uppercase tracking-widest text-primary font-mono font-semibold">
-              Modern Union
-            </span>
-            <div className="w-8 h-8 border border-primary text-primary flex items-center justify-center text-xs font-sans font-bold">
-              N &amp; R
+        screenContent = (
+          <div className="w-full h-full bg-[#F8F9FA] text-[#0F172A] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+            <div className="space-y-1 relative z-10">
+              <span className="text-[7px] uppercase tracking-widest text-primary font-mono font-semibold block">
+                Modern Union
+              </span>
+              <div className="w-6 h-6 mx-auto border border-primary text-primary flex items-center justify-center text-[9px] font-sans font-bold">
+                N &amp; R
+              </div>
             </div>
-            <h4 className="font-sans text-base sm:text-lg text-[#0F172A] font-semibold tracking-tight">
-              Nadia &amp; Reza
-            </h4>
-            <div className="w-12 h-0.5 bg-primary/40 my-1" />
-            <p className="text-[10px] text-[#64748B]">
-              Sabtu, 08 November 2026
-            </p>
+
+            <div className="space-y-1 my-auto relative z-10">
+              <h4 className="font-sans text-xs sm:text-sm text-[#0F172A] font-bold tracking-tight">
+                Nadia &amp; Reza
+              </h4>
+              <div className="w-8 h-0.5 bg-primary/40 mx-auto my-1" />
+              <p className="text-[8px] text-[#64748B] font-sans">
+                Sabtu, 08 November 2026
+              </p>
+            </div>
+
+            <div className="w-full relative z-10 pb-2">
+              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-primary text-white text-[8px] font-medium shadow-xs">
+                <span>✉</span>
+                <span>Buka Undangan</span>
+              </div>
+            </div>
           </div>
         );
+        break;
 
       case 'classic-elegance':
       default:
-        return (
-          <div className="w-full h-full bg-[#FAF9F6] text-[#292524] p-4 flex flex-col items-center justify-center text-center space-y-2 border border-[#E7E5E0] transition-transform duration-300 group-hover:scale-105">
-            <span className="text-[9px] uppercase tracking-widest text-[#78716C] font-sans">
-              The Wedding Of
-            </span>
-            <MonogramFrame initials="S & D" variant="classic-ring" />
-            <h4 className="font-serif text-lg sm:text-xl text-[#292524] font-normal tracking-wide">
-              Sarah &amp; Dimas
-            </h4>
-            <DecorativeDivider variant="diamond" />
-            <p className="text-[10px] text-[#78716C]">
-              Minggu, 20 September 2026
-            </p>
+        screenContent = (
+          <div className="w-full h-full bg-[#FAF9F6] text-[#292524] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+            <div className="space-y-1 relative z-10">
+              <span className="text-[7px] uppercase tracking-widest text-[#78716C] font-sans block">
+                The Wedding Of
+              </span>
+              <div className="py-0.5">
+                <MonogramFrame initials="S & D" variant="classic-ring" />
+              </div>
+            </div>
+
+            <div className="space-y-1 my-auto relative z-10">
+              <h4 className="font-serif text-sm sm:text-base text-[#292524] font-normal tracking-wide">
+                Sarah &amp; Dimas
+              </h4>
+              <p className="text-[8px] text-[#78716C] font-sans">
+                Minggu, 20 September 2026
+              </p>
+            </div>
+
+            <div className="w-full relative z-10 pb-2">
+              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#292524] text-white text-[8px] font-medium shadow-xs">
+                <span>✉</span>
+                <span>Buka Undangan</span>
+              </div>
+            </div>
           </div>
         );
+        break;
     }
+
+    return (
+      <div className="relative w-[145px] sm:w-[165px] h-[270px] sm:h-[300px] mx-auto my-1 rounded-[2.2rem] p-[5px] bg-[#111827] shadow-xl border border-slate-700/60 ring-1 ring-black/40 flex flex-col transition-transform duration-300 group-hover:scale-[1.03]">
+        {/* Dynamic Island Notch */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 w-12 h-3.5 bg-black rounded-full flex items-center justify-end px-1.5 shadow-xs">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#1e293b]" />
+        </div>
+
+        {/* Screen Bezel Container */}
+        <div className="relative w-full h-full rounded-[1.85rem] overflow-hidden flex flex-col justify-between select-none">
+          {screenContent}
+        </div>
+      </div>
+    );
   };
 
   const totalPages = maxIndex + 1;
@@ -267,28 +339,25 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
                 className="flex-shrink-0 px-2.5 sm:px-3"
                 style={{ width: `${100 / itemsPerView}%` }}
               >
-                {/* Landscape Card Template */}
+                {/* Smartphone Device Frame Card (Seperti Foto 2) */}
                 <div className="group bg-surface border border-border rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-secondary/40 transition-all flex flex-col h-full">
-                  {/* Bagian Visual Preview Landscape (Elemen Terbesar) */}
-                  <div className="relative w-full aspect-[16/10] overflow-hidden bg-surface-elevated">
-                    {renderTemplateVisual(tmpl.slug)}
-                    <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-surface/90 text-primary border border-border backdrop-blur-xs shadow-xs">
-                      {categoryLabel}
-                    </span>
+                  {/* Container Mockup Ponsel */}
+                  <div className="relative w-full p-4 sm:p-5 bg-surface-elevated/40 flex items-center justify-center overflow-hidden border-b border-border/60">
+                    {renderPhoneMockup(tmpl.slug)}
                   </div>
 
-                  {/* Konten Card: Nama, Deskripsi Singkat, & Tombol Lihat Demo */}
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+                  {/* Konten Card: Nama Template & Tombol Lihat Demo */}
+                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between items-center text-center space-y-4">
                     <div className="space-y-1">
                       <h3 className="font-serif text-base sm:text-lg font-bold text-text-primary group-hover:text-primary transition-colors">
                         {tmpl.name}
                       </h3>
-                      <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">
-                        {tmpl.description || 'Desain undangan premium dengan estetika terkurasi.'}
+                      <p className="text-xs text-text-muted font-medium">
+                        {categoryLabel}
                       </p>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="w-full pt-1">
                       <Link
                         to={actionUrl}
                         className="w-full py-2.5 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center justify-center min-h-[44px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
@@ -304,10 +373,23 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
         </div>
       </div>
 
-      {/* Navigasi Carousel: Tombol Prev / Next & Pagination Dots */}
-      <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Pagination Dots */}
-        <div className="flex items-center gap-1.5" role="tablist" aria-label="Halaman carousel template">
+      {/* Navigasi Carousel: Tombol Prev / Next Lingkaran & Pagination Dots (Seperti Foto 2) */}
+      <div className="mt-8 flex items-center justify-center gap-6">
+        {/* Tombol Prev Lingkaran */}
+        <button
+          type="button"
+          onClick={handlePrev}
+          disabled={currentIndex === 0}
+          aria-label="Template sebelumnya"
+          className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-border bg-surface hover:bg-surface-elevated text-primary disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-xs active:scale-95"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Pagination Dots di Tengah */}
+        <div className="flex items-center gap-2" role="tablist" aria-label="Halaman carousel template">
           {Array.from({ length: totalPages }).map((_, idx) => (
             <button
               key={idx}
@@ -318,43 +400,25 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
               role="tab"
               className={`transition-all rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary ${
                 currentIndex === idx
-                  ? 'w-6 h-2 bg-primary'
-                  : 'w-2 h-2 bg-border hover:bg-secondary'
+                  ? 'w-6 h-2.5 bg-primary'
+                  : 'w-2.5 h-2.5 bg-border hover:bg-secondary'
               }`}
             />
           ))}
         </div>
 
-        {/* Previous and Next Controls */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handlePrev}
-            disabled={currentIndex === 0}
-            aria-label="Template sebelumnya"
-            className="w-11 h-11 rounded-full border border-border bg-surface hover:bg-surface-elevated text-text-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <span className="text-xs font-medium text-text-muted font-mono px-1">
-            {currentIndex + 1} / {totalPages}
-          </span>
-
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={currentIndex >= maxIndex}
-            aria-label="Template berikutnya"
-            className="w-11 h-11 rounded-full border border-border bg-surface hover:bg-surface-elevated text-text-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
+        {/* Tombol Next Lingkaran */}
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={currentIndex >= maxIndex}
+          aria-label="Template berikutnya"
+          className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-border bg-surface hover:bg-surface-elevated text-primary disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-xs active:scale-95"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   );

@@ -557,14 +557,11 @@ export function LandingPage() {
         {/* ================================================================== */}
         <section id="template" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase tracking-widest text-primary font-semibold">
-              Pilih Gaya Undanganmu &bull; Koleksi Desain Terkurasi
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-text-primary font-normal leading-tight">
               Pilihan Tema Undangan yang Siap Dipakai
             </h2>
-            <p className="text-sm text-text-muted leading-relaxed">
-              Temukan gaya yang paling sesuai untuk cerita Anda.
+            <p className="text-sm sm:text-base text-text-muted leading-relaxed">
+              Banyak pilihan tema premium dan langsung bisa digunakan tanpa ribet.
             </p>
           </div>
 
