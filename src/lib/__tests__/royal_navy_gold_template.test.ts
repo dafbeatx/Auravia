@@ -67,9 +67,43 @@ describe('Royal Navy & Gold Master Template Specification & Integration Tests', 
       expect(cssVars).toHaveProperty('--theme-color-surface', '#132238');
       expect(cssVars).toHaveProperty('--theme-color-accent', '#D4AF37');
       expect(cssVars).toHaveProperty('--theme-color-border', '#D4AF37');
+      expect(cssVars).toHaveProperty('--theme-color-secondary', '#1E3A5F');
+      expect(cssVars).toHaveProperty('--theme-color-accent-soft', '#F6E09C');
       expect(cssVars).toHaveProperty('--theme-radius-button', '9999px');
       expect(cssVars).toHaveProperty('--theme-radius-card', '16px');
       expect(cssVars).toHaveProperty('--theme-border-style', 'solid');
+    });
+
+    it('mendukung format konfigurasi tema dengan alias kunci seperti background, primary, accent, heading_font, body_font', () => {
+      const promptFormatTheme = {
+        background: '#0A1324',
+        primary: '#1E3A5F',
+        accent: '#D4AF37',
+        accent_soft: '#F6E09C',
+        text: '#F8FAFC',
+        border: '#D4AF37',
+        heading_font: 'Playfair Display',
+        body_font: 'Outfit',
+      };
+
+      const normalized = normalizeTheme(promptFormatTheme, {});
+
+      expect(normalized.fontHeading).toBe('Playfair Display');
+      expect(normalized.fontBody).toBe('Outfit');
+      expect(normalized.colorBackground).toBe('#0A1324');
+      expect(normalized.colorPrimary).toBe('#1E3A5F');
+      expect(normalized.colorForeground).toBe('#F8FAFC');
+      expect(normalized.colorBorder).toBe('#D4AF37');
+      expect(normalized.colorAccent).toBe('#D4AF37');
+      expect(normalized.colorAccentSoft).toBe('#F6E09C');
+
+      const cssVars = createThemeStyleVariables(normalized);
+      expect(cssVars).toHaveProperty('--theme-color-bg', '#0A1324');
+      expect(cssVars).toHaveProperty('--theme-color-border', '#D4AF37');
+      expect(cssVars).toHaveProperty('--theme-color-accent', '#D4AF37');
+      expect(cssVars).toHaveProperty('--theme-color-accent-soft', '#F6E09C');
+      expect(cssVars).toHaveProperty('--theme-font-heading', expect.stringContaining('Playfair Display'));
+      expect(cssVars).toHaveProperty('--theme-font-body', expect.stringContaining('Outfit'));
     });
 
     it('mempertahankan tema identik antara mode public dan editor', () => {

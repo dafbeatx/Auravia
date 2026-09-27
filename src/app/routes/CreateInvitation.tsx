@@ -417,7 +417,7 @@ export function CreateInvitation() {
                           className="text-2xl font-normal leading-tight tracking-wide"
                           style={{ fontFamily: previewFont }}
                         >
-                          Sarah &amp; Rizky
+                          {coupleNames.trim() || 'Nama Mempelai'}
                         </p>
                         <p className="text-xs opacity-75 font-sans">
                           {tpl.name}

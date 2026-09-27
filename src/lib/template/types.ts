@@ -27,13 +27,25 @@ export type DecorativeStyle = 'classic' | 'minimal' | 'bordered';
  */
 export interface InvitationThemeOverride {
   font_heading?: string;
+  heading_font?: string;
   font_body?: string;
+  body_font?: string;
   color_background?: string;
+  background?: string;
   color_primary?: string;
+  primary?: string;
+  color_secondary?: string;
+  secondary?: string;
   color_foreground?: string;
+  text?: string;
   color_surface?: string;
+  surface?: string;
   color_border?: string;
+  border?: string;
   color_accent?: string;
+  accent?: string;
+  color_accent_soft?: string;
+  accent_soft?: string;
   button_radius?: ButtonRadiusStyle;
   card_radius?: CardRadiusStyle;
   decorative_style?: DecorativeStyle;
@@ -53,9 +65,11 @@ export interface NormalizedTheme {
   colorBackground: string;
   colorForeground: string;
   colorPrimary: string;
+  colorSecondary?: string;
   colorSurface: string;
   colorBorder: string;
   colorAccent: string;
+  colorAccentSoft?: string;
   buttonRadius: ButtonRadiusStyle;
   cardRadius: CardRadiusStyle;
   decorativeStyle: DecorativeStyle;

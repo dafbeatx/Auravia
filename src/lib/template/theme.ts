@@ -97,37 +97,84 @@ export function normalizeTheme(
     ? themeOverrideRaw
     : {}) as TemplateTheme;
 
-  const rawFontHeading = overrideObj.font_heading || defaultObj.font_heading;
+  const rawFontHeading =
+    overrideObj.font_heading ||
+    overrideObj.heading_font ||
+    defaultObj.font_heading ||
+    defaultObj.heading_font;
   const fontHeading = sanitizeFont(rawFontHeading, DEFAULT_THEME_FALLBACK.fontHeading);
 
-  const rawFontBody = overrideObj.font_body || defaultObj.font_body;
+  const rawFontBody =
+    overrideObj.font_body ||
+    overrideObj.body_font ||
+    defaultObj.font_body ||
+    defaultObj.body_font;
   const fontBody = sanitizeFont(rawFontBody, DEFAULT_THEME_FALLBACK.fontBody);
 
-  const rawColorBackground = overrideObj.color_background || defaultObj.color_background;
+  const rawColorBackground =
+    overrideObj.color_background ||
+    overrideObj.background ||
+    defaultObj.color_background ||
+    defaultObj.background;
   const colorBackground = sanitizeColor(rawColorBackground, DEFAULT_THEME_FALLBACK.colorBackground);
 
   const rawColorPrimary =
     overrideObj.color_primary ||
+    overrideObj.primary ||
     overrideObj.color_foreground ||
+    overrideObj.text ||
     defaultObj.color_primary ||
-    defaultObj.color_foreground;
+    defaultObj.primary ||
+    defaultObj.color_foreground ||
+    defaultObj.text;
   const colorPrimary = sanitizeColor(rawColorPrimary, DEFAULT_THEME_FALLBACK.colorPrimary);
+
+  const rawColorSecondary =
+    overrideObj.color_secondary ||
+    overrideObj.secondary ||
+    defaultObj.color_secondary ||
+    defaultObj.secondary;
+  const colorSecondary = rawColorSecondary ? sanitizeColor(rawColorSecondary, '#1E3A5F') : '#1E3A5F';
 
   const rawColorForeground =
     overrideObj.color_foreground ||
+    overrideObj.text ||
     overrideObj.color_primary ||
+    overrideObj.primary ||
     defaultObj.color_foreground ||
-    defaultObj.color_primary;
+    defaultObj.text ||
+    defaultObj.color_primary ||
+    defaultObj.primary;
   const colorForeground = sanitizeColor(rawColorForeground, DEFAULT_THEME_FALLBACK.colorForeground);
 
-  const rawColorSurface = overrideObj.color_surface || defaultObj.color_surface;
+  const rawColorSurface =
+    overrideObj.color_surface ||
+    overrideObj.surface ||
+    defaultObj.color_surface ||
+    defaultObj.surface;
   const colorSurface = sanitizeColor(rawColorSurface, DEFAULT_THEME_FALLBACK.colorSurface);
 
-  const rawColorBorder = overrideObj.color_border || defaultObj.color_border;
+  const rawColorBorder =
+    overrideObj.color_border ||
+    overrideObj.border ||
+    defaultObj.color_border ||
+    defaultObj.border;
   const colorBorder = sanitizeColor(rawColorBorder, DEFAULT_THEME_FALLBACK.colorBorder);
 
-  const rawColorAccent = overrideObj.color_accent || defaultObj.color_accent || colorPrimary;
+  const rawColorAccent =
+    overrideObj.color_accent ||
+    overrideObj.accent ||
+    defaultObj.color_accent ||
+    defaultObj.accent ||
+    colorPrimary;
   const colorAccent = sanitizeColor(rawColorAccent, colorPrimary);
+
+  const rawColorAccentSoft =
+    overrideObj.color_accent_soft ||
+    overrideObj.accent_soft ||
+    defaultObj.color_accent_soft ||
+    defaultObj.accent_soft;
+  const colorAccentSoft = rawColorAccentSoft ? sanitizeColor(rawColorAccentSoft, '#F6E09C') : '#F6E09C';
 
   const rawButtonRadius = overrideObj.button_radius || defaultObj.button_radius;
   const buttonRadius = sanitizeButtonRadius(rawButtonRadius, DEFAULT_THEME_FALLBACK.buttonRadius);
@@ -147,9 +194,11 @@ export function normalizeTheme(
     colorBackground,
     colorForeground,
     colorPrimary,
+    colorSecondary,
     colorSurface,
     colorBorder,
     colorAccent,
+    colorAccentSoft,
     buttonRadius,
     cardRadius,
     decorativeStyle,
@@ -172,10 +221,12 @@ export function createThemeStyleVariables(theme: NormalizedTheme): CSSProperties
     '--theme-color-bg': theme.colorBackground,
     '--theme-color-background': theme.colorBackground,
     '--theme-color-primary': theme.colorPrimary,
+    '--theme-color-secondary': theme.colorSecondary || '#1E3A5F',
     '--theme-color-foreground': theme.colorForeground,
     '--theme-color-surface': theme.colorSurface,
     '--theme-color-border': theme.colorBorder,
     '--theme-color-accent': theme.colorAccent || theme.colorPrimary,
+    '--theme-color-accent-soft': theme.colorAccentSoft || '#F6E09C',
     '--theme-radius-button': buttonRadiusValue,
     '--theme-radius-card': cardRadiusValue,
     '--theme-border-style': borderStyleValue,

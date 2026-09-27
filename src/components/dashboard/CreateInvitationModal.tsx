@@ -500,7 +500,7 @@ export function CreateInvitationModal({
                                 className="text-2xl font-normal tracking-wide"
                                 style={{ fontFamily: cardFont, color: cardText }}
                               >
-                                Sarah &amp; Rizky
+                                {title.trim() || 'Nama Mempelai'}
                               </p>
                               <div
                                 className="w-8 h-[1px] mx-auto opacity-40"
