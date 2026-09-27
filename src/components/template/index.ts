@@ -8,6 +8,7 @@ export * from './sections/GallerySection';
 export * from './sections/RsvpSection';
 export * from './sections/WishesSection';
 export * from './sections/GiftSection';
+export * from './sections/QuoteSection';
 export * from './sections/ClosingSection';
 export * from './sections/UnknownSectionFallback';
 export * from './MusicPlayer';

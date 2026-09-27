@@ -34,6 +34,7 @@ import type {
   InvitationContent,
   InvitationContentStoryItem,
   InvitationContentHost,
+  InvitationContentQuote,
   InvitationContentGiftAccount,
   InvitationContentGiftAddress,
   InvitationContentMusic,
@@ -71,6 +72,8 @@ import {
  */
 const SECTION_METADATA: Record<string, { label: string; description: string }> = {
   hero: { label: 'Sampul Utama (Hero Cover)', description: 'Header pembuka dengan judul acara dan tanggal' },
+  quote: { label: 'Kutipan & Ayat (Quote)', description: 'Untaian ayat suci atau kutipan mutiara pernikahan' },
+  quran: { label: 'Kutipan & Ayat (Quote)', description: 'Untaian ayat suci atau kutipan mutiara pernikahan' },
   hosts: { label: 'Profil Mempelai (Couple)', description: 'Informasi calon mempelai pria dan wanita' },
   couple: { label: 'Profil Mempelai (Couple)', description: 'Informasi calon mempelai pria dan wanita' },
   events: { label: 'Agenda Acara (Events)', description: 'Waktu pelaksanaan, lokasi gedung, dan peta' },
@@ -156,6 +159,7 @@ export function InvitationDetail() {
     }),
     musicJson: JSON.stringify(DEFAULT_MUSIC_CONFIG),
     coverJson: JSON.stringify(DEFAULT_COVER_CONFIG),
+    quoteJson: '{}',
     templateId: '',
     themeOverrideJson: '{}',
   });
@@ -213,6 +217,12 @@ export function InvitationDetail() {
   const brideFileInputRef = useRef<HTMLInputElement>(null);
 
   const [draftClosingNotes, setDraftClosingNotes] = useState('');
+  const [draftQuote, setDraftQuote] = useState<InvitationContentQuote>({
+    enabled: true,
+    arabic: '',
+    translation: '',
+    source: '',
+  });
 
   // State Linimasa Cerita Cinta (Story)
   const [draftStory, setDraftStory] = useState<InvitationContentStoryItem[]>([]);
@@ -425,6 +435,7 @@ export function InvitationDetail() {
 
       let initialStory: InvitationContentStoryItem[] = [];
       let initialClosingNotes = '';
+      let initialQuote: InvitationContentQuote = { enabled: true, arabic: '', translation: '', source: '' };
 
       let initialRsvpTitle = '';
       let initialRsvpDescription = '';
@@ -542,6 +553,16 @@ export function InvitationDetail() {
         if (c.cover) {
           initialCover = sanitizeCoverConfig(c.cover);
         }
+
+        if (c.quote && typeof c.quote === 'object') {
+          const q = c.quote as Record<string, unknown>;
+          initialQuote = {
+            enabled: typeof q.enabled === 'boolean' ? q.enabled : true,
+            arabic: typeof q.arabic === 'string' ? q.arabic : '',
+            translation: typeof q.translation === 'string' ? q.translation : '',
+            source: typeof q.source === 'string' ? q.source : '',
+          };
+        }
       }
 
       setDraftHeroHeadline(initialHeroHeadline);
@@ -565,6 +586,7 @@ export function InvitationDetail() {
 
       setDraftStory(initialStory);
       setDraftClosingNotes(initialClosingNotes);
+      setDraftQuote(initialQuote);
 
       setDraftRsvpTitle(initialRsvpTitle);
       setDraftRsvpDescription(initialRsvpDescription);
@@ -639,6 +661,7 @@ export function InvitationDetail() {
         giftAddressJson: initialGiftAddressJson,
         musicJson: initialMusicJson,
         coverJson: JSON.stringify(initialCover),
+        quoteJson: JSON.stringify(initialQuote),
         heroHeadline: initialHeroHeadline,
         heroOpeningText: initialHeroOpeningText,
         heroCoupleNames: initialHeroCoupleNames,
@@ -692,6 +715,7 @@ export function InvitationDetail() {
   const currentGiftAddressJson = useMemo(() => JSON.stringify(draftGiftAddress), [draftGiftAddress]);
   const currentMusicJson = useMemo(() => JSON.stringify(draftMusic), [draftMusic]);
   const currentCoverJson = useMemo(() => JSON.stringify(draftCover), [draftCover]);
+  const currentQuoteJson = useMemo(() => JSON.stringify(draftQuote), [draftQuote]);
   const currentThemeOverrideJson = useMemo(() => JSON.stringify(draftThemeOverride), [draftThemeOverride]);
 
   const hasUnsavedChanges = useMemo(() => {
@@ -716,6 +740,7 @@ export function InvitationDetail() {
       currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
       currentMusicJson !== savedSnapshot.musicJson ||
       currentCoverJson !== savedSnapshot.coverJson ||
+      currentQuoteJson !== savedSnapshot.quoteJson ||
       draftHeroHeadline !== savedSnapshot.heroHeadline ||
       draftHeroOpeningText !== savedSnapshot.heroOpeningText ||
       draftHeroCoupleNames !== savedSnapshot.heroCoupleNames ||
@@ -776,6 +801,7 @@ export function InvitationDetail() {
     draftClosingNotes,
     currentSectionsJson,
     currentCoverJson,
+    currentQuoteJson,
     savedSnapshot,
   ]);
 
@@ -913,6 +939,7 @@ export function InvitationDetail() {
         couple_names: draftHeroCoupleNames.trim() || undefined,
         location_short: draftHeroLocation.trim() || undefined,
       },
+      quote: draftQuote,
       hosts,
       story: draftStory,
       closing_notes: draftClosingNotes.trim(),
@@ -938,6 +965,7 @@ export function InvitationDetail() {
     draftHeroOpeningText,
     draftHeroCoupleNames,
     draftHeroLocation,
+    draftQuote,
     draftGroomName,
     draftGroomRole,
     draftGroomParents,
@@ -1089,7 +1117,8 @@ export function InvitationDetail() {
         currentGiftAccountsJson !== savedSnapshot.giftAccountsJson ||
         currentGiftAddressJson !== savedSnapshot.giftAddressJson ||
         currentMusicJson !== savedSnapshot.musicJson ||
-        currentCoverJson !== savedSnapshot.coverJson;
+        currentCoverJson !== savedSnapshot.coverJson ||
+        currentQuoteJson !== savedSnapshot.quoteJson;
 
       if (isContentChanged) {
         updateTasks.push(upsertInvitationData(id, liveContent));
@@ -1132,6 +1161,7 @@ export function InvitationDetail() {
         giftAddressJson: currentGiftAddressJson,
         musicJson: currentMusicJson,
         coverJson: currentCoverJson,
+        quoteJson: currentQuoteJson,
         heroHeadline: draftHeroHeadline,
         heroOpeningText: draftHeroOpeningText,
         heroCoupleNames: draftHeroCoupleNames,
@@ -3126,6 +3156,61 @@ export function InvitationDetail() {
                   <p className="text-[11px] text-text-subtle">
                     Pesan ini akan ditampilkan pada seksi penutup undangan.
                   </p>
+                </div>
+
+                {/* Kutipan & Ayat Suci (Quran / Quote) */}
+                <div className="space-y-3 pt-3 border-t border-border">
+                  <div>
+                    <h4 className="font-semibold text-text-primary text-xs">
+                      Kutipan Ayat Suci / Mutiara Kata
+                    </h4>
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      Kutipan yang ditampilkan pada seksi Kutipan &amp; Ayat (secara bawaan menampilkan QS. Ar-Rum: 21).
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="quoteArabic" className="font-medium text-text-primary block">
+                      Teks Ayat Arab (Opsional)
+                    </label>
+                    <textarea
+                      id="quoteArabic"
+                      rows={2}
+                      dir="rtl"
+                      value={draftQuote.arabic || ''}
+                      onChange={(e) => setDraftQuote((prev) => ({ ...prev, arabic: e.target.value }))}
+                      placeholder="Dikosongkan untuk menggunakan ayat Ar-Rum: 21 standar"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs text-right font-serif"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="quoteTranslation" className="font-medium text-text-primary block">
+                      Terjemahan / Isi Kutipan
+                    </label>
+                    <textarea
+                      id="quoteTranslation"
+                      rows={3}
+                      value={draftQuote.translation || ''}
+                      onChange={(e) => setDraftQuote((prev) => ({ ...prev, translation: e.target.value }))}
+                      placeholder="Dikosongkan untuk menggunakan terjemahan Ar-Rum: 21 standar"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="quoteSource" className="font-medium text-text-primary block">
+                      Sumber Kutipan / Nama Surat &amp; Ayat
+                    </label>
+                    <input
+                      id="quoteSource"
+                      type="text"
+                      value={draftQuote.source || ''}
+                      onChange={(e) => setDraftQuote((prev) => ({ ...prev, source: e.target.value }))}
+                      placeholder="Contoh: QS. Ar-Rum: 21"
+                      className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                  </div>
                 </div>
               </div>
             )}

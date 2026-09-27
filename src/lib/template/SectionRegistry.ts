@@ -8,6 +8,7 @@ import { GallerySection } from '@/components/template/sections/GallerySection';
 import { RsvpSection } from '@/components/template/sections/RsvpSection';
 import { WishesSection } from '@/components/template/sections/WishesSection';
 import { GiftSection } from '@/components/template/sections/GiftSection';
+import { QuoteSection } from '@/components/template/sections/QuoteSection';
 import { ClosingSection } from '@/components/template/sections/ClosingSection';
 import { UnknownSectionFallback } from '@/components/template/sections/UnknownSectionFallback';
 
@@ -17,6 +18,8 @@ import { UnknownSectionFallback } from '@/components/template/sections/UnknownSe
 export const SECTION_ALIASES: Record<string, string> = {
   hosts: 'couple',
   events: 'event',
+  quran: 'quote',
+  verse: 'quote',
 };
 
 /**
@@ -40,6 +43,14 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     availableVariants: ['editorial', 'centered', 'minimal'],
     defaultVariant: 'editorial',
     component: HeroSection as ComponentType<SectionRendererProps>,
+  },
+  {
+    type: 'quote',
+    name: 'Kutipan & Ayat',
+    description: 'Untaian ayat suci atau kutipan mutiara pernikahan.',
+    availableVariants: ['islamic', 'minimal', 'card'],
+    defaultVariant: 'islamic',
+    component: QuoteSection as ComponentType<SectionRendererProps>,
   },
   {
     type: 'couple',

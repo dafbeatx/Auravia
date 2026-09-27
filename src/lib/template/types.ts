@@ -171,8 +171,16 @@ export interface InvitationContentCover {
   overlay_opacity?: number;
 }
 
+export interface InvitationContentQuote {
+  enabled?: boolean;
+  arabic?: string;
+  translation?: string;
+  source?: string;
+}
+
 export interface InvitationContent {
   hero?: InvitationContentHero;
+  quote?: InvitationContentQuote;
   hosts?: InvitationContentHost[];
   story?: InvitationContentStoryItem[];
   financial_accounts?: Array<{ bank_name: string; account_number: string; holder_name?: string }>;

@@ -29,14 +29,15 @@ describe('Royal Navy & Gold Master Template Specification & Integration Tests', 
 
   const ROYAL_NAVY_GOLD_DEFAULT_SECTIONS = [
     { type: 'hero', order: 0, enabled: true },
-    { type: 'hosts', order: 1, enabled: true },
-    { type: 'events', order: 2, enabled: true },
-    { type: 'story', order: 3, enabled: true },
-    { type: 'gallery', order: 4, enabled: true },
-    { type: 'gift', order: 5, enabled: true },
-    { type: 'rsvp', order: 6, enabled: true },
-    { type: 'wishes', order: 7, enabled: true },
-    { type: 'closing', order: 8, enabled: true },
+    { type: 'quote', order: 1, enabled: true },
+    { type: 'hosts', order: 2, enabled: true },
+    { type: 'events', order: 3, enabled: true },
+    { type: 'story', order: 4, enabled: true },
+    { type: 'gallery', order: 5, enabled: true },
+    { type: 'gift', order: 6, enabled: true },
+    { type: 'rsvp', order: 7, enabled: true },
+    { type: 'wishes', order: 8, enabled: true },
+    { type: 'closing', order: 9, enabled: true },
   ];
 
   beforeEach(() => {
@@ -128,9 +129,10 @@ describe('Royal Navy & Gold Master Template Specification & Integration Tests', 
     it('memetakan seluruh seksi default Royal Navy & Gold ke SectionRegistry yang sah', () => {
       const resolved = resolveSections(ROYAL_NAVY_GOLD_DEFAULT_SECTIONS);
 
-      expect(resolved).toHaveLength(9);
+      expect(resolved).toHaveLength(10);
       expect(resolved.map((s) => s.section_type)).toEqual([
         'hero',
+        'quote',
         'hosts',
         'events',
         'story',
@@ -146,6 +148,13 @@ describe('Royal Navy & Gold Master Template Specification & Integration Tests', 
         expect(component).toBeDefined();
         expect(normalizeSectionType(section.section_type)).not.toBe('');
       });
+    });
+
+    it('mendukung alias quran dan verse ke seksi quote', () => {
+      expect(normalizeSectionType('quran')).toBe('quote');
+      expect(normalizeSectionType('verse')).toBe('quote');
+      const quoteComponent = getSectionComponent('quran');
+      expect(quoteComponent).toBeDefined();
     });
 
     it('mengurutkan seksi secara menaik sesuai display_order', () => {
