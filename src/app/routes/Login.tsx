@@ -145,13 +145,10 @@ export function Login() {
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="inline-flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg p-1 mb-4"
+            className="inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg p-1 mb-4 hover:opacity-90 transition-opacity"
             aria-label="Kembali ke Beranda Aurovia"
           >
-            <img src="/logo.svg" alt="Aurovia" className="h-9 w-auto object-contain" />
-            <span className="font-serif text-2xl font-bold tracking-wider text-[#1C1917]">
-              AUROVIA
-            </span>
+            <img src="/logo.svg" alt="Aurovia" className="h-9 sm:h-10 w-auto object-contain" />
           </Link>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
             Selamat datang kembali

@@ -58,13 +58,10 @@ export function LandingPage() {
           {/* Logo Brand */}
           <Link
             to="/"
-            className="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg py-1"
+            className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg py-1 hover:opacity-90 transition-opacity"
             aria-label="Aurovia Beranda"
           >
-            <img src="/logo.svg" alt="Aurovia" className="h-8 w-auto object-contain" />
-            <span className="font-serif text-2xl font-bold tracking-wider text-[#1C1917]">
-              AUROVIA
-            </span>
+            <img src="/logo.svg" alt="Aurovia" className="h-8 sm:h-9 w-auto object-contain" />
           </Link>
 
           {/* Desktop Navigation Links */}
@@ -1027,11 +1024,8 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-[#E7E5E0]">
           {/* Brand Info */}
           <div className="space-y-3 md:col-span-2">
-            <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Aurovia" className="h-7 w-auto object-contain" />
-              <span className="font-serif text-xl font-bold tracking-wider text-[#1C1917]">
-                AUROVIA
-              </span>
+            <div className="flex items-center">
+              <img src="/logo.svg" alt="Aurovia" className="h-7 sm:h-8 w-auto object-contain" />
             </div>
             <p className="text-xs text-[#78716C] max-w-sm leading-relaxed">
               Platform undangan digital terstruktur. Dirancang dengan pendekatan tipografi editorial dan keandalan sistem cloud modern.

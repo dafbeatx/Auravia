@@ -127,6 +127,10 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
     it('tidak menggunakan karakter em dash', () => {
       expect(landingSource).not.toContain('\u2014');
     });
+
+    it('tidak menduplikasi teks nama brand di samping logo.svg', () => {
+      expect(landingSource).not.toMatch(/<img[^>]+logo\.svg[^>]*>\s*<span[^>]*>AUROVIA<\/span>/i);
+    });
   });
 
   describe('Verifikasi Login & Register Sesuai Pedoman', () => {
@@ -152,6 +156,9 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
 
       // Tidak ada em dash
       expect(loginSource).not.toContain('\u2014');
+
+      // Tidak ada duplikasi teks AUROVIA di samping logo.svg
+      expect(loginSource).not.toMatch(/<img[^>]+logo\.svg[^>]*>\s*<span[^>]*>AUROVIA<\/span>/i);
     });
 
     it('Register konsisten dengan Login dan tidak memiliki Apple login', () => {
@@ -167,6 +174,9 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
 
       // Tidak ada em dash
       expect(registerSource).not.toContain('\u2014');
+
+      // Tidak ada duplikasi teks AUROVIA di samping logo.svg
+      expect(registerSource).not.toMatch(/<img[^>]+logo\.svg[^>]*>\s*<span[^>]*>AUROVIA<\/span>/i);
     });
   });
 
