@@ -53,8 +53,8 @@ import {
 import { isValidWebUrl } from '@/lib/urls';
 import { getInvitationGuests } from '@/lib/guests';
 import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
-import { InvitationRenderer } from '@/components/template';
 import { ValidationError, DatabaseError, AuthorizationError } from '@/lib/errors';
+import { EditorHeader, EditorSidebarNav, EditorPreviewCanvas, type EditorTabId } from '@/components/editor';
 
 /**
  * Metadata seksi untuk tampilan pengelolaan tata letak editor
@@ -263,13 +263,12 @@ export function InvitationDetail() {
   const [musicPreviewError, setMusicPreviewError] = useState<string | null>(null);
 
   // Tampilan antarmuka
-  const [activeTab, setActiveTab] = useState<
-    'settings' | 'cover' | 'hero' | 'content' | 'story' | 'events' | 'gallery' | 'gift' | 'music' | 'sections' | 'guests'
-  >('settings');
+  const [activeTab, setActiveTab] = useState<EditorTabId>('settings');
   const [guestCount, setGuestCount] = useState(0);
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('desktop');
-  const [showPreviewDesktop, setShowPreviewDesktop] = useState(true);
+  const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
+  const [confirmLeaveModalOpen, setConfirmLeaveModalOpen] = useState(false);
 
   // Status proses penyimpanan
   const [isSaving, setIsSaving] = useState(false);
@@ -738,6 +737,66 @@ export function InvitationDetail() {
     currentSectionsJson,
     currentCoverJson,
     savedSnapshot,
+  ]);
+
+  // Peringatan peramban saat meninggalkan halaman dengan perubahan belum tersimpan
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Handler navigasi kembali ke dashboard dengan proteksi perubahan belum disimpan
+  const handleBackToDashboard = () => {
+    if (hasUnsavedChanges) {
+      setConfirmLeaveModalOpen(true);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  // Handler tutup modal dengan tombol Escape (Aksesibilitas WCAG AA)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (confirmLeaveModalOpen) setConfirmLeaveModalOpen(false);
+        else if (storyModalOpen) setStoryModalOpen(false);
+        else if (deleteStoryModalOpen) setDeleteStoryModalOpen(false);
+        else if (eventModalOpen) setEventModalOpen(false);
+        else if (deleteEventModalOpen) setDeleteEventModalOpen(false);
+        else if (uploadModalOpen) setUploadModalOpen(false);
+        else if (editGalleryModalOpen) setEditGalleryModalOpen(false);
+        else if (deleteGalleryModalOpen) setDeleteGalleryModalOpen(false);
+        else if (giftAccountModalOpen) setGiftAccountModalOpen(false);
+        else if (deleteGiftAccountModalOpen) setDeleteGiftAccountModalOpen(false);
+        else if (publishModalOpen) setPublishModalOpen(false);
+        else if (publishSuccessModalOpen) setPublishSuccessModalOpen(false);
+        else if (unpublishModalOpen) setUnpublishModalOpen(false);
+        else if (deleteModalOpen) setDeleteModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    confirmLeaveModalOpen,
+    storyModalOpen,
+    deleteStoryModalOpen,
+    eventModalOpen,
+    deleteEventModalOpen,
+    uploadModalOpen,
+    editGalleryModalOpen,
+    deleteGalleryModalOpen,
+    giftAccountModalOpen,
+    deleteGiftAccountModalOpen,
+    publishModalOpen,
+    publishSuccessModalOpen,
+    unpublishModalOpen,
+    deleteModalOpen,
   ]);
 
   // Objek live invitation untuk preview lokal instan tanpa query
@@ -2016,341 +2075,107 @@ export function InvitationDetail() {
   };
 
   return (
-    <div className="py-6 max-w-7xl mx-auto space-y-6">
+    <div className="h-screen w-full flex flex-col bg-background text-text-primary overflow-hidden">
       {/* 1. Header Toolbar Editor */}
-      <header className="bg-surface border border-border rounded p-5 shadow-sm space-y-4">
-        {/* Baris Navigasi Atas & Info Status */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/dashboard"
-              className="text-xs font-semibold text-text-muted hover:text-text-primary transition-colors inline-flex items-center gap-1"
-            >
-              &larr; Dashboard
-            </Link>
-            <span className="text-border-strong text-xs">/</span>
-            <span className="text-xs text-text-subtle font-mono truncate max-w-[200px]">
-              {invitation.slug}
-            </span>
-          </div>
+      <EditorHeader
+        title={draftTitle}
+        slug={draftSlug}
+        status={invitation.status === 'published' ? 'published' : 'draft'}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isSaving={isSaving}
+        onSave={() => handleSaveAll()}
+        onPublish={handleOpenPublishModal}
+        onUnpublish={() => setUnpublishModalOpen(true)}
+        onDelete={() => setDeleteModalOpen(true)}
+        onCopyLink={handleCopyLink}
+        linkCopied={linkCopied}
+        mobileView={mobileView}
+        onToggleMobileView={() => setMobileView(mobileView === 'editor' ? 'preview' : 'editor')}
+        previewDevice={previewDevice}
+        onChangePreviewDevice={setPreviewDevice}
+        onToggleFullscreen={() => setIsFullscreenPreview((prev) => !prev)}
+        onBack={handleBackToDashboard}
+      />
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            {hasUnsavedChanges && (
-              <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-medium">
-                Ada perubahan belum disimpan
-              </span>
-            )}
-            <span
-              className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded border ${
-                invitation.status === 'published'
-                  ? 'border-success/40 bg-success/10 text-success'
-                  : 'border-border bg-surface-elevated text-text-muted'
-              }`}
-            >
-              {invitation.status === 'published' ? 'Dipublikasikan' : 'Draf'}
-            </span>
-          </div>
-        </div>
-
-        {/* Baris Judul & Tombol Aksi Utama */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary">
-              {draftTitle || 'Tanpa Judul'}
-            </h1>
-            <p className="text-xs text-text-muted mt-0.5">
-              Template: <strong className="font-medium text-text-primary">{previewConfig?.template?.name ?? 'Classic Elegance'}</strong>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Tombol Simpan Perubahan */}
-            <button
-              type="button"
-              onClick={() => handleSaveAll()}
-              disabled={isSaving}
-              className="py-2 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
-            >
-              {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
-            </button>
-
-            {/* Tombol Publikasi / Unpublish */}
-            {invitation.status === 'draft' ? (
-              <button
-                type="button"
-                onClick={handleOpenPublishModal}
-                disabled={isSaving || isPublishing}
-                className="py-2 px-4 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-primary rounded transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Publikasikan
-              </button>
-            ) : (
-              <>
-                <Link
-                  to={`/i/${invitation.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="py-2 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-primary rounded transition-colors cursor-pointer inline-flex items-center gap-1"
-                >
-                  Buka Undangan &rarr;
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setUnpublishModalOpen(true)}
-                  disabled={isUnpublishing}
-                  className="py-2 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted hover:text-danger rounded transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  Batalkan Publikasi
-                </button>
-              </>
-            )}
-
-            {/* Switch Tampilan Pratinjau di Layar Desktop */}
-            <button
-              type="button"
-              onClick={() => setShowPreviewDesktop(!showPreviewDesktop)}
-              className="hidden lg:inline-flex py-2 px-3 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted hover:text-text-primary rounded transition-colors cursor-pointer"
-            >
-              {showPreviewDesktop ? 'Sembunyikan Preview' : 'Tampilkan Preview'}
-            </button>
-
-            {/* Tombol Hapus */}
-            <button
-              type="button"
-              onClick={() => setDeleteModalOpen(true)}
-              disabled={isDeleting}
-              className="py-2 px-3 bg-surface hover:bg-danger/10 border border-border hover:border-danger/30 text-xs font-semibold text-danger rounded transition-colors cursor-pointer disabled:opacity-50"
-              title="Hapus Undangan"
-            >
-              Hapus
-            </button>
-          </div>
-        </div>
-
-        {/* Notifikasi Status Penyimpanan */}
-        {saveSuccessMessage && (
-          <div
-            role="status"
-            className="p-3 bg-success/10 border border-success/30 rounded text-xs text-success font-medium flex items-center justify-between"
-          >
+      {/* Notifikasi Status Penyimpanan */}
+      {saveSuccessMessage && (
+        <div
+          role="status"
+          className="bg-success/10 border-b border-success/30 px-4 py-2 text-xs text-success font-medium flex items-center justify-between shrink-0"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-success shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
             <span>{saveSuccessMessage}</span>
-            <button
-              type="button"
-              onClick={() => setSaveSuccessMessage(null)}
-              className="text-success hover:underline text-xs"
-            >
-              Tutup
-            </button>
           </div>
-        )}
-
-        {saveErrorMessage && (
-          <div
-            role="alert"
-            className="p-3 bg-danger/10 border border-danger/30 rounded text-xs text-danger font-medium flex items-center justify-between"
+          <button
+            type="button"
+            onClick={() => setSaveSuccessMessage(null)}
+            className="text-success hover:underline text-xs cursor-pointer font-semibold ml-3"
           >
+            Tutup
+          </button>
+        </div>
+      )}
+
+      {saveErrorMessage && (
+        <div
+          role="alert"
+          className="bg-danger/10 border-b border-danger/30 px-4 py-2 text-xs text-danger font-medium flex items-center justify-between shrink-0"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-danger shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <span>{saveErrorMessage}</span>
-            <button
-              type="button"
-              onClick={() => setSaveErrorMessage(null)}
-              className="text-danger hover:underline text-xs"
-            >
-              Tutup
-            </button>
           </div>
-        )}
-
-        {/* Banner Khusus Saat Undangan Sudah Terbit */}
-        {invitation.status === 'published' && (
-          <div className="p-3 bg-surface-elevated border border-border rounded flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-text-muted">Tautan Publik:</span>
-              <strong className="text-text-primary font-mono font-normal">/i/{invitation.slug}</strong>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="py-1 px-2.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-primary rounded transition-colors cursor-pointer"
-              >
-                {linkCopied ? 'Tautan Disalin!' : 'Salin Tautan'}
-              </button>
-              <Link
-                to={`/i/${invitation.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-1 px-2.5 bg-primary text-primary-foreground text-xs font-semibold rounded hover:bg-primary-hover transition-colors"
-              >
-                Lihat Halaman Publik &rarr;
-              </Link>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Switch Tampilan Khusus Mobile & Tablet (< lg) */}
-      <div className="flex lg:hidden bg-surface border border-border rounded p-1 text-xs font-semibold">
-        <button
-          type="button"
-          onClick={() => setMobileView('editor')}
-          className={`flex-1 py-2 text-center rounded transition-colors cursor-pointer ${
-            mobileView === 'editor'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-text-muted hover:text-text-primary'
-          }`}
-        >
-          Formulir Editor
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileView('preview')}
-          className={`flex-1 py-2 text-center rounded transition-colors cursor-pointer ${
-            mobileView === 'preview'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-text-muted hover:text-text-primary'
-          }`}
-        >
-          Pratinjau Langsung
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setSaveErrorMessage(null)}
+            className="text-danger hover:underline text-xs cursor-pointer font-semibold ml-3"
+          >
+            Tutup
+          </button>
+        </div>
+      )}
 
       {/* 2. Grid Ruang Kerja Utama (Editor vs Live Preview) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Kolom Kiri: Panel Formulir Editor (5 cols atau 12 cols jika preview disembunyikan) */}
-        <div
-          className={`${
-            showPreviewDesktop ? 'lg:col-span-5' : 'lg:col-span-12'
-          } ${mobileView === 'preview' ? 'hidden lg:block' : 'block'} space-y-4`}
+      <div className="flex-1 h-[calc(100vh-56px)] flex flex-col lg:flex-row overflow-hidden min-w-0">
+        {/* Sidebar Navigasi Seksi */}
+        <EditorSidebarNav
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          badges={{
+            storyCount: draftStory.length,
+            eventCount: draftEvents.length,
+            galleryCount: draftGallery.length,
+            giftCount: draftGiftAccounts.length,
+            guestCount,
+            coverEnabled: draftCover.enabled,
+            musicEnabled: draftMusic.enabled,
+          }}
+        />
+
+        {/* Kolom Formulir Editor Aktif */}
+        <main
+          className={`w-full lg:w-[460px] xl:w-[490px] h-full overflow-y-auto bg-surface border-r border-border shrink-0 select-text ${
+            mobileView === 'preview' ? 'hidden lg:block' : 'block'
+          }`}
         >
-          <div className="bg-surface border border-border rounded shadow-sm overflow-hidden">
-            {/* Navigasi Sub-Tab Editor (8 Tab) */}
-            <div className="flex border-b border-border bg-surface-elevated text-xs font-semibold overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setActiveTab('settings')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'settings'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Pengaturan
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('cover')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'cover'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Cover {draftCover.enabled ? '✓' : ''}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('hero')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'hero'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Hero &amp; Cover
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('content')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'content'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Mempelai
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('story')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'story'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Kisah Kami ({draftStory.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('events')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'events'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Acara ({draftEvents.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('gallery')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'gallery'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Galeri ({draftGallery.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('gift')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'gift'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Hadiah ({draftGiftAccounts.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('music')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'music'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Musik {draftMusic.enabled ? '✓' : ''}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('sections')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'sections'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Seksi
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('guests')}
-                className={`py-3 px-3 text-center border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  activeTab === 'guests'
-                    ? 'border-primary text-primary bg-surface'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                RSVP &amp; Tamu {guestCount > 0 ? `(${guestCount})` : ''}
-              </button>
-            </div>
 
             {/* TAB 1: PENGATURAN UMUM */}
             {activeTab === 'settings' && (
               <div className="p-5 space-y-5 text-xs">
+                <div className="pb-3 border-b border-border">
+                  <h3 className="font-semibold text-text-primary text-sm">
+                    Pengaturan Umum
+                  </h3>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    Atur nama undangan, tautan kustom, serta preferensi kehadiran dan ucapan.
+                  </p>
+                </div>
+
                 {/* Judul Undangan */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
@@ -2378,9 +2203,14 @@ export function InvitationDetail() {
 
                 {/* Slug Tautan Kustom */}
                 <div className="space-y-1">
-                  <label htmlFor="formSlug" className="font-semibold text-text-primary block">
-                    Tautan Kustom (Slug)
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="formSlug" className="font-semibold text-text-primary block">
+                      Tautan Kustom (Slug)
+                    </label>
+                    <span className="text-[11px] text-text-subtle font-mono">
+                      {draftSlug.length}/60
+                    </span>
+                  </div>
                   <div className="flex items-center">
                     <span className="py-2 px-2.5 bg-surface-elevated border border-r-0 border-border rounded-l text-text-muted text-xs font-mono">
                       /i/
@@ -2483,17 +2313,22 @@ export function InvitationDetail() {
 
                       {/* Deskripsi / Instruksi RSVP */}
                       <div className="space-y-1">
-                        <label htmlFor="rsvpDescInput" className="font-medium text-text-primary block">
-                          Teks Deskripsi / Instruksi RSVP
-                        </label>
+                        <div className="flex justify-between items-center">
+                          <label htmlFor="rsvpDescInput" className="font-medium text-text-primary block">
+                            Teks Deskripsi / Instruksi RSVP
+                          </label>
+                          <span className="text-[11px] text-text-subtle font-mono">
+                            {draftRsvpDescription.length}/300
+                          </span>
+                        </div>
                         <textarea
                           id="rsvpDescInput"
-                          rows={2}
+                          rows={3}
                           value={draftRsvpDescription}
                           onChange={(e) => setDraftRsvpDescription(e.target.value)}
                           placeholder="Mohon konfirmasikan kepastian kehadiran Anda untuk kelancaran acara kami."
                           maxLength={300}
-                          className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
+                          className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs min-h-[72px] resize-y"
                         />
                         <p className="text-[11px] text-text-subtle">
                           Pesan pengantar di bawah judul formulir RSVP.
@@ -2804,6 +2639,15 @@ export function InvitationDetail() {
             {/* TAB: HERO / COVER */}
             {activeTab === 'hero' && (
               <div className="p-5 space-y-5 text-xs">
+                <div className="pb-3 border-b border-border">
+                  <h3 className="font-semibold text-text-primary text-sm">
+                    Sampul Utama (Hero Section)
+                  </h3>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    Sesuaikan tajuk pembuka, nama panggilan mempelai, dan kutipan sambutan.
+                  </p>
+                </div>
+
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
                     <label htmlFor="heroHeadline" className="font-semibold text-text-primary block">
@@ -2882,6 +2726,15 @@ export function InvitationDetail() {
             {/* TAB: MEMPELAI & TUAN RUMAH */}
             {activeTab === 'content' && (
               <div className="p-5 space-y-6 text-xs">
+                <div className="pb-3 border-b border-border">
+                  <h3 className="font-semibold text-text-primary text-sm">
+                    Profil Mempelai
+                  </h3>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    Lengkapi identitas, foto profil, dan biografi singkat kedua calon mempelai.
+                  </p>
+                </div>
+
                 {/* Mempelai Pria */}
                 <div className="space-y-4 p-4 border border-border rounded bg-surface-elevated/40">
                   <div className="flex items-center justify-between">
@@ -3134,16 +2987,22 @@ export function InvitationDetail() {
 
                 {/* Pesan Penutup & Kutipan */}
                 <div className="space-y-1 pt-2">
-                  <label htmlFor="closingNotes" className="font-semibold text-text-primary block">
-                    Pesan Penutup atau Doa Singkat
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="closingNotes" className="font-semibold text-text-primary block">
+                      Pesan Penutup atau Doa Singkat
+                    </label>
+                    <span className="text-[11px] text-text-subtle font-mono">
+                      {draftClosingNotes.length}/500
+                    </span>
+                  </div>
                   <textarea
                     id="closingNotes"
                     rows={4}
+                    maxLength={500}
                     value={draftClosingNotes}
                     onChange={(e) => setDraftClosingNotes(e.target.value)}
                     placeholder="Contoh: Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir untuk memberikan doa restu kepada kedua mempelai."
-                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed"
+                    className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed min-h-[100px] resize-y"
                   />
                   <p className="text-[11px] text-text-subtle">
                     Pesan ini akan ditampilkan pada seksi penutup undangan.
@@ -3475,8 +3334,11 @@ export function InvitationDetail() {
                         : 'border-border bg-surface'
                     }`}
                   >
-                    <div className="w-12 h-12 mx-auto rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted text-lg">
-                      &#128247;
+                    <div className="w-12 h-12 mx-auto rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-subtle">
+                      <svg className="w-5 h-5 text-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                      </svg>
                     </div>
                     <div>
                       <p className="text-text-primary font-medium text-xs">
@@ -3646,17 +3508,22 @@ export function InvitationDetail() {
                       </div>
 
                       <div className="space-y-1">
-                        <label htmlFor="gift-desc-input" className="font-medium text-text-primary block">
-                          Pesan Pengantar / Instruksi
-                        </label>
+                        <div className="flex justify-between items-center">
+                          <label htmlFor="gift-desc-input" className="font-medium text-text-primary block">
+                            Pesan Pengantar / Instruksi
+                          </label>
+                          <span className="text-[11px] text-text-subtle font-mono">
+                            {draftGiftDescription.length}/300
+                          </span>
+                        </div>
                         <textarea
                           id="gift-desc-input"
-                          rows={2}
+                          rows={3}
                           value={draftGiftDescription}
                           onChange={(e) => setDraftGiftDescription(e.target.value)}
                           placeholder="Tuliskan ucapan atau pengantar untuk para tamu..."
                           maxLength={300}
-                          className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
+                          className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs min-h-[72px] resize-y"
                         />
                       </div>
                     </div>
@@ -3837,9 +3704,14 @@ export function InvitationDetail() {
                         </div>
 
                         <div className="space-y-1">
-                          <label htmlFor="gift-address-text" className="font-medium text-text-primary block">
-                            Alamat Lengkap Pengiriman
-                          </label>
+                          <div className="flex justify-between items-center">
+                            <label htmlFor="gift-address-text" className="font-medium text-text-primary block">
+                              Alamat Lengkap Pengiriman
+                            </label>
+                            <span className="text-[11px] text-text-subtle font-mono">
+                              {draftGiftAddress.address.length}/300
+                            </span>
+                          </div>
                           <textarea
                             id="gift-address-text"
                             rows={3}
@@ -3849,7 +3721,7 @@ export function InvitationDetail() {
                             }
                             placeholder="Jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota/kabupaten, kode pos"
                             maxLength={300}
-                            className="w-full py-1.5 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs resize-none"
+                            className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs min-h-[72px] resize-y"
                           />
                         </div>
 
@@ -4013,12 +3885,16 @@ export function InvitationDetail() {
                         >
                           {musicPreviewPlaying ? (
                             <>
-                              <span>&#10074;&#10074;</span>
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75zm10.5 0a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75z" clipRule="evenodd" />
+                              </svg>
                               <span>Hentikan Pratinjau</span>
                             </>
                           ) : (
                             <>
-                              <span>&#9658;</span>
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                              </svg>
                               <span>Uji Putar Musik</span>
                             </>
                           )}
@@ -4237,90 +4113,32 @@ export function InvitationDetail() {
                 onGuestCountChange={setGuestCount}
               />
             )}
-          </div>
-        </div>
+        </main>
 
         {/* Kolom Kanan: Panel Pratinjau Desain Langsung (Live Preview) */}
-        {showPreviewDesktop && (
-          <div
-            className={`lg:col-span-7 ${
-              mobileView === 'editor' ? 'hidden lg:block' : 'block'
-            } space-y-3 sticky top-6`}
-          >
-            <div className="border border-border rounded overflow-hidden shadow-sm bg-background">
-              {/* Header Panel Pratinjau */}
-              <div className="py-2.5 px-4 bg-surface-elevated border-b border-border flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-text-primary">
-                    Pratinjau Langsung
-                  </span>
-                  <span className="px-2 py-0.5 rounded border border-border bg-surface text-[10px] uppercase font-semibold text-text-muted">
-                    {previewConfig?.template?.name ?? 'Classic Elegance'}
-                  </span>
-                </div>
-
-                {/* Sakelar Tampilan Lebar Desktop vs Ponsel */}
-                <div className="flex items-center gap-1 bg-surface border border-border rounded p-0.5 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDevice('desktop')}
-                    className={`py-0.5 px-2 rounded transition-colors cursor-pointer ${
-                      previewDevice === 'desktop'
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    Layar Lebar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewDevice('mobile')}
-                    className={`py-0.5 px-2 rounded transition-colors cursor-pointer ${
-                      previewDevice === 'mobile'
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'text-text-muted hover:text-text-primary'
-                    }`}
-                  >
-                    Layar Ponsel
-                  </button>
-                </div>
-              </div>
-
-              {/* Area Renderer Undangan (Responsif terhadap draft lokal acara dan galeri) */}
-              <div
-                className={`max-h-[720px] overflow-y-auto ${
-                  previewDevice === 'mobile' ? 'p-6 flex justify-center bg-surface-elevated/60' : ''
-                }`}
-              >
-                <div
-                  className={
-                    previewDevice === 'mobile'
-                      ? 'w-[390px] border border-border rounded-xl overflow-hidden shadow-md bg-background'
-                      : 'w-full'
-                  }
-                >
-                  {liveInvitation ? (
-                    <InvitationRenderer
-                      key={coverPreviewResetKey}
-                      invitation={liveInvitation}
-                      template={previewConfig?.template}
-                      customSections={draftSections}
-                      content={liveContent}
-                      events={draftEvents}
-                      gallery={draftGallery}
-                      mode="editor"
-                      previewCover={activeTab === 'cover' && draftCover.enabled}
-                    />
-                  ) : (
-                    <div className="py-24 text-center text-xs text-text-muted">
-                      Menyiapkan pratinjau...
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <div
+          className={`flex-1 h-full min-w-0 ${
+            mobileView === 'editor' ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          <EditorPreviewCanvas
+            previewDevice={previewDevice}
+            onChangePreviewDevice={setPreviewDevice}
+            liveInvitation={liveInvitation}
+            template={previewConfig?.template}
+            draftSections={draftSections}
+            liveContent={liveContent}
+            draftEvents={draftEvents}
+            draftGallery={draftGallery}
+            previewCover={activeTab === 'cover' && draftCover.enabled}
+            coverPreviewResetKey={coverPreviewResetKey}
+            onResetCoverPreview={() => setCoverPreviewResetKey((k) => k + 1)}
+            isFullscreen={isFullscreenPreview}
+            onToggleFullscreen={() => setIsFullscreenPreview((prev) => !prev)}
+            slug={invitation.slug}
+            isPublished={invitation.status === 'published'}
+          />
+        </div>
       </div>
 
       {/* 3. Modal Tambah / Edit Acara */}
@@ -4424,11 +4242,11 @@ export function InvitationDetail() {
                 </label>
                 <textarea
                   id="evtAddress"
-                  rows={2}
+                  rows={3}
                   value={eventForm.address}
                   onChange={(e) => setEventForm({ ...eventForm, address: e.target.value })}
                   placeholder="Contoh: Jl. Sisingamangaraja, Kebayoran Baru, Jakarta Selatan"
-                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs min-h-[64px] resize-y"
                 />
               </div>
 
@@ -4595,7 +4413,7 @@ export function InvitationDetail() {
                   value={storyForm.description}
                   onChange={(e) => setStoryForm((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Ceritakan kisah indah pada momen ini secara singkat dan berkesan..."
-                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed"
+                  className="w-full py-2 px-3 border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary text-xs leading-relaxed min-h-[100px] resize-y"
                 />
               </div>
 
@@ -5378,6 +5196,45 @@ export function InvitationDetail() {
                 className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer min-h-[36px]"
               >
                 Ya, Hapus Rekening
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 13. Modal Konfirmasi Tinggalkan Halaman saat ada perubahan belum disimpan */}
+      {confirmLeaveModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Konfirmasi Tinggalkan Halaman"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        >
+          <div className="bg-surface border border-border rounded-lg max-w-md w-full p-6 shadow-lg space-y-4">
+            <h2 className="font-serif text-xl font-bold text-text-primary">
+              Perubahan Belum Disimpan
+            </h2>
+
+            <p className="text-xs text-text-muted leading-relaxed">
+              Anda memiliki perubahan data undangan yang belum disimpan. Jika Anda meninggalkan halaman ini sekarang, perubahan tersebut tidak akan tersimpan.
+            </p>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmLeaveModalOpen(false)}
+                className="py-1.5 px-3.5 bg-surface hover:bg-surface-elevated border border-border text-xs font-semibold text-text-muted rounded transition-colors cursor-pointer min-h-[36px]"
+              >
+                Tetap di Editor
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmLeaveModalOpen(false);
+                  navigate('/dashboard');
+                }}
+                className="py-1.5 px-4 bg-danger hover:bg-danger/90 text-danger-foreground text-xs font-semibold rounded transition-colors cursor-pointer min-h-[36px]"
+              >
+                Tinggalkan Halaman
               </button>
             </div>
           </div>

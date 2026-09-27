@@ -299,6 +299,16 @@ function HeaderNav({ onOpenHelp }: { onOpenHelp: () => void }) {
 
 function LayoutContent() {
   const [helpOpen, setHelpOpen] = useState(false);
+  const location = useLocation();
+  const isEditor = location.pathname.startsWith('/dashboard/invitations/');
+
+  if (isEditor) {
+    return (
+      <div className="h-screen flex flex-col bg-background text-text-primary overflow-hidden">
+        <Outlet />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-text-primary">
