@@ -45,7 +45,7 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Masuk');
 
       // Section 2: Hero
-      expect(landingSource).toContain('Undangan Digital yang Dibuat untuk Momen yang Berarti');
+      expect(landingSource).toContain('Undangan Digital yang Dibuat untuk Cerita yang Berarti');
       expect(landingSource).toContain('Gratis untuk mulai membuat');
 
       // Section 3: Value Strip
@@ -84,11 +84,11 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
 
       // Section 7: Cara Kerja
       expect(landingSource).toContain('01');
-      expect(landingSource).toContain('Pilih Desain');
+      expect(landingSource).toContain('Pilih Template');
       expect(landingSource).toContain('02');
-      expect(landingSource).toContain('Personalisasi Konten');
+      expect(landingSource).toContain('Isi Informasi Undangan');
       expect(landingSource).toContain('03');
-      expect(landingSource).toContain('Terbitkan & Bagikan');
+      expect(landingSource).toContain('Bagikan Undangan');
 
       // Section 8: Personalisasi
       expect(landingSource).toContain('Template adalah awal. Cerita Anda yang membuatnya berbeda.');

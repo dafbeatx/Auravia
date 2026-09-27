@@ -78,6 +78,21 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<RsvpItem> {
   const trimmedWishes = input.wishes?.trim() || null;
   const paxCount = input.status === 'declined' ? 1 : (input.pax_count ?? 1);
 
+  // Jika ID undangan demo, kembalikan data respons lokal yang aman tanpa memanggil Supabase
+  if (input.invitation_id.startsWith('demo-')) {
+    return {
+      id: `demo-rsvp-${Date.now()}`,
+      invitation_id: input.invitation_id,
+      guest_id: input.guest_id || null,
+      guest_name: trimmedName,
+      status: input.status,
+      pax_count: paxCount,
+      wishes: trimmedWishes,
+      is_hidden: false,
+      created_at: new Date().toISOString(),
+    };
+  }
+
   // Column-level security and RLS enforce is_hidden = false by table DEFAULT and policy WITH CHECK.
   // We do not include is_hidden in payload because anon role does not have INSERT privilege on is_hidden.
   const payload = {
@@ -118,6 +133,33 @@ export async function getPublicWishes(
   limit = 50,
   offset = 0
 ): Promise<PublicRsvpWish[]> {
+  // Jika ID undangan demo, berikan untaian ucapan natural tanpa memicu PostgREST 400 Bad Request
+  if (!invitationId || invitationId.startsWith('demo-')) {
+    return [
+      {
+        id: 'demo-wish-1',
+        invitation_id: invitationId,
+        guest_name: 'Dimas & Dinda',
+        wishes: "Barakallahu lakuma wa baraka 'alaikuma wa jama'a bainakuma fii khoir. Selamat menempuh hidup baru Raka & Aulia!",
+        created_at: '2026-09-20T10:00:00Z',
+      },
+      {
+        id: 'demo-wish-2',
+        invitation_id: invitationId,
+        guest_name: 'Sahabat Teknik 2017',
+        wishes: 'Semoga cinta dan kebahagiaan kalian senantiasa mekar abadi sampai maut memisahkan. Selamat berbahagia!',
+        created_at: '2026-09-21T14:30:00Z',
+      },
+      {
+        id: 'demo-wish-3',
+        invitation_id: invitationId,
+        guest_name: 'Keluarga Besar H. Mansyur',
+        wishes: 'Selamat berbahagia untuk kedua mempelai dan keluarga besar. Semoga menjadi keluarga sakinah, mawaddah, warahmah.',
+        created_at: '2026-09-22T09:15:00Z',
+      },
+    ];
+  }
+
   // Respects anonymous column grants: id, invitation_id, guest_name, wishes, created_at.
   const { data, error } = await supabase
     .from('rsvps')

@@ -193,27 +193,27 @@ export function LandingPage() {
               </div>
 
               <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-text-primary font-normal leading-tight tracking-tight">
-                Undangan Digital yang Dibuat untuk Momen yang Berarti.
+                Undangan Digital yang Dibuat untuk Cerita yang Berarti.
               </h1>
 
               <p className="text-sm sm:text-base text-text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Buat undangan pernikahan digital yang elegan, personal, dan mudah dibagikan. Pilih desain, isi cerita Anda, lalu bagikan secara terstruktur kepada orang-orang terdekat.
+                Bagikan momen pernikahan Anda melalui undangan digital yang elegan, personal, dan mudah dibagikan.
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
-                <Link
-                  to={createInvitationUrl}
-                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px] cursor-pointer"
-                >
-                  Mulai Buat Undangan
-                </Link>
-
                 <a
                   href="#template"
                   className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-border bg-surface hover:bg-surface-elevated text-text-primary text-sm font-semibold tracking-wide transition-all min-h-[48px] cursor-pointer"
                 >
                   Lihat Template
                 </a>
+
+                <Link
+                  to={createInvitationUrl}
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px] cursor-pointer"
+                >
+                  Buat Undangan
+                </Link>
               </div>
 
               <p className="text-xs text-text-subtle pt-1">
@@ -592,17 +592,17 @@ export function LandingPage() {
               {[
                 {
                   step: '01',
-                  title: 'Pilih Desain',
+                  title: 'Pilih Template',
                   desc: 'Pilih salah satu template kurasi desainer kami yang selaras dengan tema hari bahagia Anda.',
                 },
                 {
                   step: '02',
-                  title: 'Personalisasi Konten',
+                  title: 'Isi Informasi Undangan',
                   desc: 'Lengkapi identitas pasangan, waktu, lokasi, kisah cinta, foto galeri, hingga musik latar pilihan.',
                 },
                 {
                   step: '03',
-                  title: 'Terbitkan & Bagikan',
+                  title: 'Bagikan Undangan',
                   desc: 'Pratinjau hasil undangan Anda, publikasikan dengan satu klik, dan bagikan tautan khusus per tamu.',
                 },
               ].map((s) => (

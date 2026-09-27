@@ -259,7 +259,7 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
         {guest?.name && (
           <div className="inline-flex flex-col items-center gap-1.5 py-3 px-6 rounded-xl border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/90 backdrop-blur-md shadow-xs max-w-xs mx-auto">
             <span className="text-[10px] uppercase tracking-widest text-[var(--theme-color-primary)]/70 font-semibold">
-              Kepada Yth. Bapak/Ibu/Saudara/i:
+              Kepada Yth.
             </span>
             <span
               className="text-base sm:text-lg font-medium text-[var(--theme-color-primary)] break-words text-center"
