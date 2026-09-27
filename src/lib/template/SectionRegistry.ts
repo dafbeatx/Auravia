@@ -1,15 +1,22 @@
 import type { ComponentType } from 'react';
 import type { RegisteredSection, SectionRendererProps, SectionConfig, TemplateDefinition } from './types';
 import { HeroSection } from '@/components/template/sections/HeroSection';
+import { HeroRoyalSection } from '@/components/template/sections/HeroRoyalSection';
 import { CoupleSection } from '@/components/template/sections/CoupleSection';
+import { CoupleRoyalSection } from '@/components/template/sections/CoupleRoyalSection';
 import { EventSection } from '@/components/template/sections/EventSection';
+import { EventGlassCardSection } from '@/components/template/sections/EventGlassCardSection';
 import { StorySection } from '@/components/template/sections/StorySection';
 import { GallerySection } from '@/components/template/sections/GallerySection';
+import { GalleryRoyalSection } from '@/components/template/sections/GalleryRoyalSection';
 import { RsvpSection } from '@/components/template/sections/RsvpSection';
 import { WishesSection } from '@/components/template/sections/WishesSection';
 import { GiftSection } from '@/components/template/sections/GiftSection';
+import { GiftDigitalEnvelopeSection } from '@/components/template/sections/GiftDigitalEnvelopeSection';
 import { QuoteSection } from '@/components/template/sections/QuoteSection';
+import { QuoteIslamicSection } from '@/components/template/sections/QuoteIslamicSection';
 import { ClosingSection } from '@/components/template/sections/ClosingSection';
+import { ClosingRoyalSection } from '@/components/template/sections/ClosingRoyalSection';
 import { UnknownSectionFallback } from '@/components/template/sections/UnknownSectionFallback';
 
 /**
@@ -40,12 +47,13 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'hero',
     name: 'Hero Cover',
     description: 'Header pembuka undangan dengan judul dan waktu acara utama.',
-    availableVariants: ['editorial', 'centered', 'minimal'],
+    availableVariants: ['editorial', 'royal', 'centered', 'minimal'],
     defaultVariant: 'editorial',
     component: HeroSection as ComponentType<SectionRendererProps>,
     variants: {
       default: HeroSection as ComponentType<SectionRendererProps>,
       editorial: HeroSection as ComponentType<SectionRendererProps>,
+      royal: HeroRoyalSection as ComponentType<SectionRendererProps>,
       centered: HeroSection as ComponentType<SectionRendererProps>,
       minimal: HeroSection as ComponentType<SectionRendererProps>,
     },
@@ -54,12 +62,13 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'quote',
     name: 'Kutipan & Ayat',
     description: 'Untaian ayat suci atau kutipan mutiara pernikahan.',
-    availableVariants: ['islamic', 'minimal', 'card'],
+    availableVariants: ['islamic', 'royal', 'minimal', 'card'],
     defaultVariant: 'islamic',
     component: QuoteSection as ComponentType<SectionRendererProps>,
     variants: {
       default: QuoteSection as ComponentType<SectionRendererProps>,
-      islamic: QuoteSection as ComponentType<SectionRendererProps>,
+      islamic: QuoteIslamicSection as ComponentType<SectionRendererProps>,
+      royal: QuoteIslamicSection as ComponentType<SectionRendererProps>,
       minimal: QuoteSection as ComponentType<SectionRendererProps>,
       card: QuoteSection as ComponentType<SectionRendererProps>,
     },
@@ -68,12 +77,14 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'couple',
     name: 'Profil Mempelai',
     description: 'Informasi kedua calon mempelai atau tuan rumah acara.',
-    availableVariants: ['cards', 'split', 'stacked'],
+    availableVariants: ['cards', 'royal', 'monogram', 'split', 'stacked'],
     defaultVariant: 'cards',
     component: CoupleSection as ComponentType<SectionRendererProps>,
     variants: {
       default: CoupleSection as ComponentType<SectionRendererProps>,
       cards: CoupleSection as ComponentType<SectionRendererProps>,
+      royal: CoupleRoyalSection as ComponentType<SectionRendererProps>,
+      monogram: CoupleRoyalSection as ComponentType<SectionRendererProps>,
       split: CoupleSection as ComponentType<SectionRendererProps>,
       stacked: CoupleSection as ComponentType<SectionRendererProps>,
     },
@@ -82,12 +93,14 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'event',
     name: 'Agenda Acara',
     description: 'Rincian waktu, lokasi, dan peta rute acara.',
-    availableVariants: ['cards', 'timeline', 'classic'],
+    availableVariants: ['cards', 'glass', 'royal', 'timeline', 'classic'],
     defaultVariant: 'cards',
     component: EventSection as ComponentType<SectionRendererProps>,
     variants: {
       default: EventSection as ComponentType<SectionRendererProps>,
       cards: EventSection as ComponentType<SectionRendererProps>,
+      glass: EventGlassCardSection as ComponentType<SectionRendererProps>,
+      royal: EventGlassCardSection as ComponentType<SectionRendererProps>,
       timeline: EventSection as ComponentType<SectionRendererProps>,
       classic: EventSection as ComponentType<SectionRendererProps>,
     },
@@ -103,18 +116,20 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
       default: StorySection as ComponentType<SectionRendererProps>,
       timeline: StorySection as ComponentType<SectionRendererProps>,
       cards: StorySection as ComponentType<SectionRendererProps>,
+      royal: StorySection as ComponentType<SectionRendererProps>,
     },
   },
   {
     type: 'gallery',
     name: 'Galeri Foto',
     description: 'Koleksi dokumentasi foto momen kebahagiaan.',
-    availableVariants: ['grid', 'masonry', 'carousel'],
+    availableVariants: ['grid', 'royal', 'masonry', 'carousel'],
     defaultVariant: 'grid',
     component: GallerySection as ComponentType<SectionRendererProps>,
     variants: {
       default: GallerySection as ComponentType<SectionRendererProps>,
       grid: GallerySection as ComponentType<SectionRendererProps>,
+      royal: GalleryRoyalSection as ComponentType<SectionRendererProps>,
       masonry: GallerySection as ComponentType<SectionRendererProps>,
       carousel: GallerySection as ComponentType<SectionRendererProps>,
     },
@@ -123,12 +138,13 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'rsvp',
     name: 'Konfirmasi Kehadiran',
     description: 'Formulir konfirmasi kehadiran tamu undangan.',
-    availableVariants: ['standard', 'minimal'],
+    availableVariants: ['standard', 'royal', 'minimal'],
     defaultVariant: 'standard',
     component: RsvpSection as ComponentType<SectionRendererProps>,
     variants: {
       default: RsvpSection as ComponentType<SectionRendererProps>,
       standard: RsvpSection as ComponentType<SectionRendererProps>,
+      royal: RsvpSection as ComponentType<SectionRendererProps>,
       minimal: RsvpSection as ComponentType<SectionRendererProps>,
     },
   },
@@ -136,12 +152,13 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'wishes',
     name: 'Doa & Ucapan',
     description: 'Buku ucapan dan untaian doa dari tamu.',
-    availableVariants: ['list', 'wall'],
+    availableVariants: ['list', 'royal', 'wall'],
     defaultVariant: 'list',
     component: WishesSection as ComponentType<SectionRendererProps>,
     variants: {
       default: WishesSection as ComponentType<SectionRendererProps>,
       list: WishesSection as ComponentType<SectionRendererProps>,
+      royal: WishesSection as ComponentType<SectionRendererProps>,
       wall: WishesSection as ComponentType<SectionRendererProps>,
     },
   },
@@ -149,12 +166,13 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'gift',
     name: 'Tanda Kasih',
     description: 'Informasi rekening hadiah pernikahan.',
-    availableVariants: ['cards', 'simple'],
+    availableVariants: ['cards', 'royal', 'simple'],
     defaultVariant: 'cards',
     component: GiftSection as ComponentType<SectionRendererProps>,
     variants: {
       default: GiftSection as ComponentType<SectionRendererProps>,
       cards: GiftSection as ComponentType<SectionRendererProps>,
+      royal: GiftDigitalEnvelopeSection as ComponentType<SectionRendererProps>,
       simple: GiftSection as ComponentType<SectionRendererProps>,
     },
   },
@@ -162,12 +180,13 @@ export const INITIAL_SECTIONS: RegisteredSection[] = [
     type: 'closing',
     name: 'Penutup & Salam',
     description: 'Ucapan terima kasih dan salam penutup.',
-    availableVariants: ['simple'],
+    availableVariants: ['simple', 'royal'],
     defaultVariant: 'simple',
     component: ClosingSection as ComponentType<SectionRendererProps>,
     variants: {
       default: ClosingSection as ComponentType<SectionRendererProps>,
       simple: ClosingSection as ComponentType<SectionRendererProps>,
+      royal: ClosingRoyalSection as ComponentType<SectionRendererProps>,
     },
   },
 ];

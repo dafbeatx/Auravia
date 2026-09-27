@@ -1,13 +1,15 @@
 import type { TemplateDefinition } from '../types';
 import { classicEleganceTemplate } from './classicElegance';
+import { royalNavyGoldTemplate } from './royalNavyGold';
 
-export { classicEleganceTemplate };
+export { classicEleganceTemplate, royalNavyGoldTemplate };
 
 /**
  * Peta seluruh definisi template terdaftar di platform Aurovia
  */
 export const TEMPLATE_DEFINITIONS: Record<string, TemplateDefinition> = {
   'classic-elegance': classicEleganceTemplate,
+  'royal-navy-gold': royalNavyGoldTemplate,
 };
 
 /**

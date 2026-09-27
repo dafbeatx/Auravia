@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { InvitationContentCover, InvitationContent } from '@/lib/template/types';
 import { isValidWebUrl } from '@/lib/urls';
+import { DecorativeDivider, MonogramFrame } from '@/components/template/ornaments';
 
 export interface CoverEnvelopeProps {
   cover?: InvitationContentCover | null;
@@ -221,11 +222,7 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
 
       {/* Bagian Atas: Eyebrow Khidmat & Ornamen */}
       <div className="relative z-10 w-full text-center pt-2 sm:pt-6 space-y-2">
-        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
-          <span>✦</span>
-          <span className="text-[8px] opacity-70">♦</span>
-          <span>✦</span>
-        </div>
+        <DecorativeDivider variant="diamond" withLine={false} />
 
         <p
           className="text-xs uppercase tracking-[0.25em] font-semibold text-[var(--theme-color-primary)]/80 inline-block px-4 py-1.5 rounded-[var(--theme-radius-button)] border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/70 backdrop-blur-xs"
@@ -238,15 +235,7 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
       <div className="relative z-10 w-full max-w-lg mx-auto text-center space-y-6 sm:space-y-8 my-auto py-6">
         {/* Monogram Lingkaran Klasik jika tanpa background image */}
         {!validBackgroundUrl && coupleMonogram && (
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full border-2 border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/80 flex items-center justify-center shadow-md select-none">
-            <div className="absolute inset-1 rounded-full border border-dashed border-[var(--theme-color-border)]/40 pointer-events-none" />
-            <span
-              className="text-xl sm:text-2xl font-light text-[var(--theme-color-accent)]"
-              style={{ fontFamily: 'var(--theme-font-heading)' }}
-            >
-              {coupleMonogram}
-            </span>
-          </div>
+          <MonogramFrame initials={coupleMonogram} variant="royal-circle" />
         )}
 
         <div className="space-y-3">

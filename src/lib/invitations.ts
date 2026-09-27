@@ -640,7 +640,7 @@ export async function updateInvitationSections(
  * Daftar tipe seksi kanonikal yang diizinkan oleh constraint database public.invitation_sections:
  * CHECK (section_type IN ('hero', 'hosts', 'events', 'story', 'gallery', 'gift', 'rsvp', 'closing'))
  */
-const DB_CANONICAL_SECTION_TYPES = new Set([
+export const DB_CANONICAL_SECTION_TYPES = new Set([
   'hero',
   'hosts',
   'events',
@@ -654,7 +654,7 @@ const DB_CANONICAL_SECTION_TYPES = new Set([
 /**
  * Normalisasi tipe seksi ke nama kolom kanonikal database jika menggunakan alias (misal couple -> hosts)
  */
-function normalizeToDbSectionType(type: string): string {
+export function normalizeToDbSectionType(type: string): string {
   const clean = type.trim().toLowerCase();
   if (clean === 'couple') return 'hosts';
   if (clean === 'event') return 'events';

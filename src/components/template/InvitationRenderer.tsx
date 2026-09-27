@@ -228,19 +228,64 @@ export const InvitationRenderer: React.FC<InvitationRendererProps> = ({
               );
             }
 
+            const isHeroSection = section.section_type === 'hero';
+            const shouldRenderCompanionQuote =
+              isHeroSection &&
+              !activeSections.some((s) => s.section_type === 'quote') &&
+              content?.quote?.enabled !== false;
+
+            const isRsvpSection = section.section_type === 'rsvp';
+            const shouldRenderCompanionWishes =
+              isRsvpSection &&
+              !activeSections.some((s) => s.section_type === 'wishes') &&
+              normalizedInvitation.showWishes;
+
             return (
-              <SectionComponent
-                key={sectionKey}
-                sectionId={section.id}
-                sectionType={section.section_type}
-                variant={section.variant}
-                config={section.custom_config as Record<string, unknown> | undefined}
-                invitation={normalizedInvitation}
-                content={content}
-                events={events}
-                gallery={gallery}
-                guest={guest}
-              />
+              <React.Fragment key={sectionKey}>
+                <SectionComponent
+                  sectionId={section.id}
+                  sectionType={section.section_type}
+                  variant={section.variant}
+                  config={section.custom_config as Record<string, unknown> | undefined}
+                  invitation={normalizedInvitation}
+                  content={content}
+                  events={events}
+                  gallery={gallery}
+                  guest={guest}
+                />
+                {shouldRenderCompanionQuote && (() => {
+                  const quoteVariant = templateDefinition.sectionVariants['quote'] || 'default';
+                  const QuoteComp = getSectionVariantComponent('quote', quoteVariant, templateDefinition);
+                  return (
+                    <QuoteComp
+                      sectionId="companion-quote"
+                      sectionType="quote"
+                      variant={quoteVariant}
+                      invitation={normalizedInvitation}
+                      content={content}
+                      events={events}
+                      gallery={gallery}
+                      guest={guest}
+                    />
+                  );
+                })()}
+                {shouldRenderCompanionWishes && (() => {
+                  const wishesVariant = templateDefinition.sectionVariants['wishes'] || 'default';
+                  const WishesComp = getSectionVariantComponent('wishes', wishesVariant, templateDefinition);
+                  return (
+                    <WishesComp
+                      sectionId="companion-wishes"
+                      sectionType="wishes"
+                      variant={wishesVariant}
+                      invitation={normalizedInvitation}
+                      content={content}
+                      events={events}
+                      gallery={gallery}
+                      guest={guest}
+                    />
+                  );
+                })()}
+              </React.Fragment>
             );
           })
         )}

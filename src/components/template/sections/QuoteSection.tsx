@@ -35,11 +35,7 @@ export const QuoteSection: React.FC<SectionRendererProps> = ({ content }) => {
         ) : null}
 
         {/* Garis Pemisah Emas Halus */}
-        <div className="flex items-center justify-center gap-3">
-          <div className="h-[1px] bg-gradient-to-r from-transparent via-[var(--theme-color-border)]/40 to-transparent w-16" />
-          <span className="text-[var(--theme-color-accent)] text-[8px] opacity-70">♦</span>
-          <div className="h-[1px] bg-gradient-to-r from-transparent via-[var(--theme-color-border)]/40 to-transparent w-16" />
-        </div>
+        <DecorativeDivider variant="diamond" withLine={true} className="my-3" />
 
         {/* Teks Terjemahan / Pesan Kutipan */}
         {translationText ? (

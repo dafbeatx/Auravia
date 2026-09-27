@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type DividerVariant = 'diamond' | 'line' | 'minimal' | 'gold' | 'none';
+export type DividerVariant = 'diamond' | 'line' | 'minimal' | 'gold' | 'royal' | 'none';
 
 export interface DecorativeDividerProps {
   variant?: DividerVariant;
@@ -41,6 +41,21 @@ export const DecorativeDivider: React.FC<DecorativeDividerProps> = ({
         <div className="w-12 h-px bg-gradient-to-r from-transparent to-[var(--theme-color-border)]/60" />
         <span className="text-[7px] text-[var(--theme-color-accent)] opacity-80">◆</span>
         <div className="w-12 h-px bg-gradient-to-l from-transparent to-[var(--theme-color-border)]/60" />
+      </div>
+    );
+  }
+
+  if (variant === 'royal') {
+    return (
+      <div className={`space-y-1 select-none py-1 ${className}`} aria-hidden="true">
+        <div className="flex items-center justify-center gap-2 text-[var(--theme-color-accent)] text-xs">
+          <div className="w-12 h-px bg-gradient-to-r from-transparent to-[var(--theme-color-accent)]" />
+          <span className="text-[11px] text-[var(--theme-color-accent)]">❖</span>
+          <div className="w-12 h-px bg-gradient-to-l from-transparent to-[var(--theme-color-accent)]" />
+        </div>
+        {withLine && (
+          <div className="w-20 h-[0.5px] bg-gradient-to-r from-transparent via-[var(--theme-color-accent-soft)]/60 to-transparent mx-auto" />
+        )}
       </div>
     );
   }

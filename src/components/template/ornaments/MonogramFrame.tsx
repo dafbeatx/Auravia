@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type MonogramFrameVariant = 'classic-ring' | 'none';
+export type MonogramFrameVariant = 'classic-ring' | 'royal-circle' | 'royal' | 'gold' | 'minimal' | 'diamond' | 'none';
 
 export interface MonogramFrameProps {
   initials?: string;
@@ -41,6 +41,12 @@ export const MonogramFrame: React.FC<MonogramFrameProps> = ({
           loading="lazy"
           className={`${sizeClasses} rounded-full object-cover border-2 border-[var(--theme-color-border)] shadow-sm transition-transform duration-300 group-hover:scale-105`}
         />
+        {(variant === 'royal-circle' || variant === 'royal' || variant === 'gold') && (
+          <div
+            className="absolute -inset-1 rounded-full border border-[var(--theme-color-accent)]/40 pointer-events-none"
+            aria-hidden="true"
+          />
+        )}
       </div>
     );
   }
@@ -56,6 +62,20 @@ export const MonogramFrame: React.FC<MonogramFrameProps> = ({
           className="absolute inset-1.5 rounded-full border border-dashed border-[var(--theme-color-border)]/40 pointer-events-none"
           aria-hidden="true"
         />
+      )}
+
+      {/* Cincin Ganda Emas jika varian royal-circle/royal/gold aktif */}
+      {(variant === 'royal-circle' || variant === 'royal' || variant === 'gold') && (
+        <>
+          <div
+            className="absolute inset-1.5 rounded-full border border-[var(--theme-color-accent-soft)]/50 pointer-events-none"
+            aria-hidden="true"
+          />
+          <div
+            className="absolute -inset-1 rounded-full border border-[var(--theme-color-accent)]/30 pointer-events-none"
+            aria-hidden="true"
+          />
+        </>
       )}
       <span
         className="font-normal text-[var(--theme-color-accent)] pt-0.5"

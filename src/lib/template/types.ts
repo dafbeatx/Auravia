@@ -105,6 +105,7 @@ export interface InvitationContentHero {
   location_short?: string;
   guest_greeting?: string;
   guestGreeting?: string;
+  eyebrow?: string;
 }
 
 export interface InvitationContentHost {
@@ -209,7 +210,7 @@ export interface InvitationContent {
 export interface SectionRendererProps<TConfig = Record<string, unknown>> {
   sectionId?: string;
   sectionType: string;
-  variant: string;
+  variant?: string;
   config?: TConfig;
   invitation: {
     id: string;
@@ -278,19 +279,32 @@ export type SectionVariantMap = Record<string, string>;
  * Konfigurasi sistem dekorasi bawaan template
  */
 export interface TemplateDecorativeConfig {
-  divider: 'diamond' | 'line' | 'minimal' | 'none';
-  monogramFrame: 'classic-ring' | 'none';
+  divider: 'diamond' | 'line' | 'minimal' | 'gold' | 'royal' | 'none';
+  monogramFrame: 'classic-ring' | 'royal-circle' | 'minimal' | 'none';
+  sectionEyebrow?: 'minimal' | 'diamond' | 'gold' | 'royal' | 'none';
 }
 
 /**
  * Kapabilitas fungsional yang didukung oleh template
  */
 export interface TemplateCapabilities {
-  supportsCoverEnvelope: boolean;
-  supportsMonogram: boolean;
-  supportsCountdown: boolean;
-  supportsMusic: boolean;
-  bottomNavStyle: 'floating' | 'docked' | 'none';
+  countdown?: boolean;
+  coverEnvelope?: boolean;
+  musicPlayer?: boolean;
+  bottomNavigation?: boolean;
+  gallery?: boolean;
+  rsvp?: boolean;
+  wishes?: boolean;
+  gift?: boolean;
+  story?: boolean;
+  multipleEvents?: boolean;
+
+  // Backward-compatible capability flags
+  supportsCoverEnvelope?: boolean;
+  supportsMonogram?: boolean;
+  supportsCountdown?: boolean;
+  supportsMusic?: boolean;
+  bottomNavStyle?: 'floating' | 'docked' | 'none';
 }
 
 /**
@@ -329,8 +343,16 @@ export interface TemplateDefinition {
   category: TemplateCategory;
   defaultTheme: NormalizedTheme;
   sections: TemplateSectionConfig[];
+  defaultSections?: TemplateSectionConfig[];
   capabilities: TemplateCapabilities;
   sectionVariants: SectionVariantMap;
+  coverVariant?: string;
+  navigationVariant?: string;
+  typography?: {
+    heading: string;
+    body: string;
+  };
+  ornaments?: TemplateDecorativeConfig;
   defaultSectionOrder: string[];
 
   // Backward-compatible structured metadata

@@ -50,6 +50,16 @@ const capabilities = {
   supportsMonogram: true,
   supportsCountdown: true,
   supportsMusic: true,
+  coverEnvelope: true,
+  countdown: true,
+  musicPlayer: true,
+  bottomNavigation: true,
+  gallery: true,
+  rsvp: true,
+  wishes: true,
+  gift: true,
+  story: true,
+  multipleEvents: true,
   bottomNavStyle: 'floating' as const,
 };
 

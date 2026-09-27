@@ -237,8 +237,19 @@ export function createThemeStyleVariables(theme: NormalizedTheme): CSSProperties
   const borderStyleValue = theme.decorativeStyle === 'minimal' ? 'none' : 'solid';
 
   return {
-    '--theme-font-heading': `"${theme.fontHeading}", 'Cormorant Garamond', Georgia, serif`,
-    '--theme-font-body': `"${theme.fontBody}", 'Plus Jakarta Sans', system-ui, sans-serif`,
+    // Template Token System Aliases (scoped to container)
+    '--template-bg': theme.colorBackground,
+    '--template-surface': theme.colorSurface,
+    '--template-text': theme.colorForeground,
+    '--template-muted': theme.colorMuted || '#78716C',
+    '--template-primary': theme.colorPrimary,
+    '--template-accent': theme.colorAccent || theme.colorPrimary,
+    '--template-accent-soft': theme.colorAccentSoft || '#F6E09C',
+    '--template-border': theme.colorBorder,
+    '--template-heading-font': `"${theme.fontHeading}", 'Playfair Display', 'Cormorant Garamond', Georgia, serif`,
+    '--template-body-font': `"${theme.fontBody}", 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif`,
+    '--theme-font-heading': `"${theme.fontHeading}", 'Playfair Display', 'Cormorant Garamond', Georgia, serif`,
+    '--theme-font-body': `"${theme.fontBody}", 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif`,
     '--theme-color-bg': theme.colorBackground,
     '--theme-color-background': theme.colorBackground,
     '--theme-color-primary': theme.colorPrimary,

@@ -42,6 +42,7 @@ import type {
   InvitationThemeOverride,
 } from '@/lib/template/types';
 import { normalizeTheme } from '@/lib/template/theme';
+import { getRegisteredSection } from '@/lib/template/SectionRegistry';
 import type { TemplateListItem } from '@/lib/templates';
 import {
   isValidAudioUrl,
@@ -636,7 +637,7 @@ export function InvitationDetail() {
 
       // Simpan snapshot untuk melacak perubahan yang belum disimpan
       const initialSectionsJson = JSON.stringify(
-        initialSections.map((s) => ({ id: s.id, order: s.display_order, enabled: s.is_enabled }))
+        initialSections.map((s) => ({ id: s.id, order: s.display_order, enabled: s.is_enabled, variant: s.variant }))
       );
       const initialStoryJson = JSON.stringify(initialStory);
       const initialGiftAccountsJson = JSON.stringify(initialGiftAccounts);
@@ -706,7 +707,7 @@ export function InvitationDetail() {
   // Evaluasi apakah ada perubahan form lokal yang belum disimpan ke database
   const currentSectionsJson = useMemo(() => {
     return JSON.stringify(
-      draftSections.map((s) => ({ id: s.id, order: s.display_order, enabled: s.is_enabled }))
+      draftSections.map((s) => ({ id: s.id, order: s.display_order, enabled: s.is_enabled, variant: s.variant }))
     );
   }, [draftSections]);
 
@@ -1134,6 +1135,7 @@ export function InvitationDetail() {
               id: s.id,
               display_order: s.display_order,
               is_enabled: s.is_enabled,
+              variant: s.variant,
             }))
           )
         );
@@ -1396,6 +1398,13 @@ export function InvitationDetail() {
   const handleToggleSection = (sectionId: string) => {
     setDraftSections((prev) =>
       prev.map((s) => (s.id === sectionId ? { ...s, is_enabled: !s.is_enabled } : s))
+    );
+  };
+
+  // Handler memilih varian tampilan seksi di draft lokal
+  const handleChangeSectionVariant = (sectionId: string, newVariant: string) => {
+    setDraftSections((prev) =>
+      prev.map((s) => (s.id === sectionId ? { ...s, variant: newVariant } : s))
     );
   };
 
@@ -4236,6 +4245,8 @@ export function InvitationDetail() {
                         label: section.section_type,
                         description: 'Seksi kustom undangan',
                       };
+                      const regSection = getRegisteredSection(section.section_type);
+                      const availableVariants = regSection?.availableVariants ?? [];
 
                       return (
                         <div
@@ -4287,6 +4298,30 @@ export function InvitationDetail() {
                               <p className="text-[11px] text-text-subtle truncate">
                                 {meta.description}
                               </p>
+                              {availableVariants.length > 1 && (
+                                <div className="mt-1 flex items-center gap-1.5">
+                                  <label
+                                    htmlFor={`section-variant-${section.id}`}
+                                    className="text-[10px] text-text-muted select-none"
+                                  >
+                                    Varian:
+                                  </label>
+                                  <select
+                                    id={`section-variant-${section.id}`}
+                                    value={section.variant || 'default'}
+                                    onChange={(e) =>
+                                      handleChangeSectionVariant(section.id, e.target.value)
+                                    }
+                                    className="text-[10px] py-0.5 px-1.5 border border-border rounded bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                                  >
+                                    {availableVariants.map((v) => (
+                                      <option key={v} value={v}>
+                                        {v}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
                             </div>
                           </div>
 
