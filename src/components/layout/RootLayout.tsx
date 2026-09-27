@@ -312,6 +312,20 @@ function LayoutContent() {
     );
   }
 
+  // Halaman publik landing dan autentikasi mengelola tampilan penuh tanpa chrome dashboard
+  const isPublicChromeFree =
+    location.pathname === '/' ||
+    location.pathname === '/login' ||
+    location.pathname === '/register';
+
+  if (isPublicChromeFree) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-[#1C1917]">
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-text-primary">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-sm px-4 sm:px-8 py-3.5 transition-shadow">

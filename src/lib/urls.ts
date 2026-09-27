@@ -40,3 +40,24 @@ export function isValidWebUrl(url: string | null | undefined): boolean {
     return false;
   }
 }
+
+/**
+ * Memvalidasi dan mengekstrak parameter redirect URL agar aman dari serangan Open Redirect.
+ * Hanya mengizinkan path relatif internal (diawali '/') dan menolak skema eksternal, '//', '\\', atau ':'.
+ */
+export function getSafeRedirectUrl(
+  rawRedirect: string | null | undefined,
+  fallback = '/dashboard'
+): string {
+  if (!rawRedirect || typeof rawRedirect !== 'string') return fallback;
+  const trimmed = rawRedirect.trim();
+  if (
+    trimmed.startsWith('/') &&
+    !trimmed.startsWith('//') &&
+    !trimmed.includes('\\') &&
+    !trimmed.includes(':')
+  ) {
+    return trimmed;
+  }
+  return fallback;
+}

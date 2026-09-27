@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/components/layout/RootLayout';
-import { FoundationStatus } from '@/app/FoundationStatus';
+import { LandingPage } from '@/app/routes/LandingPage';
 import { Login } from '@/app/routes/Login';
 import { Register } from '@/app/routes/Register';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -21,7 +21,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <FoundationStatus />,
+        element: <LandingPage />,
       },
       {
         path: 'login',
