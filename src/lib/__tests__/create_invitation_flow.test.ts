@@ -214,7 +214,11 @@ describe('4. Penyimpanan Undangan Sebagai Draft (createInvitation persistence)',
   it('berhasil menyimpan draft undangan dengan template_id, slug, dan event_type', async () => {
     // 1. Mock verifikasi template aktif
     const mockTmplMaybeSingle = vi.fn().mockResolvedValue({
-      data: { id: 'tpl-classic', is_active: true },
+      data: {
+        id: 'tpl-classic',
+        is_active: true,
+        default_sections: [{ type: 'hero', order: 0, enabled: true }],
+      },
       error: null,
     });
     const mockTmplEq = vi.fn().mockReturnValue({ maybeSingle: mockTmplMaybeSingle });
@@ -234,14 +238,34 @@ describe('4. Penyimpanan Undangan Sebagai Draft (createInvitation persistence)',
 
     const mockSingle = vi.fn().mockResolvedValue({ data: createdRecord, error: null });
     const mockInsertSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockInsert = vi.fn().mockReturnValue({ select: mockInsertSelect });
+    const mockInsertInvitation = vi.fn().mockReturnValue({ select: mockInsertSelect });
+
+    // 3. Mock insert invitation_data
+    const mockInsertData = vi.fn().mockResolvedValue({ error: null });
+
+    // 4. Mock sections
+    const mockSectionsOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockSectionsEq = vi.fn().mockReturnValue({ order: mockSectionsOrder });
+    const mockSectionsSelect = vi.fn().mockReturnValue({ eq: mockSectionsEq });
+    const mockSectionsInsertOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockSectionsInsertSelect = vi.fn().mockReturnValue({ order: mockSectionsInsertOrder });
+    const mockSectionsInsert = vi.fn().mockReturnValue({ select: mockSectionsInsertSelect });
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'templates') {
         return { select: mockTmplSelect } as unknown as ReturnType<typeof supabase.from>;
       }
       if (table === 'invitations') {
-        return { insert: mockInsert } as unknown as ReturnType<typeof supabase.from>;
+        return { insert: mockInsertInvitation } as unknown as ReturnType<typeof supabase.from>;
+      }
+      if (table === 'invitation_data') {
+        return { insert: mockInsertData } as unknown as ReturnType<typeof supabase.from>;
+      }
+      if (table === 'invitation_sections') {
+        return {
+          select: mockSectionsSelect,
+          insert: mockSectionsInsert,
+        } as unknown as ReturnType<typeof supabase.from>;
       }
       return {} as unknown as ReturnType<typeof supabase.from>;
     });
@@ -251,19 +275,155 @@ describe('4. Penyimpanan Undangan Sebagai Draft (createInvitation persistence)',
       templateId: 'tpl-classic',
       slug: 'rizky-sarah-wedding',
       eventType: 'Pernikahan',
+      coupleNames: 'Sarah & Rizky',
     });
 
-    expect(mockInsert).toHaveBeenCalledWith({
+    expect(mockInsertInvitation).toHaveBeenCalledWith({
       user_id: 'usr-456',
       template_id: 'tpl-classic',
       title: 'Pernikahan Rizky & Sarah',
       slug: 'rizky-sarah-wedding',
       event_type: 'Pernikahan',
       status: 'draft',
+      allow_rsvp: true,
+      show_wishes: true,
     });
     expect(result.id).toBe('inv-new-999');
     expect(result.status).toBe('draft');
     expect(result.slug).toBe('rizky-sarah-wedding');
+
+    // Memverifikasi bahwa invitation_data dibuat dengan struktur yang tepat
+    expect(mockInsertData).toHaveBeenCalledWith({
+      invitation_id: 'inv-new-999',
+      content: expect.objectContaining({
+        hero: expect.objectContaining({
+          headline: 'Pernikahan Rizky & Sarah',
+          couple_names: 'Sarah & Rizky',
+        }),
+        hosts: expect.arrayContaining([
+          expect.objectContaining({ name: 'Sarah', role: 'Mempelai Pria' }),
+          expect.objectContaining({ name: 'Rizky', role: 'Mempelai Wanita' }),
+        ]),
+        cover: expect.objectContaining({
+          enabled: true,
+          title: 'Sarah & Rizky',
+          subtitle: 'Pernikahan',
+        }),
+      }),
+    });
+  });
+
+  it('menginisialisasi seksi bawaan template pada tabel invitation_sections', async () => {
+    const mockTmplMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: 'tpl-classic',
+        is_active: true,
+        default_sections: [
+          { type: 'hero', order: 0, enabled: true },
+          { type: 'events', order: 1, enabled: true },
+        ],
+      },
+      error: null,
+    });
+    const mockTmplEq = vi.fn().mockReturnValue({ maybeSingle: mockTmplMaybeSingle });
+    const mockTmplSelect = vi.fn().mockReturnValue({ eq: mockTmplEq });
+
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { id: 'inv-sec-101', slug: 'sarah-dimas', status: 'draft' },
+      error: null,
+    });
+    const mockInsertSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockInsertInvitation = vi.fn().mockReturnValue({ select: mockInsertSelect });
+    const mockInsertData = vi.fn().mockResolvedValue({ error: null });
+
+    const mockSectionsOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockSectionsEq = vi.fn().mockReturnValue({ order: mockSectionsOrder });
+    const mockSectionsSelect = vi.fn().mockReturnValue({ eq: mockSectionsEq });
+
+    const mockSectionsInsertOrder = vi.fn().mockResolvedValue({
+      data: [
+        { id: 'sec-1', section_type: 'hero', display_order: 0, is_enabled: true },
+        { id: 'sec-2', section_type: 'events', display_order: 1, is_enabled: true },
+        { id: 'sec-3', section_type: 'wishes', display_order: 2, is_enabled: true },
+      ],
+      error: null,
+    });
+    const mockSectionsInsertSelect = vi.fn().mockReturnValue({ order: mockSectionsInsertOrder });
+    const mockSectionsInsert = vi.fn().mockReturnValue({ select: mockSectionsInsertSelect });
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'templates') return { select: mockTmplSelect } as unknown as ReturnType<typeof supabase.from>;
+      if (table === 'invitations') return { insert: mockInsertInvitation } as unknown as ReturnType<typeof supabase.from>;
+      if (table === 'invitation_data') return { insert: mockInsertData } as unknown as ReturnType<typeof supabase.from>;
+      if (table === 'invitation_sections') {
+        return {
+          select: mockSectionsSelect,
+          insert: mockSectionsInsert,
+        } as unknown as ReturnType<typeof supabase.from>;
+      }
+      return {} as unknown as ReturnType<typeof supabase.from>;
+    });
+
+    await createInvitation({
+      title: 'Pernikahan Sarah & Dimas',
+      templateId: 'tpl-classic',
+      slug: 'sarah-dimas',
+    });
+
+    expect(mockSectionsInsert).toHaveBeenCalled();
+  });
+
+  it('melakukan rollback cleanup dengan menghapus invitation jika pembuatan data/seksi gagal', async () => {
+    const mockTmplMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: 'tpl-classic',
+        is_active: true,
+        default_sections: [{ type: 'hero', order: 0, enabled: true }],
+      },
+      error: null,
+    });
+    const mockTmplEq = vi.fn().mockReturnValue({ maybeSingle: mockTmplMaybeSingle });
+    const mockTmplSelect = vi.fn().mockReturnValue({ eq: mockTmplEq });
+
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { id: 'inv-to-rollback', slug: 'rollback-test', status: 'draft' },
+      error: null,
+    });
+    const mockInsertSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockInsertInvitation = vi.fn().mockReturnValue({ select: mockInsertSelect });
+
+    // Mock kegagalan saat insert invitation_data
+    const mockInsertData = vi.fn().mockResolvedValue({
+      error: { message: 'Gagal insert invitation_data' },
+    });
+
+    // Mock delete cleanup
+    const mockDeleteEq = vi.fn().mockResolvedValue({ error: null });
+    const mockDeleteInvitation = vi.fn().mockReturnValue({ eq: mockDeleteEq });
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'templates') return { select: mockTmplSelect } as unknown as ReturnType<typeof supabase.from>;
+      if (table === 'invitations') {
+        return {
+          insert: mockInsertInvitation,
+          delete: mockDeleteInvitation,
+        } as unknown as ReturnType<typeof supabase.from>;
+      }
+      if (table === 'invitation_data') return { insert: mockInsertData } as unknown as ReturnType<typeof supabase.from>;
+      return {} as unknown as ReturnType<typeof supabase.from>;
+    });
+
+    await expect(
+      createInvitation({
+        title: 'Pernikahan Uji Rollback',
+        templateId: 'tpl-classic',
+        slug: 'rollback-test',
+      })
+    ).rejects.toThrow(DatabaseError);
+
+    // Memverifikasi bahwa rollback delete dipanggil untuk ID undangan yang bersangkutan
+    expect(mockDeleteInvitation).toHaveBeenCalled();
+    expect(mockDeleteEq).toHaveBeenCalledWith('id', 'inv-to-rollback');
   });
 
   it('menangani konflik tabrakan slug (error code 23505) dengan pesan ramah', async () => {

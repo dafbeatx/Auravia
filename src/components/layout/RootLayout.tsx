@@ -300,7 +300,9 @@ function HeaderNav({ onOpenHelp }: { onOpenHelp: () => void }) {
 function LayoutContent() {
   const [helpOpen, setHelpOpen] = useState(false);
   const location = useLocation();
-  const isEditor = location.pathname.startsWith('/dashboard/invitations/');
+  const isEditor =
+    location.pathname.startsWith('/dashboard/invitations/') &&
+    location.pathname !== '/dashboard/invitations/new';
 
   if (isEditor) {
     return (

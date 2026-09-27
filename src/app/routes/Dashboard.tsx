@@ -9,7 +9,6 @@ import {
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { InvitationCard } from '@/components/dashboard/InvitationCard';
-import { CreateInvitationModal } from '@/components/dashboard/CreateInvitationModal';
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal';
 
 export function Dashboard() {
@@ -26,7 +25,6 @@ export function Dashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Modal Dialogs
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [deletingInvitation, setDeletingInvitation] = useState<InvitationListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -107,7 +105,7 @@ export function Dashboard() {
       {/* Welcome / Editorial Hero */}
       <DashboardHero
         userName={greetingName}
-        onCreateClick={() => setShowCreateModal(true)}
+        onCreateClick={() => navigate('/dashboard/invitations/new')}
       />
 
       {/* Actual Statistics Cards */}
@@ -139,7 +137,7 @@ export function Dashboard() {
 
           <button
             type="button"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => navigate('/dashboard/invitations/new')}
             className="self-start md:self-auto inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer min-h-[40px]"
           >
             <svg
@@ -316,7 +314,7 @@ export function Dashboard() {
             </div>
             <button
               type="button"
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => navigate('/dashboard/invitations/new')}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer min-h-[44px]"
             >
               <svg
@@ -374,16 +372,6 @@ export function Dashboard() {
           </div>
         )}
       </section>
-
-      {/* Create Invitation Modal */}
-      <CreateInvitationModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={(id) => {
-          setShowCreateModal(false);
-          navigate(`/dashboard/invitations/${id}`);
-        }}
-      />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal

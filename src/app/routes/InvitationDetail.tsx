@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type FormEvent } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   getMyInvitationById,
   updateInvitationCore,
@@ -357,6 +357,16 @@ export function InvitationDetail() {
   // Status penghapusan undangan
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const state = location.state as { flashMessage?: string } | null;
+    if (state?.flashMessage) {
+      setSaveSuccessMessage(state.flashMessage);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Muat data undangan, konten, seksi, acara, dan galeri
   const loadData = useCallback(async () => {

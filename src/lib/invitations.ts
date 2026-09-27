@@ -100,12 +100,14 @@ export interface CreateInvitationParams {
   templateId: string;
   slug?: string;
   eventType?: string;
+  coupleNames?: string;
 }
 
 /**
  * Membuat draft undangan baru untuk pengguna terautentikasi dengan template pilihan.
  * Sesi pengguna diverifikasi langsung dari Supabase Auth untuk mencegah pemalsuan user_id.
- * Mendukung parameter terstruktur (title, templateId, slug, eventType) maupun argumen posisi klasik.
+ * Menginisialisasi record invitations, invitation_data, dan default invitation_sections.
+ * Menjalankan pembersihan (rollback) otomatis jika terjadi kegagalan parsial.
  */
 export async function createInvitation(
   paramsOrTitle: string | CreateInvitationParams,
@@ -117,12 +119,14 @@ export async function createInvitation(
   let templateId: string;
   let customSlug: string | undefined;
   let eventType: string | undefined;
+  let coupleNames: string | undefined;
 
   if (typeof paramsOrTitle === 'object' && paramsOrTitle !== null) {
     title = paramsOrTitle.title;
     templateId = paramsOrTitle.templateId;
     customSlug = paramsOrTitle.slug;
     eventType = paramsOrTitle.eventType;
+    coupleNames = paramsOrTitle.coupleNames;
   } else {
     title = paramsOrTitle;
     templateId = legacyTemplateId || '';
@@ -154,10 +158,10 @@ export async function createInvitation(
     throw new AuthenticationError('Sesi pengguna tidak valid. Silakan masuk kembali.');
   }
 
-  // 1. Verifikasi template aktif dari database
+  // 1. Verifikasi template aktif dan ambil konfigurasi seksi bawaan
   const { data: templateRecord, error: templateError } = await supabase
     .from('templates')
-    .select('id, is_active')
+    .select('id, is_active, default_sections, default_theme')
     .eq('id', trimmedTemplateId)
     .maybeSingle();
 
@@ -188,7 +192,7 @@ export async function createInvitation(
 
   const cleanEventType = (eventType || 'Pernikahan').trim();
 
-  // 3. Simpan draft undangan ke Supabase
+  // 3. Simpan draft undangan ke public.invitations
   const { data: newInvitation, error: insertError } = await supabase
     .from('invitations')
     .insert({
@@ -198,6 +202,8 @@ export async function createInvitation(
       slug,
       event_type: cleanEventType,
       status: 'draft',
+      allow_rsvp: true,
+      show_wishes: true,
     })
     .select('id, slug, title, event_type, status, template_id, created_at, updated_at')
     .single();
@@ -216,6 +222,59 @@ export async function createInvitation(
       throw new AuthorizationError('Anda tidak memiliki hak akses untuk membuat undangan.');
     }
     throw new DatabaseError('Gagal membuat draft undangan.', insertError);
+  }
+
+  // 4. Inisialisasi invitation_data dan default invitation_sections
+  // Jika salah satu proses gagal, lakukan rollback dengan menghapus record undangan yang baru dibuat
+  try {
+    const cleanCoupleNames = (coupleNames || '').trim();
+    const initialContent: Record<string, unknown> = {
+      hero: {
+        headline: trimmedTitle,
+        couple_names: cleanCoupleNames || trimmedTitle,
+        opening_text: `Dengan memohon rahmat dan ridho Tuhan Yang Maha Esa, kami mengundang Anda untuk hadir pada perayaan ${cleanEventType.toLowerCase()} kami.`,
+      },
+      hosts: cleanCoupleNames
+        ? cleanCoupleNames.includes('&')
+          ? [
+              { name: (cleanCoupleNames.split('&')[0] ?? '').trim(), role: 'Mempelai Pria' },
+              { name: (cleanCoupleNames.split('&')[1] ?? '').trim(), role: 'Mempelai Wanita' },
+            ]
+          : [{ name: cleanCoupleNames, role: 'Tuan Rumah' }]
+        : [],
+      cover: {
+        enabled: true,
+        title: cleanCoupleNames || trimmedTitle,
+        subtitle: cleanEventType,
+        button_label: 'Buka Undangan',
+      },
+    };
+
+    const { error: dataError } = await supabase
+      .from('invitation_data')
+      .insert({
+        invitation_id: newInvitation.id,
+        content: initialContent as unknown as import('@/types/database').Json,
+      });
+
+    if (dataError) {
+      throw new DatabaseError('Gagal menginisialisasi konten undangan.', dataError);
+    }
+
+    if (templateRecord.default_sections) {
+      await initializeInvitationSectionsFromTemplate(
+        newInvitation.id,
+        templateRecord.default_sections
+      );
+    }
+  } catch (initErr) {
+    // Rollback / cleanup otomatis agar tidak meninggalkan invitation setengah jadi
+    try {
+      await supabase.from('invitations').delete().eq('id', newInvitation.id);
+    } catch {
+      // Abaikan error cleanup agar error inisialisasi utama yang dilempar ke pemanggil
+    }
+    throw initErr;
   }
 
   return newInvitation;

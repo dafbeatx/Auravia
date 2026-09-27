@@ -17,7 +17,7 @@ export type TemplateDetail = Pick<
 
 export type TemplateListItem = Pick<
   Tables<'templates'>,
-  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'default_theme' | 'is_active'
+  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'default_theme' | 'default_sections' | 'is_active'
 >;
 
 /**
@@ -27,7 +27,7 @@ export type TemplateListItem = Pick<
 export async function getActiveTemplates(): Promise<TemplateListItem[]> {
   const { data, error } = await supabase
     .from('templates')
-    .select('id, slug, name, category, description, thumbnail_url, default_theme, is_active')
+    .select('id, slug, name, category, description, thumbnail_url, default_theme, default_sections, is_active')
     .eq('is_active', true)
     .order('name', { ascending: true });
 
@@ -45,7 +45,7 @@ export async function getActiveTemplates(): Promise<TemplateListItem[]> {
 export async function getAllTemplates(): Promise<TemplateListItem[]> {
   const { data, error } = await supabase
     .from('templates')
-    .select('id, slug, name, category, description, thumbnail_url, default_theme, is_active')
+    .select('id, slug, name, category, description, thumbnail_url, default_theme, default_sections, is_active')
     .order('is_active', { ascending: false })
     .order('name', { ascending: true });
 
