@@ -17,7 +17,7 @@ export type TemplateDetail = Pick<
 
 export type TemplateListItem = Pick<
   Tables<'templates'>,
-  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'is_active'
+  'id' | 'slug' | 'name' | 'category' | 'description' | 'thumbnail_url' | 'default_theme' | 'is_active'
 >;
 
 /**
@@ -27,12 +27,30 @@ export type TemplateListItem = Pick<
 export async function getActiveTemplates(): Promise<TemplateListItem[]> {
   const { data, error } = await supabase
     .from('templates')
-    .select('id, slug, name, category, description, thumbnail_url, is_active')
+    .select('id, slug, name, category, description, thumbnail_url, default_theme, is_active')
     .eq('is_active', true)
     .order('name', { ascending: true });
 
   if (error) {
     throw new DatabaseError('Gagal memuat katalog template.', error);
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Mengambil seluruh data template (aktif maupun tidak) untuk tampilan pemilih template.
+ * Template tidak aktif tetap dapat ditampilkan namun dinonaktifkan dari pemilihan.
+ */
+export async function getAllTemplates(): Promise<TemplateListItem[]> {
+  const { data, error } = await supabase
+    .from('templates')
+    .select('id, slug, name, category, description, thumbnail_url, default_theme, is_active')
+    .order('is_active', { ascending: false })
+    .order('name', { ascending: true });
+
+  if (error) {
+    throw new DatabaseError('Gagal memuat seluruh template.', error);
   }
 
   return data ?? [];

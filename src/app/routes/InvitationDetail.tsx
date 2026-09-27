@@ -38,7 +38,10 @@ import type {
   InvitationContentGiftAddress,
   InvitationContentMusic,
   InvitationContentCover,
+  InvitationThemeOverride,
 } from '@/lib/template/types';
+import { normalizeTheme } from '@/lib/template/theme';
+import type { TemplateListItem } from '@/lib/templates';
 import {
   isValidAudioUrl,
   validateMusicConfig,
@@ -54,7 +57,14 @@ import { isValidWebUrl } from '@/lib/urls';
 import { getInvitationGuests } from '@/lib/guests';
 import { GuestManagementTab } from '@/components/dashboard/GuestManagementTab';
 import { ValidationError, DatabaseError, AuthorizationError } from '@/lib/errors';
-import { EditorHeader, EditorSidebarNav, EditorPreviewCanvas, type EditorTabId } from '@/components/editor';
+import {
+  EditorHeader,
+  EditorSidebarNav,
+  EditorPreviewCanvas,
+  TemplateSelectorTab,
+  DesignCustomizationTab,
+  type EditorTabId,
+} from '@/components/editor';
 
 /**
  * Metadata seksi untuk tampilan pengelolaan tata letak editor
@@ -146,7 +156,14 @@ export function InvitationDetail() {
     }),
     musicJson: JSON.stringify(DEFAULT_MUSIC_CONFIG),
     coverJson: JSON.stringify(DEFAULT_COVER_CONFIG),
+    templateId: '',
+    themeOverrideJson: '{}',
   });
+
+  // State Template & Kustomisasi Desain
+  const [draftTemplateId, setDraftTemplateId] = useState('');
+  const [draftTemplate, setDraftTemplate] = useState<InvitationTemplateConfig['template'] | null>(null);
+  const [draftThemeOverride, setDraftThemeOverride] = useState<InvitationThemeOverride>({});
 
   // State Formulir Sampul Pembuka (Cover Envelope)
   const [draftCover, setDraftCover] = useState<InvitationContentCover>({
@@ -557,6 +574,12 @@ export function InvitationDetail() {
       const config = await getInvitationTemplateConfig(id);
       let initialSections: InvitationSectionItem[] = [];
 
+      const initialTemplateId = invData.template_id || config?.template?.id || '';
+      const initialThemeOverride = (invData.theme_override as InvitationThemeOverride) || {};
+      setDraftTemplateId(initialTemplateId);
+      setDraftTemplate(config?.template || null);
+      setDraftThemeOverride(initialThemeOverride);
+
       if (config) {
         setPreviewConfig(config);
         const resolvedSections = await initializeInvitationSectionsFromTemplate(
@@ -625,6 +648,8 @@ export function InvitationDetail() {
         storyJson: initialStoryJson,
         closingNotes: initialClosingNotes,
         sectionsJson: initialSectionsJson,
+        templateId: initialTemplateId,
+        themeOverrideJson: JSON.stringify(initialThemeOverride),
       });
     } catch {
       setPageError('Terjadi kendala saat memuat data undangan. Silakan periksa koneksi dan coba lagi.');
@@ -657,10 +682,13 @@ export function InvitationDetail() {
   const currentGiftAddressJson = useMemo(() => JSON.stringify(draftGiftAddress), [draftGiftAddress]);
   const currentMusicJson = useMemo(() => JSON.stringify(draftMusic), [draftMusic]);
   const currentCoverJson = useMemo(() => JSON.stringify(draftCover), [draftCover]);
+  const currentThemeOverrideJson = useMemo(() => JSON.stringify(draftThemeOverride), [draftThemeOverride]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!invitation) return false;
     return (
+      (draftTemplateId !== savedSnapshot.templateId && Boolean(draftTemplateId)) ||
+      currentThemeOverrideJson !== savedSnapshot.themeOverrideJson ||
       draftTitle !== savedSnapshot.title ||
       draftSlug !== savedSnapshot.slug ||
       draftEventType !== savedSnapshot.eventType ||
@@ -700,6 +728,8 @@ export function InvitationDetail() {
     );
   }, [
     invitation,
+    draftTemplateId,
+    currentThemeOverrideJson,
     draftTitle,
     draftSlug,
     draftEventType,
@@ -799,6 +829,28 @@ export function InvitationDetail() {
     deleteModalOpen,
   ]);
 
+  // Handler pergantian template (Template Switching)
+  const handleSelectTemplate = (selectedTpl: TemplateListItem) => {
+    setDraftTemplateId(selectedTpl.id);
+    setDraftTemplate({
+      id: selectedTpl.id,
+      slug: selectedTpl.slug,
+      name: selectedTpl.name,
+      category: selectedTpl.category,
+      description: selectedTpl.description,
+      default_theme: selectedTpl.default_theme,
+      default_sections:
+        typeof selectedTpl === 'object' && selectedTpl !== null && 'default_sections' in selectedTpl
+          ? ((selectedTpl as Record<string, unknown>).default_sections as import('@/types/database').Json)
+          : (previewConfig?.template?.default_sections || null),
+    });
+  };
+
+  // Handler reset kustomisasi desain (Reset Design)
+  const handleResetDesign = () => {
+    setDraftThemeOverride({});
+  };
+
   // Objek live invitation untuk preview lokal instan tanpa query
   const liveInvitation = useMemo(() => {
     if (!invitation) return null;
@@ -810,9 +862,15 @@ export function InvitationDetail() {
       status: invitation.status,
       allowRsvp: draftAllowRsvp,
       showWishes: draftShowWishes,
-      theme_override: invitation.theme_override,
+      theme_override: (draftThemeOverride as import('@/types/database').Json) || invitation.theme_override,
     };
-  }, [invitation, draftTitle, draftSlug, draftEventType, draftAllowRsvp, draftShowWishes]);
+  }, [invitation, draftTitle, draftSlug, draftEventType, draftAllowRsvp, draftShowWishes, draftThemeOverride]);
+
+  // Resolusi tema terpadu (Normalized Theme) untuk konfigurasi desain
+  const activeNormalizedTheme = useMemo(() => {
+    const defaultThemeRaw = draftTemplate?.default_theme ?? previewConfig?.template?.default_theme;
+    return normalizeTheme(defaultThemeRaw, draftThemeOverride);
+  }, [draftTemplate, previewConfig, draftThemeOverride]);
 
   // Objek live content untuk preview lokal instan tanpa query
   const liveContent = useMemo<InvitationContent>(() => {
@@ -964,12 +1022,17 @@ export function InvitationDetail() {
       const updateTasks: Promise<unknown>[] = [];
 
       // A. Periksa perubahan data inti
+      const isThemeChanged = currentThemeOverrideJson !== savedSnapshot.themeOverrideJson;
+      const isTemplateChanged = draftTemplateId !== savedSnapshot.templateId && Boolean(draftTemplateId);
+
       const isCoreChanged =
         cleanTitle !== savedSnapshot.title ||
         cleanSlug !== savedSnapshot.slug ||
         draftEventType !== savedSnapshot.eventType ||
         draftAllowRsvp !== savedSnapshot.allowRsvp ||
-        draftShowWishes !== savedSnapshot.showWishes;
+        draftShowWishes !== savedSnapshot.showWishes ||
+        isThemeChanged ||
+        isTemplateChanged;
 
       if (isCoreChanged) {
         updateTasks.push(
@@ -979,6 +1042,8 @@ export function InvitationDetail() {
             event_type: draftEventType,
             allow_rsvp: draftAllowRsvp,
             show_wishes: draftShowWishes,
+            theme_override: (draftThemeOverride as import('@/types/database').Json) || {},
+            ...(isTemplateChanged ? { template_id: draftTemplateId } : {}),
           })
         );
       }
@@ -1076,6 +1141,8 @@ export function InvitationDetail() {
         storyJson: currentStoryJson,
         closingNotes: draftClosingNotes,
         sectionsJson: currentSectionsJson,
+        templateId: draftTemplateId || savedSnapshot.templateId,
+        themeOverrideJson: currentThemeOverrideJson,
       });
 
       setInvitation((prev) =>
@@ -1087,9 +1154,26 @@ export function InvitationDetail() {
               event_type: draftEventType,
               allow_rsvp: draftAllowRsvp,
               show_wishes: draftShowWishes,
+              template_id: draftTemplateId || prev.template_id,
+              theme_override: (draftThemeOverride as import('@/types/database').Json) || prev.theme_override,
             }
           : null
       );
+
+      if (draftTemplate) {
+        setPreviewConfig((prev) =>
+          prev
+            ? {
+                ...prev,
+                template: {
+                  ...prev.template,
+                  ...draftTemplate,
+                },
+                theme_override: (draftThemeOverride as import('@/types/database').Json) || prev.theme_override,
+              }
+            : null
+        );
+      }
 
       setSaveSuccessMessage('Seluruh perubahan berhasil disimpan.');
     } catch (err: unknown) {
@@ -2421,6 +2505,31 @@ export function InvitationDetail() {
                   </label>
                 </div>
               </div>
+            )}
+
+            {/* TAB: PILIHAN TEMPLATE */}
+            {activeTab === 'template' && (
+              <TemplateSelectorTab
+                currentTemplateId={draftTemplateId}
+                onSelectTemplate={handleSelectTemplate}
+                invitationTitle={draftTitle}
+                coupleNames={
+                  draftHeroCoupleNames ||
+                  (draftGroomName && draftBrideName ? `${draftGroomName} & ${draftBrideName}` : undefined)
+                }
+                eventType={draftEventType}
+              />
+            )}
+
+            {/* TAB: KUSTOMISASI DESAIN */}
+            {activeTab === 'design' && (
+              <DesignCustomizationTab
+                themeOverride={draftThemeOverride}
+                activeTheme={activeNormalizedTheme}
+                defaultTheme={draftTemplate?.default_theme ?? previewConfig?.template?.default_theme}
+                onChangeThemeOverride={setDraftThemeOverride}
+                onResetDesign={handleResetDesign}
+              />
             )}
 
             {/* TAB: COVER ENVELOPE */}
@@ -4125,7 +4234,7 @@ export function InvitationDetail() {
             previewDevice={previewDevice}
             onChangePreviewDevice={setPreviewDevice}
             liveInvitation={liveInvitation}
-            template={previewConfig?.template}
+            template={draftTemplate || previewConfig?.template}
             draftSections={draftSections}
             liveContent={liveContent}
             draftEvents={draftEvents}

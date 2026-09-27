@@ -8,9 +8,24 @@ export type EventRow = Tables<'events'>;
 export type GalleryItemRow = Tables<'gallery_items'>;
 
 /**
- * Struktur tema mentah dari templates.default_theme atau invitations.theme_override
+ * Pilihan gaya sudut tombol (token-based)
  */
-export interface TemplateTheme {
+export type ButtonRadiusStyle = 'pill' | 'rounded' | 'sharp';
+
+/**
+ * Pilihan gaya sudut kartu / panel (token-based)
+ */
+export type CardRadiusStyle = 'rounded' | 'subtle' | 'sharp';
+
+/**
+ * Pilihan dekorasi batas dan aksen (token-based)
+ */
+export type DecorativeStyle = 'classic' | 'minimal' | 'bordered';
+
+/**
+ * Struktur tema kustomisasi undangan (invitations.theme_override)
+ */
+export interface InvitationThemeOverride {
   font_heading?: string;
   font_body?: string;
   color_background?: string;
@@ -19,7 +34,15 @@ export interface TemplateTheme {
   color_surface?: string;
   color_border?: string;
   color_accent?: string;
+  button_radius?: ButtonRadiusStyle;
+  card_radius?: CardRadiusStyle;
+  decorative_style?: DecorativeStyle;
 }
+
+/**
+ * Struktur tema mentah dari templates.default_theme atau invitations.theme_override
+ */
+export type TemplateTheme = InvitationThemeOverride;
 
 /**
  * Tema yang telah dinormalisasi dengan nilai fallback aman
@@ -32,7 +55,10 @@ export interface NormalizedTheme {
   colorPrimary: string;
   colorSurface: string;
   colorBorder: string;
-  colorAccent?: string;
+  colorAccent: string;
+  buttonRadius: ButtonRadiusStyle;
+  cardRadius: CardRadiusStyle;
+  decorativeStyle: DecorativeStyle;
 }
 
 /**

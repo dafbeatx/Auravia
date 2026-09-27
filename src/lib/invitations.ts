@@ -286,6 +286,7 @@ export interface UpdateInvitationCoreInput {
   allow_rsvp?: boolean;
   show_wishes?: boolean;
   theme_override?: import('@/types/database').Json;
+  template_id?: string;
 }
 
 /**
@@ -339,6 +340,14 @@ export async function updateInvitationCore(
     payload.theme_override = updates.theme_override;
   }
 
+  if (updates.template_id !== undefined) {
+    const cleanTemplateId = updates.template_id.trim();
+    if (!cleanTemplateId) {
+      throw new ValidationError('ID template tidak boleh kosong.');
+    }
+    payload.template_id = cleanTemplateId;
+  }
+
   const { data, error } = await supabase
     .from('invitations')
     .update(payload)
@@ -360,6 +369,47 @@ export async function updateInvitationCore(
   }
 
   return data;
+}
+
+/**
+ * Mengganti template aktif undangan (Template Switching).
+ * Mempertahankan seluruh metadata, konten, agenda acara, galeri, kisah, dan data undangan lainnya.
+ * Ditegakkan melalui validasi template aktif di tabel master templates.
+ */
+export async function switchInvitationTemplate(
+  id: string,
+  newTemplateId: string
+): Promise<InvitationDetail> {
+  const cleanId = newTemplateId.trim();
+  if (!cleanId) {
+    throw new ValidationError('ID template tidak boleh kosong.');
+  }
+
+  // Validasi apakah template ada dan aktif
+  const { data: tpl, error: tplError } = await supabase
+    .from('templates')
+    .select('id, is_active')
+    .eq('id', cleanId)
+    .maybeSingle();
+
+  if (tplError || !tpl) {
+    throw new ValidationError('Template yang dipilih tidak ditemukan.');
+  }
+
+  if (!tpl.is_active) {
+    throw new ValidationError('Template yang dipilih sedang tidak aktif.');
+  }
+
+  return updateInvitationCore(id, { template_id: cleanId });
+}
+
+/**
+ * Mengatur ulang kustomisasi desain (Reset Design).
+ * Menghapus nilai theme_override sehingga kembali menggunakan default_theme dari template master.
+ * Tidak menghapus konten maupun agenda undangan.
+ */
+export async function resetInvitationTheme(id: string): Promise<InvitationDetail> {
+  return updateInvitationCore(id, { theme_override: {} });
 }
 
 export interface InvitationDataRecord {
