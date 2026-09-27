@@ -4,6 +4,9 @@ import {
   getActiveTemplates,
   suggestSlugFromTitle,
   generateSlug,
+  initializeInvitationSectionsFromTemplate,
+  updateInvitationSections,
+  updateInvitationSection,
 } from '@/lib/invitations';
 import { resolveTemplateConfig } from '@/lib/template/resolution';
 import { supabase } from '@/lib/supabase';
@@ -344,7 +347,6 @@ describe('4. Penyimpanan Undangan Sebagai Draft (createInvitation persistence)',
       data: [
         { id: 'sec-1', section_type: 'hero', display_order: 0, is_enabled: true },
         { id: 'sec-2', section_type: 'events', display_order: 1, is_enabled: true },
-        { id: 'sec-3', section_type: 'wishes', display_order: 2, is_enabled: true },
       ],
       error: null,
     });
@@ -537,5 +539,125 @@ describe('5. Arsitektur Pratinjau Desain Template Lokal (Template Preview Experi
     expect(slugRegex.test('sarah-rizky-')).toBe(false); // trailing dash
     expect(slugRegex.test('sarah--rizky')).toBe(false); // double dash
     expect(slugRegex.test('')).toBe(false); // empty
+  });
+});
+
+describe('Audit & Persistensi invitation_sections (Anti-HTTP 400 & Multi-Variant)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('hanya melakukan insert untuk tipe seksi kanonikal database dan menolak tipe non-tabel (quote, wishes)', async () => {
+    // Mock getInvitationSections: existing = []
+    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockEq = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+
+    // Mock insert
+    let capturedRows: unknown = null;
+    const mockInsertOrder = vi.fn().mockImplementation(() => ({
+      data: capturedRows,
+      error: null,
+    }));
+    const mockInsertSelect = vi.fn().mockReturnValue({ order: mockInsertOrder });
+    const mockInsert = vi.fn().mockImplementation((rows) => {
+      capturedRows = rows;
+      return { select: mockInsertSelect };
+    });
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'invitation_sections') {
+        return {
+          select: mockSelect,
+          insert: mockInsert,
+        } as unknown as ReturnType<typeof supabase.from>;
+      }
+      return {} as unknown as ReturnType<typeof supabase.from>;
+    });
+
+    const rawTemplateSections = [
+      { type: 'hero', order: 0, enabled: true },
+      { type: 'quote', order: 1, enabled: true }, // Harus difilter (bukan kolom invitation_sections)
+      { type: 'couple', order: 2, enabled: true }, // Harus dinormalisasi ke 'hosts'
+      { type: 'event', order: 3, enabled: true }, // Harus dinormalisasi ke 'events'
+      { type: 'story', order: 4, enabled: true },
+      { type: 'gallery', order: 5, enabled: true },
+      { type: 'gift', order: 6, enabled: true },
+      { type: 'rsvp', order: 7, enabled: true },
+      { type: 'wishes', order: 8, enabled: true }, // Harus difilter (disimpan di rsvps.wishes / show_wishes)
+      { type: 'closing', order: 9, enabled: true },
+    ];
+
+    await initializeInvitationSectionsFromTemplate('inv-test-123', rawTemplateSections);
+
+    expect(mockInsert).toHaveBeenCalledTimes(1);
+    const firstCall = mockInsert.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    const inserted = firstCall![0] as Array<{ section_type: string }>;
+    
+    // Pastikan tidak ada 'quote' atau 'wishes' yang masuk ke payload insert
+    const insertedTypes = inserted.map((r) => r.section_type);
+    expect(insertedTypes).not.toContain('quote');
+    expect(insertedTypes).not.toContain('wishes');
+    expect(insertedTypes).not.toContain('couple');
+    expect(insertedTypes).not.toContain('event');
+
+    // Pastikan dinormalisasi ke nama kanonikal database
+    expect(insertedTypes).toContain('hosts');
+    expect(insertedTypes).toContain('events');
+    expect(insertedTypes).toEqual(['hero', 'hosts', 'events', 'story', 'gallery', 'gift', 'rsvp', 'closing']);
+  });
+
+  it('updateInvitationSections memperbarui display_order, is_enabled, variant, dan custom_config', async () => {
+    const mockUpdateEqInv = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdateEqId = vi.fn().mockReturnValue({ eq: mockUpdateEqInv });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEqId });
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'invitation_sections') {
+        return { update: mockUpdate } as unknown as ReturnType<typeof supabase.from>;
+      }
+      return {} as unknown as ReturnType<typeof supabase.from>;
+    });
+
+    await updateInvitationSections('inv-test-123', [
+      {
+        id: 'sec-1',
+        display_order: 0,
+        is_enabled: true,
+        variant: 'editorial',
+        custom_config: { badge: 'VIP' },
+      },
+    ]);
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      display_order: 0,
+      is_enabled: true,
+      variant: 'editorial',
+      custom_config: { badge: 'VIP' },
+    });
+  });
+
+  it('updateInvitationSection memperbarui field parsial untuk satu seksi', async () => {
+    const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      if (table === 'invitation_sections') {
+        return { update: mockUpdate } as unknown as ReturnType<typeof supabase.from>;
+      }
+      return {} as unknown as ReturnType<typeof supabase.from>;
+    });
+
+    await updateInvitationSection('sec-target-id', {
+      variant: 'minimal',
+      is_enabled: false,
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      variant: 'minimal',
+      is_enabled: false,
+    });
+    expect(mockUpdateEq).toHaveBeenCalledWith('id', 'sec-target-id');
   });
 });

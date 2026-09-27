@@ -571,22 +571,63 @@ export async function toggleInvitationSection(
 }
 
 /**
- * Memperbarui urutan display_order dan status is_enabled beberapa seksi undangan sekaligus.
+ * Memperbarui data seksi undangan tunggal (variant, custom_config, is_enabled, display_order).
+ */
+export async function updateInvitationSection(
+  sectionId: string,
+  updates: {
+    variant?: string;
+    custom_config?: Record<string, unknown> | import('@/types/database').Json;
+    is_enabled?: boolean;
+    display_order?: number;
+  }
+): Promise<void> {
+  const payload: import('@/types/database').Database['public']['Tables']['invitation_sections']['Update'] = {};
+  if (typeof updates.variant === 'string') payload.variant = updates.variant;
+  if (updates.custom_config !== undefined) payload.custom_config = updates.custom_config as import('@/types/database').Json;
+  if (typeof updates.is_enabled === 'boolean') payload.is_enabled = updates.is_enabled;
+  if (typeof updates.display_order === 'number') payload.display_order = updates.display_order;
+
+  const { error } = await supabase
+    .from('invitation_sections')
+    .update(payload)
+    .eq('id', sectionId);
+
+  if (error) {
+    throw new DatabaseError('Gagal memperbarui seksi undangan.', error);
+  }
+}
+
+/**
+ * Memperbarui urutan display_order, status is_enabled, varian, dan custom_config beberapa seksi undangan sekaligus.
  */
 export async function updateInvitationSections(
   invitationId: string,
-  sections: Array<{ id: string; display_order: number; is_enabled: boolean }>
+  sections: Array<{
+    id: string;
+    display_order: number;
+    is_enabled: boolean;
+    variant?: string;
+    custom_config?: Record<string, unknown> | import('@/types/database').Json;
+  }>
 ): Promise<void> {
-  const updates = sections.map((s) =>
-    supabase
+  const updates = sections.map((s) => {
+    const payload: import('@/types/database').Database['public']['Tables']['invitation_sections']['Update'] = {
+      display_order: s.display_order,
+      is_enabled: s.is_enabled,
+    };
+    if (typeof s.variant === 'string') {
+      payload.variant = s.variant;
+    }
+    if (s.custom_config !== undefined) {
+      payload.custom_config = s.custom_config as import('@/types/database').Json;
+    }
+    return supabase
       .from('invitation_sections')
-      .update({
-        display_order: s.display_order,
-        is_enabled: s.is_enabled,
-      })
+      .update(payload)
       .eq('id', s.id)
-      .eq('invitation_id', invitationId)
-  );
+      .eq('invitation_id', invitationId);
+  });
 
   const results = await Promise.all(updates);
   const failure = results.find((r) => r.error);
@@ -596,8 +637,33 @@ export async function updateInvitationSections(
 }
 
 /**
+ * Daftar tipe seksi kanonikal yang diizinkan oleh constraint database public.invitation_sections:
+ * CHECK (section_type IN ('hero', 'hosts', 'events', 'story', 'gallery', 'gift', 'rsvp', 'closing'))
+ */
+const DB_CANONICAL_SECTION_TYPES = new Set([
+  'hero',
+  'hosts',
+  'events',
+  'story',
+  'gallery',
+  'gift',
+  'rsvp',
+  'closing',
+]);
+
+/**
+ * Normalisasi tipe seksi ke nama kolom kanonikal database jika menggunakan alias (misal couple -> hosts)
+ */
+function normalizeToDbSectionType(type: string): string {
+  const clean = type.trim().toLowerCase();
+  if (clean === 'couple') return 'hosts';
+  if (clean === 'event') return 'events';
+  return clean;
+}
+
+/**
  * Menginisialisasi seksi undangan dari default_sections template master jika belum ada entri di database.
- * Memastikan ke-9 tipe seksi kanonikal (hero, couple/hosts, event/events, story, gallery, rsvp, wishes, gift, closing) tersedia.
+ * Memastikan hanya tipe seksi yang valid pada check_section_type yang disimpan ke database.
  */
 export async function initializeInvitationSectionsFromTemplate(
   invitationId: string,
@@ -605,27 +671,6 @@ export async function initializeInvitationSectionsFromTemplate(
 ): Promise<InvitationSectionItem[]> {
   const existing = await getInvitationSections(invitationId);
   if (existing.length > 0) {
-    // Periksa apakah seksi 'wishes' sudah ada, jika belum tambahkan ke database
-    const hasWishes = existing.some((s) => s.section_type === 'wishes');
-    if (!hasWishes) {
-      const maxOrder = existing.reduce((max, s) => Math.max(max, s.display_order), 0);
-      const { data: newWishes } = await supabase
-        .from('invitation_sections')
-        .insert({
-          invitation_id: invitationId,
-          section_type: 'wishes',
-          variant: 'default',
-          display_order: maxOrder + 1,
-          is_enabled: true,
-          custom_config: {},
-        })
-        .select('id, invitation_id, section_type, variant, display_order, is_enabled, custom_config')
-        .single();
-
-      if (newWishes) {
-        return [...existing, newWishes].sort((a, b) => a.display_order - b.display_order);
-      }
-    }
     return existing;
   }
 
@@ -642,25 +687,22 @@ export async function initializeInvitationSectionsFromTemplate(
 
   const baseRows = (defaultSectionsRaw as RawSection[])
     .filter((s) => typeof s?.type === 'string' && s.type.length > 0)
+    .map((s) => ({
+      ...s,
+      normalizedType: normalizeToDbSectionType(s.type as string),
+    }))
+    .filter((s) => DB_CANONICAL_SECTION_TYPES.has(s.normalizedType))
     .map((s, index) => ({
       invitation_id: invitationId,
-      section_type: s.type as string,
+      section_type: s.normalizedType,
       variant: typeof s.variant === 'string' ? s.variant : 'default',
       display_order: typeof s.order === 'number' ? s.order : index,
       is_enabled: typeof s.enabled === 'boolean' ? s.enabled : true,
       custom_config: {},
     }));
 
-  // Jika seksi 'wishes' belum ada dalam default template, tambahkan
-  if (!baseRows.some((s) => s.section_type === 'wishes')) {
-    baseRows.push({
-      invitation_id: invitationId,
-      section_type: 'wishes',
-      variant: 'default',
-      display_order: baseRows.length,
-      is_enabled: true,
-      custom_config: {},
-    });
+  if (baseRows.length === 0) {
+    return [];
   }
 
   const { data, error } = await supabase
