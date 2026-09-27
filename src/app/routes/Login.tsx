@@ -106,9 +106,8 @@ export function Login() {
       setErrorMessage('Harap masukkan kode akses Anda.');
       return;
     }
-    // Memberikan respon faktual mengenai kode akses
     setInfoMessage(
-      'Kode akses saat ini hanya berlaku untuk verifikasi tamu undangan privat. Untuk mengelola dan membuat undangan, silakan masuk menggunakan akun email.'
+      'Kode akses saat ini hanya berlaku untuk verifikasi tamu undangan privat. Untuk mengelola dan membuat undangan, silakan masuk menggunakan email dan kata sandi.'
     );
   };
 
@@ -139,32 +138,32 @@ export function Login() {
     : '/register';
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#1C1917] flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-[#D4AF37]/25">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-accent-light/30">
       <div className="w-full max-w-[420px]">
         {/* Brand Header */}
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg p-1 mb-4 hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1 mb-4 hover:opacity-90 transition-opacity"
             aria-label="Kembali ke Beranda Aurovia"
           >
             <img src="/logo.svg" alt="Aurovia" className="h-9 sm:h-10 w-auto object-contain" />
           </Link>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
-            Selamat datang kembali
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
+            Masuk ke Aurovia
           </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] mt-1.5">
-            Masuk untuk melanjutkan ke Aurovia.
+          <p className="text-xs sm:text-sm text-text-muted mt-1.5">
+            Masuk untuk melanjutkan ke pengelolaan undangan digital.
           </p>
         </div>
 
         {/* Card Container */}
-        <div className="bg-[#FFFFFF] border border-[#E7E5E0] rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
           {errorMessage && (
             <div
               role="alert"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-xl text-xs text-danger font-medium leading-relaxed"
             >
               {errorMessage}
             </div>
@@ -174,7 +173,7 @@ export function Login() {
             <div
               role="status"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary font-medium leading-relaxed"
             >
               {infoMessage}
             </div>
@@ -186,7 +185,7 @@ export function Login() {
               <div>
                 <label
                   htmlFor="login-email"
-                  className="block text-xs font-semibold text-[#1C1917] mb-1.5"
+                  className="block text-xs font-semibold text-text-primary mb-1.5"
                 >
                   Email
                 </label>
@@ -199,7 +198,7 @@ export function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting || isGoogleSubmitting}
                   placeholder="nama@domain.com"
-                  className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
                 />
               </div>
 
@@ -207,7 +206,7 @@ export function Login() {
                 <div className="flex items-center justify-between mb-1.5">
                   <label
                     htmlFor="login-password"
-                    className="block text-xs font-semibold text-[#1C1917]"
+                    className="block text-xs font-semibold text-text-primary"
                   >
                     Password
                   </label>
@@ -219,7 +218,7 @@ export function Login() {
                       setErrorMessage(null);
                       setInfoMessage(null);
                     }}
-                    className="text-xs font-medium text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer"
+                    className="text-xs font-medium text-secondary hover:text-primary transition-colors cursor-pointer"
                   >
                     Lupa password?
                   </button>
@@ -233,14 +232,14 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting || isGoogleSubmitting}
                   placeholder="Masukkan kata sandi Anda"
-                  className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting || isGoogleSubmitting}
-                className="w-full mt-2 py-3 px-4 bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
+                className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
               >
                 {isSubmitting ? 'Memproses...' : 'Masuk'}
               </button>
@@ -254,7 +253,7 @@ export function Login() {
                 <div className="flex items-center justify-between mb-1.5">
                   <label
                     htmlFor="access-code"
-                    className="block text-xs font-semibold text-[#1C1917]"
+                    className="block text-xs font-semibold text-text-primary"
                   >
                     Kode Akses Undangan
                   </label>
@@ -265,7 +264,7 @@ export function Login() {
                       setErrorMessage(null);
                       setInfoMessage(null);
                     }}
-                    className="text-xs text-[#78716C] hover:text-[#1C1917] underline cursor-pointer"
+                    className="text-xs text-secondary hover:text-primary underline cursor-pointer"
                   >
                     Gunakan Email
                   </button>
@@ -277,13 +276,13 @@ export function Login() {
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                   placeholder="Contoh: AUR-7890"
-                  className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] font-mono tracking-wider placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary font-mono tracking-wider placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-h-[44px]"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] text-sm font-semibold rounded-xl transition-all shadow-sm cursor-pointer min-h-[44px]"
+                className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px]"
               >
                 Verifikasi Kode Akses
               </button>
@@ -297,7 +296,7 @@ export function Login() {
                 <div className="flex items-center justify-between mb-1.5">
                   <label
                     htmlFor="reset-email"
-                    className="block text-xs font-semibold text-[#1C1917]"
+                    className="block text-xs font-semibold text-text-primary"
                   >
                     Email Akun
                   </label>
@@ -308,7 +307,7 @@ export function Login() {
                       setErrorMessage(null);
                       setInfoMessage(null);
                     }}
-                    className="text-xs text-[#78716C] hover:text-[#1C1917] underline cursor-pointer"
+                    className="text-xs text-secondary hover:text-primary underline cursor-pointer"
                   >
                     Kembali ke Login
                   </button>
@@ -321,14 +320,14 @@ export function Login() {
                   onChange={(e) => setResetEmail(e.target.value)}
                   placeholder="nama@domain.com"
                   disabled={resetSent}
-                  className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all min-h-[44px]"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-h-[44px]"
                 />
               </div>
 
               {!resetSent && (
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] text-sm font-semibold rounded-xl transition-all shadow-sm cursor-pointer min-h-[44px]"
+                  className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs cursor-pointer min-h-[44px]"
                 >
                   Kirim Tautan Pemulihan
                 </button>
@@ -339,10 +338,10 @@ export function Login() {
           {/* Divider 'atau' */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-[#E7E5E0]" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-[#FFFFFF] px-3 text-[#A8A29E] font-medium lowercase">
+              <span className="bg-surface px-3 text-text-subtle font-medium lowercase">
                 atau
               </span>
             </div>
@@ -360,9 +359,9 @@ export function Login() {
                   setErrorMessage(null);
                   setInfoMessage(null);
                 }}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#E7E5E0] bg-[#FAF9F6] hover:bg-[#F5F4F0] text-[#1C1917] text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl border border-secondary text-primary bg-primary-soft hover:bg-secondary/15 text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer"
               >
-                Masuk dengan kode akses
+                Masuk dengan Kode Akses
               </button>
             )}
 
@@ -371,7 +370,7 @@ export function Login() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleSubmitting || isSubmitting}
-              className="w-full py-2.5 px-4 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] hover:bg-[#F5F4F0] text-[#1C1917] text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+              className="w-full py-2.5 px-4 rounded-xl border border-border bg-surface hover:bg-surface-elevated text-text-primary text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
             >
               <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -393,17 +392,25 @@ export function Login() {
               </svg>
               <span>{isGoogleSubmitting ? 'Menghubungkan...' : 'Masuk dengan Google'}</span>
             </button>
+
+            {/* CTA Daftar / Buat Akun Baru */}
+            <Link
+              to={registerLink}
+              className="w-full py-2.5 px-4 rounded-xl border border-border bg-surface hover:bg-surface-elevated text-text-muted hover:text-text-primary text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer text-center"
+            >
+              Buat Akun Baru
+            </Link>
           </div>
         </div>
 
         {/* Link Footer Akun */}
-        <div className="mt-8 text-center text-xs text-[#78716C]">
+        <div className="mt-8 text-center text-xs text-text-muted">
           Belum punya akun?{' '}
           <Link
             to={registerLink}
-            className="text-[#1C1917] font-semibold hover:underline"
+            className="text-primary font-semibold hover:underline"
           >
-            Daftar
+            Daftar Sekarang
           </Link>
         </div>
       </div>

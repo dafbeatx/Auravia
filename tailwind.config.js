@@ -7,12 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: 'var(--color-bg)',
-        surface: 'var(--color-surface)',
-        'surface-elevated': 'var(--color-surface-elevated)',
-        border: 'var(--color-border)',
-        'border-strong': 'var(--color-border-strong)',
+        background: 'var(--color-background)',
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          muted: 'var(--color-surface-muted)',
+          elevated: 'var(--color-surface-elevated)',
+        },
+        border: {
+          DEFAULT: 'var(--color-border)',
+          strong: 'var(--color-border-strong)',
+        },
         text: {
+          DEFAULT: 'var(--color-text)',
           primary: 'var(--color-text-primary)',
           muted: 'var(--color-text-muted)',
           subtle: 'var(--color-text-subtle)',
@@ -20,7 +26,17 @@ export default {
         primary: {
           DEFAULT: 'var(--color-primary)',
           hover: 'var(--color-primary-hover)',
+          soft: 'var(--color-primary-soft)',
           foreground: 'var(--color-primary-foreground)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary)',
+          hover: 'var(--color-secondary-hover)',
+          foreground: 'var(--color-secondary-foreground)',
+        },
+        'accent-light': {
+          DEFAULT: 'var(--color-accent-light)',
+          soft: 'var(--color-accent-soft)',
         },
         danger: {
           DEFAULT: 'var(--color-danger)',
@@ -40,6 +56,8 @@ export default {
         DEFAULT: '6px',
         md: '8px',
         lg: '12px',
+        xl: '16px',
+        '2xl': '20px',
       },
     },
   },

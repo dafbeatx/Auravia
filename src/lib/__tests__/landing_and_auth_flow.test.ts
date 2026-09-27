@@ -40,12 +40,12 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
     it('LandingPage.tsx memiliki seluruh section yang diwajibkan', () => {
       // Section 1: Navbar
       expect(landingSource).toContain('AUROVIA');
-      expect(landingSource).toContain('Mulai Buat Undangan');
+      expect(landingSource).toContain('Buat Undangan');
       expect(landingSource).toContain('Masuk');
-      expect(landingSource).toContain('Daftar');
 
       // Section 2: Hero
-      expect(landingSource).toContain('Undangan Digital yang Dirancang untuk Momen yang Berarti');
+      expect(landingSource).toContain('Undangan Digital yang Dibuat untuk Momen yang Berarti.');
+      expect(landingSource).toContain('Tanpa instalasi');
       expect(landingSource).toContain('Gratis untuk mulai membuat');
 
       // Section 3: Value Strip
@@ -55,11 +55,8 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Dibagikan Secara Digital');
       expect(landingSource).toContain('Terintegrasi RSVP');
 
-      // Section 4: Template Showcase
-      expect(landingSource).toContain('Temukan Desain yang Sesuai dengan Cerita Anda');
-      expect(landingSource).toContain('Classic Elegance');
-      expect(landingSource).toContain('Royal Navy & Gold');
-      expect(landingSource).toContain('Lihat Demo');
+      // Section 4: Kenapa Aurovia
+      expect(landingSource).toContain('Kenapa Memilih Aurovia?');
 
       // Section 5: Fitur Utama
       expect(landingSource).toContain('Semua yang Dibutuhkan untuk Satu Undangan');
@@ -73,41 +70,36 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Amplop Digital');
       expect(landingSource).toContain('Musik Latar');
 
-      // Section 6: Preview Smartphone
-      expect(landingSource).toContain('Pengalaman Responsif di Genggaman Tamu');
-      expect(landingSource).toContain('Lihat Semua Template');
+      // Section 6: Template Showcase
+      expect(landingSource).toContain('Pilih Gaya Undanganmu');
+      expect(landingSource).toContain('Classic Elegance');
+      expect(landingSource).toContain('Royal Navy & Gold');
+      expect(landingSource).toContain('Lihat Demo');
 
-      // Section 7: Cara Kerja
+      // Section 7: Cara Kerja 3 Langkah
+      expect(landingSource).toContain('Cara Kerja Sederhana 3 Langkah');
       expect(landingSource).toContain('01');
       expect(landingSource).toContain('Pilih Desain');
       expect(landingSource).toContain('02');
       expect(landingSource).toContain('Isi Informasi');
       expect(landingSource).toContain('03');
-      expect(landingSource).toContain('Personalisasi');
-      expect(landingSource).toContain('04');
-      expect(landingSource).toContain('Publikasikan');
-      expect(landingSource).toContain('05');
-      expect(landingSource).toContain('Bagikan ke Tamu');
 
-      // Section 8: Personalisasi
-      expect(landingSource).toContain('Template adalah awal. Cerita Anda yang membuatnya berbeda.');
+      // Section 8: Preview Smartphone
+      expect(landingSource).toContain('Pengalaman Responsif di Genggaman Tamu');
 
-      // Section 9: Trust & Security
-      expect(landingSource).toContain('Data Undangan Anda Tetap Terjaga');
-      expect(landingSource).toContain('Autentikasi Akun');
-      expect(landingSource).toContain('Isolasi Data RLS');
-      expect(landingSource).toContain('Penyimpanan Aman');
-      expect(landingSource).toContain('Draft Bersifat Privat');
+      // Section 9: Fitur Lengkap
+      expect(landingSource).toContain('Integrasi Komplit dalam Satu Undangan');
 
-      // Section 10: FAQ
+      // Section 10: Mobile-First
+      expect(landingSource).toContain('Dioptimalkan Khusus untuk Layar Seluler');
+
+      // Section 11: FAQ
       expect(landingSource).toContain('Pertanyaan yang Sering Diajukan');
       expect(landingSource).toContain('Apa itu Aurovia?');
       expect(landingSource).toContain('Apakah saya harus membuat akun?');
 
-      // Section 11: Final CTA
+      // Section 12: Final CTA & Footer
       expect(landingSource).toContain('Siap Membuat Undangan Anda?');
-
-      // Section 12: Footer
       expect(landingSource).toContain('Platform undangan digital terstruktur.');
       expect(landingSource).toContain('2026 Aurovia');
     });
@@ -140,14 +132,13 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
     const registerSource = fs.readFileSync(registerPath, 'utf-8');
 
     it('Login mematuhi aturan visual dan fungsional', () => {
-      expect(loginSource).toContain('Selamat datang kembali');
-      expect(loginSource).toContain('Masuk untuk melanjutkan ke Aurovia.');
+      expect(loginSource).toContain('Masuk ke Aurovia');
       expect(loginSource).toContain('login-email');
       expect(loginSource).toContain('login-password');
       expect(loginSource).toContain('Lupa password?');
-      expect(loginSource).toContain('Masuk dengan kode akses');
+      expect(loginSource).toContain('Masuk dengan Kode Akses');
       expect(loginSource).toContain('Masuk dengan Google');
-      expect(loginSource).toContain('Belum punya akun?');
+      expect(loginSource).toContain('Buat Akun Baru');
       expect(loginSource).toContain('getSafeRedirectUrl');
 
       // TIDAK ADA Apple login

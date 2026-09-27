@@ -36,41 +36,41 @@ export function LandingPage() {
 
   const navLinks = [
     { label: 'Beranda', href: '#hero' },
-    { label: 'Template', href: '#template' },
     { label: 'Fitur', href: '#fitur' },
+    { label: 'Template', href: '#template' },
     { label: 'Cara Kerja', href: '#cara-kerja' },
     { label: 'FAQ', href: '#faq' },
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#1C1917] selection:bg-[#D4AF37]/25 antialiased font-sans flex flex-col">
+    <div className="min-h-screen bg-background text-text-primary selection:bg-accent-light/30 antialiased font-sans flex flex-col">
       {/* ================================================================== */}
-      {/* SECTION 1: NAVBAR                                                  */}
+      {/* HEADER: NAVBAR STICKY                                              */}
       {/* ================================================================== */}
       <header
         className={`sticky top-0 z-40 w-full transition-all duration-300 ${
           isScrolled
-            ? 'bg-[#FAF9F6]/95 backdrop-blur-md shadow-xs border-b border-[#E7E5E0]'
-            : 'bg-[#FAF9F6] border-b border-[#E7E5E0]/60'
+            ? 'bg-background/95 backdrop-blur-md shadow-xs border-b border-border'
+            : 'bg-background border-b border-border/60'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between">
-          {/* Logo Brand */}
+          {/* Logo Brand: logo.svg langsung tanpa teks duplikat */}
           <Link
             to="/"
-            className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg py-1 hover:opacity-90 transition-opacity"
+            className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg py-1 hover:opacity-90 transition-opacity"
             aria-label="Aurovia Beranda"
           >
             <img src="/logo.svg" alt="Aurovia" className="h-8 sm:h-9 w-auto object-contain" />
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-wide uppercase text-[#78716C]" aria-label="Menu Utama">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold tracking-wide uppercase text-text-muted" aria-label="Menu Utama">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="hover:text-[#1C1917] transition-colors py-2"
+                className="hover:text-primary transition-colors py-2"
               >
                 {link.label}
               </a>
@@ -82,7 +82,7 @@ export function LandingPage() {
             {user ? (
               <Link
                 to="/dashboard"
-                className="text-xs font-semibold text-[#1C1917] bg-[#E7E5E0] hover:bg-[#DEDCD5] px-4 py-2.5 rounded-full transition-all min-h-[44px] flex items-center justify-center cursor-pointer shadow-2xs"
+                className="text-xs font-semibold text-primary bg-primary-soft hover:bg-secondary/15 px-4 py-2.5 rounded-full transition-all min-h-[44px] flex items-center justify-center cursor-pointer border border-secondary/30"
               >
                 Ke Dashboard
               </Link>
@@ -90,36 +90,36 @@ export function LandingPage() {
               <>
                 <Link
                   to="/login"
-                  className="text-xs font-semibold text-[#78716C] hover:text-[#1C1917] px-4 py-2.5 rounded-full transition-colors min-h-[44px] flex items-center justify-center cursor-pointer"
+                  className="text-xs font-semibold text-text-muted hover:text-primary px-4 py-2.5 rounded-full transition-colors min-h-[44px] flex items-center justify-center cursor-pointer"
                 >
                   Masuk
                 </Link>
                 <Link
-                  to="/register"
-                  className="text-xs font-semibold bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] px-5 py-2.5 rounded-full transition-all min-h-[44px] flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
+                  className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary-hover px-5 py-2.5 rounded-full transition-all min-h-[44px] flex items-center justify-center cursor-pointer shadow-xs active:scale-98"
                 >
-                  Mulai Buat Undangan
+                  Buat Undangan
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Hamburger Toggle Button */}
+          {/* Mobile Hamburger Button */}
           <div className="md:hidden flex items-center">
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-expanded={mobileMenuOpen}
-              aria-label={mobileMenuOpen ? 'Tutup navigasi menu' : 'Buka navigasi menu'}
-              className="p-2.5 rounded-lg border border-[#E7E5E0] bg-[#FAF9F6] text-[#1C1917] hover:bg-[#F5F4F0] min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917]"
+              aria-label={mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+              className="p-2.5 rounded-xl border border-border bg-surface text-text-primary hover:bg-surface-elevated transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
             >
               {mobileMenuOpen ? (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
             </button>
@@ -128,26 +128,26 @@ export function LandingPage() {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-b border-[#E7E5E0] bg-[#FAF9F6] px-4 pt-3 pb-6 space-y-3 shadow-lg">
+          <div className="md:hidden border-b border-border bg-surface px-4 pt-3 pb-6 space-y-4 shadow-lg animate-fadeIn">
             <nav className="flex flex-col space-y-1" aria-label="Menu Seluler">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-3 rounded-lg text-sm font-semibold text-[#1C1917] hover:bg-[#F5F4F0] transition-colors min-h-[44px] flex items-center"
+                  className="px-3 py-3 rounded-lg text-sm font-semibold text-text-primary hover:bg-surface-elevated transition-colors min-h-[44px] flex items-center"
                 >
                   {link.label}
                 </a>
               ))}
             </nav>
 
-            <div className="pt-3 border-t border-[#E7E5E0] flex flex-col gap-2.5">
+            <div className="pt-3 border-t border-border flex flex-col gap-2.5">
               {user ? (
                 <Link
                   to="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center text-xs font-semibold bg-[#1C1917] text-[#FAF9F6] py-3 px-4 rounded-xl min-h-[44px] flex items-center justify-center"
+                  className="w-full text-center text-xs font-semibold bg-primary text-primary-foreground py-3 px-4 rounded-xl min-h-[44px] flex items-center justify-center"
                 >
                   Ke Dashboard
                 </Link>
@@ -156,16 +156,16 @@ export function LandingPage() {
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center text-xs font-semibold text-[#1C1917] border border-[#E7E5E0] bg-[#FAF9F6] hover:bg-[#F5F4F0] py-3 px-4 rounded-xl min-h-[44px] flex items-center justify-center"
+                    className="w-full text-center text-xs font-semibold border border-border bg-surface text-text-primary py-3 px-4 rounded-xl min-h-[44px] flex items-center justify-center"
                   >
                     Masuk
                   </Link>
                   <Link
-                    to="/register"
+                    to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center text-xs font-semibold bg-[#1C1917] text-[#FAF9F6] py-3 px-4 rounded-xl min-h-[44px] flex items-center justify-center shadow-xs"
+                    className="w-full text-center text-xs font-semibold bg-primary text-primary-foreground py-3 px-4 rounded-xl min-h-[44px] flex items-center justify-center shadow-xs"
                   >
-                    Mulai Buat Undangan
+                    Buat Undangan
                   </Link>
                 </>
               )}
@@ -174,64 +174,84 @@ export function LandingPage() {
         )}
       </header>
 
+      {/* ================================================================== */}
+      {/* 1. HERO SECTION                                                    */}
+      {/* ================================================================== */}
       <main className="flex-1">
-        {/* ================================================================== */}
-        {/* SECTION 2: HERO                                                    */}
-        {/* ================================================================== */}
-        <section id="hero" className="pt-16 pb-20 sm:pt-24 sm:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <section id="hero" className="relative pt-12 sm:pt-20 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Kolom Kiri: Copywriting & CTA */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-[#1C1917] text-[11px] font-semibold tracking-wider uppercase">
-                <span className="text-[#D4AF37]">✦</span>
-                <span>Platform Undangan Pernikahan Digital</span>
+            {/* Kolom Teks Hero */}
+            <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-surface text-xs font-semibold tracking-wider uppercase text-secondary">
+                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+                Platform Undangan Digital Terstruktur
               </div>
 
-              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal leading-[1.12] text-[#1C1917]">
-                Undangan Digital yang Dirancang untuk Momen yang Berarti
+              <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-normal text-text-primary tracking-tight leading-[1.15]">
+                Undangan Digital yang Dibuat untuk Momen yang Berarti.
               </h1>
 
-              <p className="text-base sm:text-lg text-[#78716C] max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Buat undangan pernikahan digital yang elegan, personal, dan mudah dibagikan.
-                Pilih desain, isi cerita Anda, lalu bagikan kepada orang-orang terdekat.
+              <p className="text-base sm:text-lg text-text-muted max-w-xl mx-auto lg:mx-0 leading-relaxed font-sans font-normal">
+                Buat undangan pernikahan digital yang elegan, personal, dan mudah dibagikan. Pilih desain, isi cerita Anda, lalu bagikan kepada orang-orang terdekat dengan tenang.
               </p>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
                 <Link
-                  to="/register"
-                  className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] text-sm font-semibold tracking-wide transition-all shadow-md active:scale-98 min-h-[48px]"
+                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px]"
                 >
                   Mulai Buat Undangan
                 </Link>
 
                 <Link
                   to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-                  className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full border border-[#E7E5E0] bg-[#FAF9F6] hover:bg-[#F5F4F0] text-[#1C1917] text-sm font-semibold tracking-wide transition-all min-h-[48px]"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-secondary text-primary bg-primary-soft hover:bg-secondary/15 text-sm font-semibold tracking-wide transition-all min-h-[48px]"
                 >
                   Lihat Template
                 </Link>
               </div>
 
-              <p className="text-xs text-[#78716C]/80 tracking-wide">
-                Gratis untuk mulai membuat &bull; Tanpa komitmen di awal
+              <p className="text-xs text-text-subtle pt-1 font-sans">
+                Gratis untuk mulai membuat &bull; Draf tersimpan privat
               </p>
+
+              {/* Trust Signals Strip */}
+              <div className="pt-6 border-t border-border grid grid-cols-2 sm:grid-cols-4 gap-4 text-center lg:text-left">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-text-primary">Tanpa instalasi</p>
+                  <p className="text-[11px] text-text-subtle">Langsung buka di browser</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-text-primary">Responsif perangkat</p>
+                  <p className="text-[11px] text-text-subtle">Sempurna di ponsel & laptop</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-text-primary">Mudah dibagikan</p>
+                  <p className="text-[11px] text-text-subtle">Tautan personal WhatsApp</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-text-primary">Dapat disesuaikan</p>
+                  <p className="text-[11px] text-text-subtle">Kisah, galeri, & musik</p>
+                </div>
+              </div>
             </div>
 
-            {/* Kolom Kanan: Visual Preview Representatif Dua Template Nyata */}
-            <div className="lg:col-span-5 relative flex justify-center">
-              <div className="w-full max-w-sm sm:max-w-md relative">
-                {/* Background Shadow Glow */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#D4AF37]/15 to-[#1E3A5F]/15 rounded-3xl blur-2xl transform -rotate-3" />
+            {/* Kolom Visual Hero: Mockup Undangan Nyata */}
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-sm sm:max-w-md">
+                {/* Background Glow Elegan */}
+                <div className="absolute -inset-4 bg-accent-light/25 rounded-3xl blur-2xl -z-10" />
 
-                {/* Kartu Pratinjau Tumpuk (Classic Elegance & Royal Navy & Gold) */}
-                <div className="relative space-y-4">
-                  {/* Kartu 1: Royal Navy & Gold Mockup */}
-                  <div className="p-6 rounded-2xl border border-[#D4AF37]/50 bg-[#0A1324] text-[#F8FAFC] shadow-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-[#D4AF37]/30 pb-3">
+                {/* Komposisi Desain: Pratinjau Desain Nyata Aurovia */}
+                <div className="space-y-4">
+                  {/* Kartu 1: Royal Navy & Gold Inset Preview */}
+                  <div className="p-6 sm:p-7 rounded-2xl border border-[#D4AF37]/35 bg-[#0F1E36] text-[#F8FAFC] shadow-xl space-y-4 relative overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-[#D4AF37]/20 pb-3">
                       <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-semibold">
-                        Walimatul &apos;Ursy
+                        The Wedding Celebration
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#D4AF37]/40 bg-[#1E3A5F] text-[#D4AF37]">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-[#D4AF37]">
                         Royal Navy &amp; Gold
                       </span>
                     </div>
@@ -256,21 +276,21 @@ export function LandingPage() {
                   </div>
 
                   {/* Kartu 2: Classic Elegance Inset Strip */}
-                  <div className="p-5 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] text-[#1C1917] shadow-lg flex items-center justify-between gap-4">
+                  <div className="p-5 rounded-2xl border border-border bg-surface text-text-primary shadow-md flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full border border-[#E7E5E0] bg-[#FAF9F6] flex items-center justify-center font-serif text-sm font-semibold text-[#1C1917]">
+                      <div className="w-10 h-10 rounded-full border border-border bg-background flex items-center justify-center font-serif text-sm font-semibold text-primary">
                         S &amp; D
                       </div>
                       <div>
-                        <p className="font-serif text-base font-medium text-[#1C1917]">
+                        <p className="font-serif text-base font-medium text-text-primary">
                           Sarah &amp; Dimas
                         </p>
-                        <p className="text-[11px] text-[#78716C]">
+                        <p className="text-[11px] text-text-muted">
                           Classic Elegance &bull; Tipografi Editorial
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold text-[#1C1917] px-3 py-1.5 rounded-full border border-[#E7E5E0] bg-[#FAF9F6]">
+                    <span className="text-xs font-semibold text-primary px-3 py-1.5 rounded-full border border-secondary/30 bg-primary-soft">
                       Aktif
                     </span>
                   </div>
@@ -281,52 +301,52 @@ export function LandingPage() {
         </section>
 
         {/* ================================================================== */}
-        {/* SECTION 3: TRUST / VALUE STRIP                                     */}
+        {/* 2. TRUST / VALUE PROPOSITION STRIP                                 */}
         {/* ================================================================== */}
-        <section className="border-y border-[#E7E5E0] bg-[#FFFFFF] py-10 px-4 sm:px-6 lg:px-8">
+        <section className="border-y border-border bg-surface py-10 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto space-y-6">
-            <p className="text-center text-xs font-semibold tracking-widest uppercase text-[#78716C]">
+            <p className="text-center text-xs font-semibold tracking-widest uppercase text-text-muted">
               Dirancang untuk membuat proses undangan terasa lebih sederhana
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
               <div className="space-y-1.5 p-2">
-                <span className="text-xl sm:text-2xl text-[#1C1917]">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-[#1C1917]">
+                <span className="text-xl sm:text-2xl text-secondary">✦</span>
+                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Desain Elegan
                 </h2>
-                <p className="text-xs text-[#78716C] leading-relaxed">
-                  Tipografi berkelas dan harmoni warna yang disusun oleh desainer.
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Tipografi berkelas dan harmoni warna yang disusun secara estetik.
                 </p>
               </div>
 
               <div className="space-y-1.5 p-2">
-                <span className="text-xl sm:text-2xl text-[#1C1917]">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-[#1C1917]">
+                <span className="text-xl sm:text-2xl text-secondary">✦</span>
+                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Mudah Dipersonalisasi
                 </h2>
-                <p className="text-xs text-[#78716C] leading-relaxed">
+                <p className="text-xs text-text-muted leading-relaxed">
                   Sesuaikan kisah, foto, agenda acara, dan musik latar Anda.
                 </p>
               </div>
 
               <div className="space-y-1.5 p-2">
-                <span className="text-xl sm:text-2xl text-[#1C1917]">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-[#1C1917]">
+                <span className="text-xl sm:text-2xl text-secondary">✦</span>
+                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Dibagikan Secara Digital
                 </h2>
-                <p className="text-xs text-[#78716C] leading-relaxed">
-                  Tautan instan ramah ponsel yang mudah dikirimkan melalui WhatsApp.
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Tautan khusus per tamu untuk pengiriman rapi lewat WhatsApp.
                 </p>
               </div>
 
               <div className="space-y-1.5 p-2">
-                <span className="text-xl sm:text-2xl text-[#1C1917]">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-[#1C1917]">
+                <span className="text-xl sm:text-2xl text-secondary">✦</span>
+                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Terintegrasi RSVP
                 </h2>
-                <p className="text-xs text-[#78716C] leading-relaxed">
-                  Rekap kehadiran tamu dan buku ucapan doa restu yang terstruktur.
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Rekap konfirmasi kehadiran tamu tercatat langsung di dashboard.
                 </p>
               </div>
             </div>
@@ -334,615 +354,633 @@ export function LandingPage() {
         </section>
 
         {/* ================================================================== */}
-        {/* SECTION 4: TEMPLATE SHOWCASE                                       */}
-        {/* ================================================================== */}
-        <section id="template" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase tracking-widest text-[#D4AF37] font-semibold">
-              Katalog Pilihan
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal">
-              Temukan Desain yang Sesuai dengan Cerita Anda
-            </h2>
-            <DecorativeDivider variant="diamond" withLine={false} />
-            <p className="text-sm text-[#78716C] leading-relaxed">
-              Setiap template dibangun di atas arsitektur Aurovia dengan dukungan multi-acara,
-              cover envelope interaktif, galeri foto, dan pemutar musik.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Template Card 1: Classic Elegance */}
-            <div className="rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
-              <div className="p-8 border-b border-[#E7E5E0] bg-[#FAF9F6] text-center space-y-4">
-                <div className="flex items-center justify-between text-[11px] text-[#78716C] font-semibold uppercase tracking-wider">
-                  <span>Pernikahan</span>
-                  <span>Editorial Serif</span>
-                </div>
-
-                <div className="py-8 space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-[#78716C]">
-                    The Wedding Of
-                  </p>
-                  <p className="font-serif text-3xl text-[#1C1917] font-normal">
-                    Sarah &amp; Dimas
-                  </p>
-                  <p className="text-xs text-[#78716C] italic font-serif">
-                    Minggu, 20 November 2026
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <span className="inline-block text-[11px] font-mono px-3 py-1 rounded-full border border-[#E7E5E0] bg-[#FFFFFF] text-[#78716C]">
-                    Warm Alabaster &bull; Cormorant Garamond
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3 className="font-serif text-xl font-medium text-[#1C1917]">
-                    Classic Elegance
-                  </h3>
-                  <p className="text-xs text-[#78716C] leading-relaxed mt-1">
-                    Nuansa editorial abadi dengan tipografi serif hangat, tata letak seimbang, dan ruang baca yang menenangkan.
-                  </p>
-                </div>
-
-                <Link
-                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-                  className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full border border-[#1C1917] text-[#1C1917] hover:bg-[#1C1917] hover:text-[#FAF9F6] text-xs font-semibold tracking-wider uppercase transition-all min-h-[44px]"
-                >
-                  Lihat Demo
-                </Link>
-              </div>
-            </div>
-
-            {/* Template Card 2: Royal Navy & Gold */}
-            <div className="rounded-2xl border border-[#D4AF37]/40 bg-[#0A1324] text-[#F8FAFC] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
-              <div className="p-8 border-b border-[#D4AF37]/30 bg-[#132238]/60 text-center space-y-4">
-                <div className="flex items-center justify-between text-[11px] text-[#D4AF37] font-semibold uppercase tracking-wider">
-                  <span>Pernikahan</span>
-                  <span>Modern Islamic</span>
-                </div>
-
-                <div className="py-8 space-y-2">
-                  <p className="text-xs uppercase tracking-widest text-[#D4AF37]">
-                    Walimatul &apos;Ursy
-                  </p>
-                  <p className="font-serif text-3xl text-[#D4AF37] font-normal">
-                    Rika &amp; Dani
-                  </p>
-                  <p className="text-xs text-[#F8FAFC]/80 font-serif">
-                    Sabtu, 15 Oktober 2026
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <span className="inline-block text-[11px] font-mono px-3 py-1 rounded-full border border-[#D4AF37]/40 bg-[#0A1324] text-[#D4AF37]">
-                    Royal Navy &bull; Gold Accent &bull; Playfair
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3 className="font-serif text-xl font-medium text-[#D4AF37]">
-                    Royal Navy &amp; Gold
-                  </h3>
-                  <p className="text-xs text-[#F8FAFC]/75 leading-relaxed mt-1">
-                    Kemegahan modern bernuansa navy kerajaan dengan aksen emas berkelas, kartu glass, dan estetika pernikahan khidmat.
-                  </p>
-                </div>
-
-                <Link
-                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-                  className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0A1324] text-xs font-semibold tracking-wider uppercase transition-all min-h-[44px]"
-                >
-                  Lihat Demo
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================================================================== */}
-        {/* SECTION 5: FITUR UTAMA                                             */}
-        {/* ================================================================== */}
-        <section id="fitur" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#E7E5E0] space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase tracking-widest text-[#78716C] font-semibold">
-              Kemampuan Platform
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal">
-              Semua yang Dibutuhkan untuk Satu Undangan
-            </h2>
-            <DecorativeDivider variant="diamond" withLine={false} />
-            <p className="text-sm text-[#78716C] leading-relaxed">
-              Seluruh komponen dirancang untuk memberikan kemudahan bagi Anda dan pengalaman berkesan bagi para tamu.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              {
-                title: 'Hero & Cover',
-                desc: 'Pengalaman pembuka sampul elegan (Cover Envelope) dengan sapaan nama tamu yang dipersonalisasi.',
-                icon: '✦',
-              },
-              {
-                title: 'Profil Mempelai',
-                desc: 'Tampilkan nama kedua calon mempelai, peran keluarga, nama orang tua, serta foto portrait berbingkai anggun.',
-                icon: '✦',
-              },
-              {
-                title: 'Kisah Kami',
-                desc: 'Bagikan momen perjalanan cinta Anda melalui linimasa cerita yang dapat diatur urutannya secara fleksibel.',
-                icon: '✦',
-              },
-              {
-                title: 'Agenda Acara',
-                desc: 'Mendukung beberapa rangkaian agenda seperti akad nikah, pemberkatan, dan resepsi lengkap dengan tombol Google Maps.',
-                icon: '✦',
-              },
-              {
-                title: 'Galeri Foto',
-                desc: 'Dokumentasi momen pre-wedding dengan integrasi Supabase Storage dan penampil lightbox layar penuh.',
-                icon: '✦',
-              },
-              {
-                title: 'RSVP Digital',
-                desc: 'Tamu dapat mengonfirmasi kehadiran serta jumlah orang yang hadir secara real-time langsung ke dashboard Anda.',
-                icon: '✦',
-              },
-              {
-                title: 'Doa & Ucapan',
-                desc: 'Buku tamu digital interaktif tempat para tamu menuliskan doa restu dan harapan terbaik bagi kedua mempelai.',
-                icon: '✦',
-              },
-              {
-                title: 'Amplop Digital',
-                desc: 'Informasi nomor rekening bank dan dompet digital tanda kasih dilengkapi tombol salin satu sentuhan.',
-                icon: '✦',
-              },
-              {
-                title: 'Musik Latar',
-                desc: 'Pemutar musik floating yang memutar alunan lagu favorit secara otomatis setelah interaksi pembuka oleh tamu.',
-                icon: '✦',
-              },
-            ].map((f, i) => (
-              <div
-                key={i}
-                className="p-6 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-3 shadow-2xs hover:border-[#D4AF37]/60 transition-colors"
-              >
-                <span className="text-base text-[#D4AF37] block font-mono">{f.icon}</span>
-                <h3 className="font-serif text-lg font-medium text-[#1C1917]">
-                  {f.title}
-                </h3>
-                <p className="text-xs text-[#78716C] leading-relaxed">
-                  {f.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ================================================================== */}
-        {/* SECTION 6: PREVIEW "HOW IT LOOKS"                                  */}
-        {/* ================================================================== */}
-        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#F5F4F0] border-y border-[#E7E5E0]">
-          <div className="max-w-7xl mx-auto space-y-12">
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <span className="text-xs uppercase tracking-widest text-[#78716C] font-semibold">
-                Tampilan Layar Ponsel
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal">
-                Pengalaman Responsif di Genggaman Tamu
-              </h2>
-              <p className="text-sm text-[#78716C] leading-relaxed">
-                Mayoritas tamu membuka undangan melalui ponsel pintar. Lihat bagaimana undangan Aurovia tampil anggun di layar seluler.
-              </p>
-
-              {/* Selector Tab Pratinjau Bagian */}
-              <div className="pt-4 flex flex-wrap items-center justify-center gap-2">
-                {[
-                  { id: 'cover', label: 'Sampul Pembuka' },
-                  { id: 'couple', label: 'Profil Mempelai' },
-                  { id: 'event', label: 'Rangkaian Acara' },
-                  { id: 'gallery', label: 'Galeri Foto' },
-                  { id: 'rsvp', label: 'RSVP & Ucapan' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActivePreviewTab(tab.id as typeof activePreviewTab)}
-                    className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider transition-all min-h-[44px] cursor-pointer ${
-                      activePreviewTab === tab.id
-                        ? 'bg-[#1C1917] text-[#FAF9F6] shadow-xs'
-                        : 'bg-[#FFFFFF] border border-[#E7E5E0] text-[#78716C] hover:text-[#1C1917]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Smartphone Mockup Frame */}
-            <div className="max-w-xs sm:max-w-sm mx-auto">
-              <div className="relative rounded-[40px] border-4 border-[#1C1917] bg-[#1C1917] p-2 shadow-2xl">
-                {/* Speaker Notch */}
-                <div className="w-24 h-4 bg-[#1C1917] rounded-b-xl mx-auto absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
-                  <div className="w-10 h-1 bg-[#292524] rounded-full" />
-                </div>
-
-                {/* Layar Ponsel Internal */}
-                <div className="w-full h-[520px] rounded-[32px] bg-[#FAF9F6] overflow-y-auto pt-8 pb-6 px-4 text-center space-y-6 text-[#1C1917] select-none">
-                  {activePreviewTab === 'cover' && (
-                    <div className="space-y-6 my-auto pt-6">
-                      <DecorativeDivider variant="diamond" withLine={false} />
-                      <p className="text-[10px] uppercase tracking-widest text-[#78716C]">
-                        The Wedding Of
-                      </p>
-                      <h3 className="font-serif text-3xl font-normal text-[#1C1917]">
-                        Sarah &amp; Dimas
-                      </h3>
-                      <div className="p-3 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] max-w-[200px] mx-auto text-[10px]">
-                        <span className="text-[#78716C] block">Kepada Yth.</span>
-                        <span className="font-semibold text-[#1C1917]">Bapak Anugrah &amp; Partner</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="px-6 py-2.5 rounded-full bg-[#1C1917] text-[#FAF9F6] text-xs font-semibold shadow-xs"
-                      >
-                        Buka Undangan
-                      </button>
-                    </div>
-                  )}
-
-                  {activePreviewTab === 'couple' && (
-                    <div className="space-y-4 pt-4">
-                      <h3 className="font-serif text-xl font-normal text-[#1C1917]">
-                        Kedua Mempelai
-                      </h3>
-                      <DecorativeDivider variant="diamond" withLine={false} />
-                      <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-2">
-                        <div className="w-12 h-12 rounded-full border border-[#D4AF37] mx-auto flex items-center justify-center font-serif text-base font-bold text-[#1C1917]">
-                          S
-                        </div>
-                        <p className="font-serif text-base font-semibold text-[#1C1917]">
-                          Sarah Anindita
-                        </p>
-                        <p className="text-[10px] text-[#78716C]">
-                          Putri pertama dari Bpk. Bambang &amp; Ibu Maria
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-2">
-                        <div className="w-12 h-12 rounded-full border border-[#D4AF37] mx-auto flex items-center justify-center font-serif text-base font-bold text-[#1C1917]">
-                          D
-                        </div>
-                        <p className="font-serif text-base font-semibold text-[#1C1917]">
-                          Dimas Prasetyo
-                        </p>
-                        <p className="text-[10px] text-[#78716C]">
-                          Putra kedua dari Bpk. Hartono &amp; Ibu Ratna
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {activePreviewTab === 'event' && (
-                    <div className="space-y-4 pt-4">
-                      <h3 className="font-serif text-xl font-normal text-[#1C1917]">
-                        Agenda Acara
-                      </h3>
-                      <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] text-left space-y-2">
-                        <div className="flex justify-between items-center border-b border-[#E7E5E0] pb-2">
-                          <span className="font-semibold text-xs text-[#1C1917]">Akad Nikah</span>
-                          <span className="text-[9px] px-2 py-0.5 rounded bg-[#D4AF37]/20 text-[#1C1917] font-semibold">
-                            Utama
-                          </span>
-                        </div>
-                        <p className="text-xs font-semibold text-[#D4AF37]">
-                          Minggu, 20 November 2026
-                        </p>
-                        <p className="text-[10px] text-[#78716C]">
-                          Pukul 08.00 - 10.00 WIB
-                        </p>
-                        <p className="text-[11px] font-semibold text-[#1C1917]">
-                          Hotel Mulia Senayan, Jakarta
-                        </p>
-                        <span className="inline-block text-[10px] font-semibold text-[#1C1917] underline pt-1">
-                          Buka Google Maps &rarr;
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {activePreviewTab === 'gallery' && (
-                    <div className="space-y-4 pt-4">
-                      <h3 className="font-serif text-xl font-normal text-[#1C1917]">
-                        Galeri Foto
-                      </h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div
-                            key={i}
-                            className="aspect-square rounded-lg border border-[#E7E5E0] bg-[#E7E5E0]/60 flex items-center justify-center text-[10px] text-[#78716C]"
-                          >
-                            Foto Dokumentasi
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activePreviewTab === 'rsvp' && (
-                    <div className="space-y-4 pt-4">
-                      <h3 className="font-serif text-xl font-normal text-[#1C1917]">
-                        Konfirmasi Kehadiran
-                      </h3>
-                      <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] text-left space-y-2">
-                        <div className="text-[10px] space-y-1">
-                          <span className="text-[#78716C] block">Nama Anda</span>
-                          <div className="p-2 rounded border border-[#E7E5E0] bg-[#FAF9F6] text-[#1C1917]">
-                            Anugrah &amp; Partner
-                          </div>
-                        </div>
-                        <div className="text-[10px] space-y-1 pt-1">
-                          <span className="text-[#78716C] block">Kehadiran</span>
-                          <div className="flex gap-2">
-                            <span className="px-3 py-1 rounded bg-[#1C1917] text-[#FAF9F6]">Hadir</span>
-                            <span className="px-3 py-1 rounded border border-[#E7E5E0]">Maaf, Berhalangan</span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className="w-full py-2 bg-[#1C1917] text-[#FAF9F6] text-[10px] rounded font-semibold mt-2"
-                        >
-                          Kirim Konfirmasi
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-center pt-8">
-                <Link
-                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-[#1C1917] text-[#1C1917] hover:bg-[#1C1917] hover:text-[#FAF9F6] text-xs font-semibold tracking-wider uppercase transition-all min-h-[44px]"
-                >
-                  Lihat Semua Template
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================================================================== */}
-        {/* SECTION 7: CARA KERJA                                              */}
-        {/* ================================================================== */}
-        <section id="cara-kerja" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase tracking-widest text-[#78716C] font-semibold">
-              Alur Pembuatan
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal">
-              Alur Pembuatan yang Mudah dan Terstruktur
-            </h2>
-            <DecorativeDivider variant="diamond" withLine={false} />
-            <p className="text-sm text-[#78716C] leading-relaxed">
-              Lima langkah terarah dari memilih desain hingga undangan siap dibagikan kepada keluarga dan kerabat.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {[
-              {
-                step: '01',
-                title: 'Pilih Desain',
-                desc: 'Pilih salah satu template master seperti Classic Elegance atau Royal Navy & Gold.',
-              },
-              {
-                step: '02',
-                title: 'Isi Informasi',
-                desc: 'Masukkan rincian calon pengantin, tanggal, rangkaian acara, dan lokasi Google Maps.',
-              },
-              {
-                step: '03',
-                title: 'Personalisasi',
-                desc: 'Sesuaikan kisah cinta, galeri foto, musik latar, serta rekening tanda kasih.',
-              },
-              {
-                step: '04',
-                title: 'Publikasikan',
-                desc: 'Pratinjau hasil secara langsung lalu terbitkan undangan Anda dengan satu klik.',
-              },
-              {
-                step: '05',
-                title: 'Bagikan ke Tamu',
-                desc: 'Buat tautan personal per tamu dan bagikan melalui WhatsApp secara cepat dan rapi.',
-              },
-            ].map((s, idx) => (
-              <div
-                key={idx}
-                className="p-6 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-3 shadow-2xs relative"
-              >
-                <span className="font-serif text-3xl font-light text-[#D4AF37] block">
-                  {s.step}
-                </span>
-                <h3 className="font-serif text-base font-semibold text-[#1C1917]">
-                  {s.title}
-                </h3>
-                <p className="text-xs text-[#78716C] leading-relaxed">
-                  {s.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ================================================================== */}
-        {/* SECTION 8: PERSONALISASI                                           */}
-        {/* ================================================================== */}
-        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#FFFFFF] border-y border-[#E7E5E0]">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <span className="text-xs uppercase tracking-widest text-[#D4AF37] font-semibold">
-                Sentuhan Pribadi
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal leading-tight">
-                Template adalah awal. Cerita Anda yang membuatnya berbeda.
-              </h2>
-              <p className="text-sm text-[#78716C] leading-relaxed">
-                Aurovia memberikan keleluasaan penuh untuk menyesuaikan setiap detail tanpa merusak keindahan tata letak desain asli.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FAF9F6] space-y-1">
-                  <span className="font-semibold text-[#1C1917]">Nama &amp; Peran Pasangan</span>
-                  <p className="text-[#78716C]">Atur panggilan, urutan nama mempelai, serta silsilah keluarga.</p>
-                </div>
-                <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FAF9F6] space-y-1">
-                  <span className="font-semibold text-[#1C1917]">Multiple Agenda</span>
-                  <p className="text-[#78716C]">Dukung akad, resepsi, atau syukuran dengan zona waktu mandiri.</p>
-                </div>
-                <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FAF9F6] space-y-1">
-                  <span className="font-semibold text-[#1C1917]">Penyimpanan Foto Asli</span>
-                  <p className="text-[#78716C]">Unggah langsung momen terbaik Anda tanpa kompresi berlebih.</p>
-                </div>
-                <div className="p-4 rounded-xl border border-[#E7E5E0] bg-[#FAF9F6] space-y-1">
-                  <span className="font-semibold text-[#1C1917]">Batas Tamu &amp; RSVP</span>
-                  <p className="text-[#78716C]">Kendalikan kapasitas kehadiran tamu per undangan secara terukur.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6 flex justify-center">
-              <div className="p-6 sm:p-8 rounded-2xl border border-[#E7E5E0] bg-[#FAF9F6] shadow-md max-w-lg w-full space-y-4">
-                <div className="flex items-center justify-between border-b border-[#E7E5E0] pb-3 text-xs text-[#78716C]">
-                  <span className="font-semibold text-[#1C1917]">Editor Undangan Aurovia</span>
-                  <span>Draft Lokal Instan</span>
-                </div>
-                <div className="space-y-3 text-xs">
-                  <div className="p-3 rounded-lg border border-[#E7E5E0] bg-[#FFFFFF] flex justify-between items-center">
-                    <span>Seksi Sampul Pembuka (Cover)</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">Aktif</span>
-                  </div>
-                  <div className="p-3 rounded-lg border border-[#E7E5E0] bg-[#FFFFFF] flex justify-between items-center">
-                    <span>Seksi Kedua Mempelai (Hosts)</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">Aktif</span>
-                  </div>
-                  <div className="p-3 rounded-lg border border-[#E7E5E0] bg-[#FFFFFF] flex justify-between items-center">
-                    <span>Agenda Acara Utama (Events)</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">Aktif</span>
-                  </div>
-                  <div className="p-3 rounded-lg border border-[#E7E5E0] bg-[#FFFFFF] flex justify-between items-center">
-                    <span>Amplop Digital &amp; Tanda Kasih</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">Aktif</span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-[#78716C] italic text-center pt-2">
-                  Pratinjau langsung diperbarui seketika tanpa request database berulang.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================================================================== */}
-        {/* SECTION 9: TRUST & SECURITY                                        */}
+        {/* 3. KENAPA AUROVIA                                                  */}
         {/* ================================================================== */}
         <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs uppercase tracking-widest text-[#78716C] font-semibold">
-              Keamanan &amp; Privasi
+            <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+              Kelebihan Platform
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal">
-              Data Undangan Anda Tetap Terjaga
+            <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+              Kenapa Memilih Aurovia?
             </h2>
-            <DecorativeDivider variant="diamond" withLine={false} />
-            <p className="text-sm text-[#78716C] leading-relaxed">
-              Kami memegang prinsip keamanan multi-tenant yang ketat agar privasi momen sakral Anda terlindungi secara menyeluruh.
+            <p className="text-sm text-text-muted leading-relaxed">
+              Kami memadukan estetika desain editorial dengan arsitektur cloud modern untuk momen terbaik hidup Anda.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-2.5">
-              <h3 className="font-serif text-base font-semibold text-[#1C1917]">
-                Autentikasi Akun
+            <div className="p-6 rounded-2xl border border-border bg-surface space-y-3 hover:border-secondary transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center font-serif text-lg font-bold">
+                01
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-text-primary">
+                Tipografi Editorial
               </h3>
-              <p className="text-xs text-[#78716C] leading-relaxed">
-                Akses editor hanya dapat dibuka oleh pemilik akun yang sah melalui sesi terverifikasi.
+              <p className="text-xs text-text-muted leading-relaxed">
+                Bukan sekadar form isian generik. Tata letak setiap halaman dipersiapkan dengan ritme tipografi yang menawan.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-2.5">
-              <h3 className="font-serif text-base font-semibold text-[#1C1917]">
-                Isolasi Data RLS
+            <div className="p-6 rounded-2xl border border-border bg-surface space-y-3 hover:border-secondary transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center font-serif text-lg font-bold">
+                02
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-text-primary">
+                Tautan Personal Tamu
               </h3>
-              <p className="text-xs text-[#78716C] leading-relaxed">
-                Tiap baris data undangan dilindungi oleh PostgreSQL Row-Level Security di level database.
+              <p className="text-xs text-text-muted leading-relaxed">
+                Sapa setiap sahabat dan keluarga dengan nama mereka pada sampul amplop digital saat tautan dibuka.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-2.5">
-              <h3 className="font-serif text-base font-semibold text-[#1C1917]">
-                Penyimpanan Aman
+            <div className="p-6 rounded-2xl border border-border bg-surface space-y-3 hover:border-secondary transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center font-serif text-lg font-bold">
+                03
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-text-primary">
+                Privasi Data Terjamin
               </h3>
-              <p className="text-xs text-[#78716C] leading-relaxed">
-                Berkas foto galeri dan pasangan disimpan pada direktori cloud terisolasi per pemilik akun.
+              <p className="text-xs text-text-muted leading-relaxed">
+                Draf undangan bersifat privat dengan PostgreSQL Row-Level Security, tidak dapat diintip sebelum dipublikasikan.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl border border-[#E7E5E0] bg-[#FFFFFF] space-y-2.5">
-              <h3 className="font-serif text-base font-semibold text-[#1C1917]">
-                Draft Bersifat Privat
+            <div className="p-6 rounded-2xl border border-border bg-surface space-y-3 hover:border-secondary transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center font-serif text-lg font-bold">
+                04
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-text-primary">
+                Cepat &amp; Bebas Iklan
               </h3>
-              <p className="text-xs text-[#78716C] leading-relaxed">
-                Undangan tidak akan dapat diakses oleh publik sebelum Anda sendiri yang mempublikasikannya.
+              <p className="text-xs text-text-muted leading-relaxed">
+                Tamu dapat membuka undangan tanpa hambatan, tanpa unduh aplikasi, dan tanpa gangguan iklan pihak ketiga.
               </p>
             </div>
           </div>
         </section>
 
         {/* ================================================================== */}
-        {/* SECTION 10: FAQ                                                    */}
+        {/* 4. FITUR UTAMA                                                     */}
         {/* ================================================================== */}
-        <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#F5F4F0] border-t border-[#E7E5E0]">
+        <section id="fitur" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-surface border-y border-border">
+          <div className="max-w-7xl mx-auto space-y-12">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+                Struktur Undangan
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+                Semua yang Dibutuhkan untuk Satu Undangan
+              </h2>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Setiap seksi dirancang secara modular agar undangan pernikahan Anda menyampaikan cerita dengan utuh dan anggun.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+              {[
+                {
+                  title: 'Hero & Cover',
+                  desc: 'Personal branding dengan amplop interaktif dan nama tamu undangan pada sampul pembuka.',
+                  icon: '✉',
+                },
+                {
+                  title: 'Profil Mempelai',
+                  desc: 'Informasi kedua mempelai, foto pasangan, nama orang tua, serta tautan media sosial keluarga.',
+                  icon: '❦',
+                },
+                {
+                  title: 'Kisah Kami',
+                  desc: 'Perjalanan cinta pasangan mulai dari pertemuan pertama, momen lamaran, hingga menuju hari bahagia.',
+                  icon: '📖',
+                },
+                {
+                  title: 'Agenda Acara',
+                  desc: 'Dukungan beberapa rangkaian acara seperti akad nikah, pemberkatan, resepsi, peta lokasi Google Maps, dan tombol kalender.',
+                  icon: '📅',
+                },
+                {
+                  title: 'Galeri Foto',
+                  desc: 'Koleksi foto pre-wedding beresolusi tinggi dengan sistem penyimpanan Supabase Storage terisolasi.',
+                  icon: '🖼',
+                },
+                {
+                  title: 'RSVP Digital',
+                  desc: 'Konfirmasi kehadiran dan jumlah tamu undangan yang terhubung langsung ke dashboard pengelola.',
+                  icon: '✓',
+                },
+                {
+                  title: 'Doa & Ucapan',
+                  desc: 'Buku tamu digital interaktif tempat keluarga dan sahabat meninggalkan doa restu.',
+                  icon: '✍',
+                },
+                {
+                  title: 'Amplop Digital',
+                  desc: 'Informasi nomor rekening bank dan dompet digital yang rapi untuk tanda kasih tanpa tunai.',
+                  icon: '💳',
+                },
+                {
+                  title: 'Musik Latar',
+                  desc: 'Pemutar musik mengambang dengan kontrol putar dan jeda otomatis demi kenyamanan tamu.',
+                  icon: '♫',
+                },
+              ].map((feat, idx) => (
+                <div
+                  key={idx}
+                  className="p-6 sm:p-7 rounded-2xl border border-border bg-background/50 hover:bg-background transition-colors space-y-2.5"
+                >
+                  <span className="text-xl text-primary font-serif block">{feat.icon}</span>
+                  <h3 className="font-serif text-lg font-semibold text-text-primary">
+                    {feat.title}
+                  </h3>
+                  <p className="text-xs text-text-muted leading-relaxed font-sans">
+                    {feat.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================== */}
+        {/* 5. TEMPLATE SHOWCASE: PILIH GAYA UNDANGANMU                        */}
+        {/* ================================================================== */}
+        <section id="template" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+              Katalog Desain
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+              Pilih Gaya Undanganmu
+            </h2>
+            <p className="text-sm text-text-muted leading-relaxed">
+              Jelajahi template master yang tersedia di sistem Aurovia. Masuk ke akun Anda untuk mencoba demo interaktifnya.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+            {/* Card Template 1: Classic Elegance */}
+            <div className="rounded-3xl border border-border bg-surface overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
+              <div>
+                {/* Visual Preview */}
+                <div className="h-64 sm:h-72 bg-[#FAF9F6] border-b border-border p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                  <div className="space-y-3 max-w-xs">
+                    <span className="text-[10px] uppercase tracking-widest text-text-subtle font-semibold">
+                      Editorial Monogram
+                    </span>
+                    <div className="w-12 h-12 mx-auto rounded-full border border-border bg-surface flex items-center justify-center font-serif text-base font-semibold text-primary">
+                      A &bull; B
+                    </div>
+                    <p className="font-serif text-2xl font-normal text-text-primary">
+                      Aditya &amp; Bella
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      Minggu, 20 Desember 2026
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-6 sm:p-8 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-text-primary">
+                      Classic Elegance
+                    </h3>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full border border-border bg-surface-elevated text-text-muted">
+                      Editorial &bull; Minimalis
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+                    Desain abadi dengan tipografi serif editorial bergaya majalah, spasi yang tenang, dan ornamen garis klasik yang anggun.
+                  </p>
+                  <p className="text-[11px] text-text-subtle font-medium">
+                    Warna dominan: Warm Alabaster, Deep Bronze &amp; Stone
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-8 pt-0">
+                <Link
+                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
+                  className="w-full inline-flex items-center justify-center px-5 py-3 rounded-xl border border-secondary text-primary bg-primary-soft hover:bg-secondary/15 text-xs font-semibold tracking-wider uppercase transition-all min-h-[44px]"
+                >
+                  Lihat Demo
+                </Link>
+              </div>
+            </div>
+
+            {/* Card Template 2: Royal Navy & Gold */}
+            <div className="rounded-3xl border border-border bg-surface overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
+              <div>
+                {/* Visual Preview */}
+                <div className="h-64 sm:h-72 bg-[#0B1528] border-b border-border p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                  <div className="space-y-3 max-w-xs text-[#F8FAFC]">
+                    <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-semibold">
+                      Islamic Luxury
+                    </span>
+                    <MonogramFrame initials="R & D" variant="royal-circle" />
+                    <p className="font-serif text-2xl font-normal text-[#D4AF37]">
+                      Rika &amp; Dani
+                    </p>
+                    <p className="text-xs text-[#F8FAFC]/75">
+                      Sabtu, 15 Oktober 2026
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-6 sm:p-8 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-text-primary">
+                      Royal Navy &amp; Gold
+                    </h3>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full border border-border bg-surface-elevated text-text-muted">
+                      Luxury &bull; Royal Navy
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+                    Terinspirasi dari perayaan sakral dengan palet biru malam dan aksen emas metalik, ornamen monogram cincin, serta seksi kutipan Islami.
+                  </p>
+                  <p className="text-[11px] text-text-subtle font-medium">
+                    Warna dominan: Royal Navy, Gold Metalik &amp; Glass
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-8 pt-0">
+                <Link
+                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
+                  className="w-full inline-flex items-center justify-center px-5 py-3 rounded-xl border border-secondary text-primary bg-primary-soft hover:bg-secondary/15 text-xs font-semibold tracking-wider uppercase transition-all min-h-[44px]"
+                >
+                  Lihat Demo
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================== */}
+        {/* 6. CARA KERJA 3 LANGKAH                                            */}
+        {/* ================================================================== */}
+        <section id="cara-kerja" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-surface border-y border-border">
+          <div className="max-w-7xl mx-auto space-y-12">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+                Alur Pembuatan
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+                Cara Kerja Sederhana 3 Langkah
+              </h2>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Mulai dari memilih gaya hingga membagikan tautan undangan, semuanya selesai dalam hitungan menit.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+              <div className="p-7 rounded-2xl border border-border bg-background/50 space-y-3">
+                <span className="font-serif text-3xl font-normal text-primary block">
+                  01
+                </span>
+                <h3 className="font-serif text-xl font-semibold text-text-primary">
+                  Pilih Desain
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Pilih template master seperti Classic Elegance atau Royal Navy &amp; Gold yang selaras dengan tema pernikahan Anda.
+                </p>
+              </div>
+
+              <div className="p-7 rounded-2xl border border-border bg-background/50 space-y-3">
+                <span className="font-serif text-3xl font-normal text-primary block">
+                  02
+                </span>
+                <h3 className="font-serif text-xl font-semibold text-text-primary">
+                  Isi Informasi &amp; Personalisasi
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Lengkapi data mempelai, jadwal akad dan resepsi, peta lokasi Google Maps, kisah cinta, foto pre-wedding, dan musik latar.
+                </p>
+              </div>
+
+              <div className="p-7 rounded-2xl border border-border bg-background/50 space-y-3">
+                <span className="font-serif text-3xl font-normal text-primary block">
+                  03
+                </span>
+                <h3 className="font-serif text-xl font-semibold text-text-primary">
+                  Publikasikan &amp; Bagikan
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Pratinjau hasil akhirnya, terbitkan undangan dengan satu klik, dan bagikan tautan nama tamu khusus via WhatsApp.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================== */}
+        {/* 7. PREVIEW UNDANGAN                                                */}
+        {/* ================================================================== */}
+        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+              Pratinjau Desain
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+              Pengalaman Responsif di Genggaman Tamu
+            </h2>
+            <p className="text-sm text-text-muted leading-relaxed">
+              Mayoritas tamu membuka undangan melalui ponsel pintar. Lihat bagaimana undangan Aurovia tampil anggun di layar seluler.
+            </p>
+
+            {/* Selector Tab Pratinjau Bagian */}
+            <div className="pt-4 flex flex-wrap items-center justify-center gap-2">
+              {[
+                { id: 'cover', label: 'Sampul Pembuka' },
+                { id: 'couple', label: 'Profil Mempelai' },
+                { id: 'event', label: 'Rangkaian Acara' },
+                { id: 'gallery', label: 'Galeri Foto' },
+                { id: 'rsvp', label: 'RSVP & Ucapan' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActivePreviewTab(tab.id as typeof activePreviewTab)}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider transition-all min-h-[44px] cursor-pointer ${
+                    activePreviewTab === tab.id
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'bg-surface border border-border text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Smartphone Frame Simulation */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-[340px] sm:max-w-[380px] rounded-[40px] border-4 border-text-primary bg-text-primary p-3 shadow-2xl">
+              {/* Speaker Notch */}
+              <div className="w-24 h-4 bg-text-primary mx-auto rounded-full mb-2 flex items-center justify-center">
+                <div className="w-10 h-1.5 bg-text-subtle/40 rounded-full" />
+              </div>
+
+              {/* Layar Ponsel */}
+              <div className="rounded-[30px] bg-surface text-text-primary overflow-hidden min-h-[500px] flex flex-col justify-between border border-border">
+                {activePreviewTab === 'cover' && (
+                  <div className="p-6 text-center space-y-6 my-auto animate-fadeIn">
+                    <p className="text-[10px] tracking-widest uppercase text-text-subtle font-semibold">
+                      Kepada Yth. Tamu Undangan
+                    </p>
+                    <div className="py-2">
+                      <div className="w-14 h-14 mx-auto rounded-full border border-border bg-background flex items-center justify-center font-serif text-lg font-bold text-primary">
+                        R &amp; D
+                      </div>
+                      <h3 className="font-serif text-2xl font-normal text-text-primary mt-3">
+                        Rika &amp; Dani
+                      </h3>
+                      <p className="text-xs text-text-muted mt-1">15 Oktober 2026</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-background border border-border text-[11px] text-text-muted">
+                      Buka Undangan Digital
+                    </div>
+                  </div>
+                )}
+
+                {activePreviewTab === 'couple' && (
+                  <div className="p-6 space-y-4 my-auto animate-fadeIn text-center">
+                    <p className="text-[10px] tracking-widest uppercase text-text-subtle font-semibold">
+                      Pasangan Mempelai
+                    </p>
+                    <div className="space-y-2">
+                      <h4 className="font-serif text-lg font-semibold text-text-primary">
+                        Rika Andriana, S.T.
+                      </h4>
+                      <p className="text-[11px] text-text-muted leading-relaxed">
+                        Putri tercinta Bapak Herman &amp; Ibu Ratna
+                      </p>
+                    </div>
+                    <DecorativeDivider variant="diamond" className="py-1" />
+                    <div className="space-y-2">
+                      <h4 className="font-serif text-lg font-semibold text-text-primary">
+                        Dani Pratama, M.Sc.
+                      </h4>
+                      <p className="text-[11px] text-text-muted leading-relaxed">
+                        Putra tercinta Bapak Surya &amp; Ibu Yuliani
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {activePreviewTab === 'event' && (
+                  <div className="p-6 space-y-4 my-auto animate-fadeIn">
+                    <p className="text-[10px] tracking-widest uppercase text-text-subtle font-semibold text-center">
+                      Agenda Pernikahan
+                    </p>
+                    <div className="p-3.5 rounded-xl border border-border bg-background space-y-1">
+                      <p className="text-xs font-semibold text-text-primary">Akad Nikah</p>
+                      <p className="text-[11px] text-text-muted">08.00 - 10.00 WIB</p>
+                      <p className="text-[10px] text-text-subtle">Masjid Agung Al-Azhar</p>
+                    </div>
+                    <div className="p-3.5 rounded-xl border border-border bg-background space-y-1">
+                      <p className="text-xs font-semibold text-text-primary">Resepsi Pernikahan</p>
+                      <p className="text-[11px] text-text-muted">11.00 - 14.00 WIB</p>
+                      <p className="text-[10px] text-text-subtle">Grand Ballroom Jakarta</p>
+                    </div>
+                  </div>
+                )}
+
+                {activePreviewTab === 'gallery' && (
+                  <div className="p-6 space-y-4 my-auto animate-fadeIn text-center">
+                    <p className="text-[10px] tracking-widest uppercase text-text-subtle font-semibold">
+                      Galeri Foto Pre-Wedding
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="h-24 rounded-lg bg-background border border-border flex items-center justify-center text-xs text-text-subtle font-serif">
+                        Foto 1
+                      </div>
+                      <div className="h-24 rounded-lg bg-background border border-border flex items-center justify-center text-xs text-text-subtle font-serif">
+                        Foto 2
+                      </div>
+                      <div className="h-24 rounded-lg bg-background border border-border flex items-center justify-center text-xs text-text-subtle font-serif">
+                        Foto 3
+                      </div>
+                      <div className="h-24 rounded-lg bg-background border border-border flex items-center justify-center text-xs text-text-subtle font-serif">
+                        Foto 4
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activePreviewTab === 'rsvp' && (
+                  <div className="p-6 space-y-3 my-auto animate-fadeIn text-center">
+                    <p className="text-[10px] tracking-widest uppercase text-text-subtle font-semibold">
+                      Konfirmasi Kehadiran &amp; Doa
+                    </p>
+                    <div className="space-y-2 text-left">
+                      <div className="p-2.5 rounded-lg bg-background border border-border text-[11px] text-text-muted">
+                        Hadir (2 Orang)
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-background border border-border text-[11px] text-text-muted">
+                        "Semoga menjadi keluarga sakinah mawaddah warahmah!"
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer Layar Ponsel */}
+                <div className="p-3 bg-surface-elevated border-t border-border text-center">
+                  <span className="text-[9px] text-text-subtle uppercase tracking-widest">
+                    Aurovia &bull; Undangan Digital
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================== */}
+        {/* 8. FITUR INTERAKTIF MENDALAM                                       */}
+        {/* ================================================================== */}
+        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-surface border-y border-border">
+          <div className="max-w-7xl mx-auto space-y-12">
+            <div className="text-center max-w-2xl mx-auto space-y-3">
+              <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+                Fitur Lengkap
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
+                Integrasi Komplit dalam Satu Undangan
+              </h2>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Kelola setiap detail interaktif mulai dari konfirmasi kehadiran hingga amplop digital tanpa konfigurasi teknis yang rumit.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-6 rounded-2xl border border-border bg-background/50 space-y-2.5">
+                <h3 className="font-serif text-lg font-semibold text-text-primary">
+                  RSVP &amp; Rekap Kehadiran
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Tamu dapat memilih hadir atau tidak hadir beserta jumlah orang. Anda dapat memantau grafik rekapitulasi jumlah tamu di dashboard secara rapi.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl border border-border bg-background/50 space-y-2.5">
+                <h3 className="font-serif text-lg font-semibold text-text-primary">
+                  Buku Tamu &amp; Ucapan
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Tamu dapat menuliskan doa dan harapan baik. Setiap ucapan langsung tampil di seksi buku doa undangan digital Anda.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl border border-border bg-background/50 space-y-2.5">
+                <h3 className="font-serif text-lg font-semibold text-text-primary">
+                  Amplop Digital &amp; Hadiah
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Sediakan informasi rekening bank atau alamat pengiriman kado fisik dengan tombol salin rekening yang memudahkan tamu.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl border border-border bg-background/50 space-y-2.5">
+                <h3 className="font-serif text-lg font-semibold text-text-primary">
+                  Galeri Foto Pre-Wedding
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Unggah momen foto terbaik Anda ke storage cloud yang aman, dilengkapi penampil lightbox yang responsif dan jernih.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl border border-border bg-background/50 space-y-2.5">
+                <h3 className="font-serif text-lg font-semibold text-text-primary">
+                  Musik Latar &amp; Kontrol Audio
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Pilih alunan musik romantis yang mengiringi momen pembacaan undangan, lengkap dengan floating audio button yang sopan.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl border border-border bg-background/50 space-y-2.5">
+                <h3 className="font-serif text-lg font-semibold text-text-primary">
+                  Rangkaian Agenda &amp; Peta
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Mendukung multi-agenda seperti akad, pemberkatan, dan resepsi dengan penunjuk waktu serta navigasi langsung ke Google Maps.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================== */}
+        {/* 9. MOBILE-FIRST EXPERIENCE                                         */}
+        {/* ================================================================== */}
+        <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 text-center">
+          <div className="max-w-2xl mx-auto space-y-4">
+            <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
+              Kenyamanan Tamu
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal leading-tight">
+              Dioptimalkan Khusus untuk Layar Seluler
+            </h2>
+            <p className="text-sm text-text-muted leading-relaxed font-sans">
+              Lebih dari 90% undangan digital diakses melalui smartphone. Aurovia memastikan setiap tombol memiliki area sentuh minimal 44px, teks terbaca jelas, dan tidak ada geseran horizontal yang mengganggu.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto pt-4 text-left">
+            <div className="p-5 rounded-2xl border border-border bg-surface space-y-2">
+              <p className="text-xs font-semibold text-text-primary">Cepat Diakses</p>
+              <p className="text-xs text-text-muted">Aset terkompresi efisien sehingga halaman terbuka instan meski pada koneksi seluler hemat daya.</p>
+            </div>
+            <div className="p-5 rounded-2xl border border-border bg-surface space-y-2">
+              <p className="text-xs font-semibold text-text-primary">Ramah Jempol</p>
+              <p className="text-xs text-text-muted">Tata letak navigasi bawah dan tombol tindakan diletakkan dalam jangkauan alami satu tangan.</p>
+            </div>
+            <div className="p-5 rounded-2xl border border-border bg-surface space-y-2">
+              <p className="text-xs font-semibold text-text-primary">Tanpa Aplikasi</p>
+              <p className="text-xs text-text-muted">Tamu tidak perlu memasang aplikasi tambahan apapun untuk membuka dan mengisi RSVP.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================== */}
+        {/* 10. FAQ ACCORDION                                                  */}
+        {/* ================================================================== */}
+        <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-surface border-t border-border">
           <div className="max-w-3xl mx-auto space-y-10">
             <div className="text-center space-y-3">
-              <span className="text-xs uppercase tracking-widest text-[#78716C] font-semibold">
+              <span className="text-xs uppercase tracking-widest text-secondary font-semibold">
                 Pertanyaan Umum
               </span>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] font-normal">
+              <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
                 Pertanyaan yang Sering Diajukan
               </h2>
-              <DecorativeDivider variant="diamond" withLine={false} />
+              <p className="text-sm text-text-muted leading-relaxed">
+                Jawaban faktual mengenai cara kerja dan pembuatan undangan di Aurovia.
+              </p>
             </div>
 
             <div className="space-y-3">
               {[
                 {
                   q: 'Apa itu Aurovia?',
-                  a: 'Aurovia adalah platform pembuatan dan distribusi undangan pernikahan digital modern yang berfokus pada keindahan estetika editorial, kemudahan personalisasi, dan kenyamanan tamu undangan.',
+                  a: 'Aurovia adalah platform pembuat dan pengelola undangan digital pernikahan terstruktur dengan pendekatan tipografi editorial elegan, terintegrasi RSVP, buku tamu, musik latar, serta tautan personal per tamu.',
                 },
                 {
                   q: 'Apakah saya harus membuat akun?',
-                  a: 'Ya, Anda cukup mendaftar akun gratis menggunakan email untuk mulai membuat draf undangan, memilih desain template, dan mengatur data acara Anda secara aman.',
+                  a: 'Untuk menjelajahi landing page dan melihat informasi fitur, Anda tidak perlu akun. Namun untuk mulai menyusun draf, memilih template, dan menerbitkan undangan, Anda perlu masuk atau mendaftar akun.',
                 },
                 {
                   q: 'Apakah saya bisa melihat template terlebih dahulu?',
-                  a: 'Tentu. Anda dapat melihat pratinjau visual template di halaman ini. Untuk mencoba interaktivitas dan menjelajahi editor, silakan masuk ke akun Anda.',
+                  a: 'Ya, Anda dapat melihat pratinjau visual template di halaman ini. Untuk mencoba interaksi demo secara penuh, silakan masuk ke akun Anda.',
                 },
                 {
                   q: 'Apakah undangan bisa dibagikan melalui WhatsApp?',
-                  a: 'Bisa. Setelah undangan dipublikasikan, Anda akan memperoleh tautan unik resmi yang dapat langsung dikirimkan melalui WhatsApp, Instagram, maupun pesan teks.',
+                  a: 'Tentu. Anda dapat membuat tautan unik untuk masing-masing nama tamu dan membagikannya secara langsung melalui pesan WhatsApp dengan teks pengantar yang rapi.',
                 },
                 {
                   q: 'Apakah bisa menggunakan foto sendiri?',
-                  a: 'Bisa. Anda dapat mengunggah foto kedua mempelai serta foto dokumentasi acara langsung ke seksi galeri foto melalui media penyimpanan cloud Aurovia.',
+                  a: 'Bisa. Anda dapat mengunggah foto pasangan dan galeri foto pre-wedding Anda langsung melalui editor undangan dengan penyimpanan cloud yang aman.',
                 },
                 {
                   q: 'Apakah bisa memiliki beberapa acara?',
@@ -961,21 +999,21 @@ export function LandingPage() {
                 return (
                   <div
                     key={idx}
-                    className="rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] overflow-hidden transition-all"
+                    className="rounded-xl border border-border bg-background/60 overflow-hidden transition-all"
                   >
                     <button
                       type="button"
                       onClick={() => toggleFaq(idx)}
                       aria-expanded={isOpen}
-                      className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 font-serif text-base font-medium text-[#1C1917] hover:bg-[#FAF9F6] transition-colors min-h-[44px] cursor-pointer"
+                      className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 font-serif text-base font-medium text-text-primary hover:bg-background transition-colors min-h-[44px] cursor-pointer"
                     >
                       <span>{faq.q}</span>
-                      <span className="text-sm font-sans text-[#78716C] transform transition-transform duration-200">
+                      <span className="text-sm font-sans text-secondary transform transition-transform duration-200">
                         {isOpen ? '−' : '+'}
                       </span>
                     </button>
                     {isOpen && (
-                      <div className="px-5 pb-4 text-xs text-[#78716C] leading-relaxed border-t border-[#E7E5E0]/60 pt-3">
+                      <div className="px-5 pb-4 text-xs text-text-muted leading-relaxed border-t border-border/60 pt-3">
                         {faq.a}
                       </div>
                     )}
@@ -987,29 +1025,29 @@ export function LandingPage() {
         </section>
 
         {/* ================================================================== */}
-        {/* SECTION 11: FINAL CTA                                              */}
+        {/* 11. FINAL CTA                                                      */}
         {/* ================================================================== */}
         <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center space-y-8">
           <div className="max-w-2xl mx-auto space-y-4">
-            <h2 className="font-serif text-3xl sm:text-5xl text-[#1C1917] font-normal leading-tight">
+            <h2 className="font-serif text-3xl sm:text-5xl text-text-primary font-normal leading-tight">
               Siap Membuat Undangan Anda?
             </h2>
-            <p className="text-sm sm:text-base text-[#78716C] leading-relaxed">
+            <p className="text-sm sm:text-base text-text-muted leading-relaxed">
               Mulai buat undangan pernikahan digital Anda sekarang dan bagikan momen bahagia bersama keluarga serta sahabat terdekat.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2">
             <Link
-              to="/register"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] text-sm font-semibold tracking-wide transition-all shadow-md active:scale-98 min-h-[48px]"
+              to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px]"
             >
               Mulai Buat Undangan
             </Link>
 
             <Link
               to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full border border-[#E7E5E0] bg-[#FAF9F6] hover:bg-[#F5F4F0] text-[#1C1917] text-sm font-semibold tracking-wide transition-all min-h-[48px]"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full border border-secondary text-primary bg-primary-soft hover:bg-secondary/15 text-sm font-semibold tracking-wide transition-all min-h-[48px]"
             >
               Lihat Template
             </Link>
@@ -1018,48 +1056,48 @@ export function LandingPage() {
       </main>
 
       {/* ================================================================== */}
-      {/* SECTION 12: FOOTER                                                 */}
+      {/* 12. FOOTER                                                         */}
       {/* ================================================================== */}
-      <footer className="border-t border-[#E7E5E0] bg-[#FFFFFF] pt-16 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-[#E7E5E0]">
+      <footer className="border-t border-border bg-surface pt-16 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-border">
           {/* Brand Info */}
           <div className="space-y-3 md:col-span-2">
             <div className="flex items-center">
               <img src="/logo.svg" alt="Aurovia" className="h-7 sm:h-8 w-auto object-contain" />
             </div>
-            <p className="text-xs text-[#78716C] max-w-sm leading-relaxed">
+            <p className="text-xs text-text-muted max-w-sm leading-relaxed">
               Platform undangan digital terstruktur. Dirancang dengan pendekatan tipografi editorial dan keandalan sistem cloud modern.
             </p>
           </div>
 
           {/* Navigasi Platform */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#1C1917]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-primary">
               Navigasi
             </p>
-            <ul className="space-y-2 text-xs text-[#78716C]">
+            <ul className="space-y-2 text-xs text-text-muted">
               <li>
-                <a href="#hero" className="hover:text-[#1C1917] transition-colors">
+                <a href="#hero" className="hover:text-primary transition-colors">
                   Beranda
                 </a>
               </li>
               <li>
-                <a href="#template" className="hover:text-[#1C1917] transition-colors">
-                  Template
-                </a>
-              </li>
-              <li>
-                <a href="#fitur" className="hover:text-[#1C1917] transition-colors">
+                <a href="#fitur" className="hover:text-primary transition-colors">
                   Fitur
                 </a>
               </li>
               <li>
-                <a href="#cara-kerja" className="hover:text-[#1C1917] transition-colors">
+                <a href="#template" className="hover:text-primary transition-colors">
+                  Template
+                </a>
+              </li>
+              <li>
+                <a href="#cara-kerja" className="hover:text-primary transition-colors">
                   Cara Kerja
                 </a>
               </li>
               <li>
-                <a href="#faq" className="hover:text-[#1C1917] transition-colors">
+                <a href="#faq" className="hover:text-primary transition-colors">
                   FAQ
                 </a>
               </li>
@@ -1068,22 +1106,22 @@ export function LandingPage() {
 
           {/* Akses Akun */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#1C1917]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-primary">
               Akun
             </p>
-            <ul className="space-y-2 text-xs text-[#78716C]">
+            <ul className="space-y-2 text-xs text-text-muted">
               <li>
-                <Link to="/login" className="hover:text-[#1C1917] transition-colors">
+                <Link to="/login" className="hover:text-primary transition-colors">
                   Masuk
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-[#1C1917] transition-colors">
+                <Link to="/register" className="hover:text-primary transition-colors">
                   Daftar
                 </Link>
               </li>
               <li>
-                <Link to="/dashboard" className="hover:text-[#1C1917] transition-colors">
+                <Link to="/dashboard" className="hover:text-primary transition-colors">
                   Dashboard
                 </Link>
               </li>
@@ -1091,7 +1129,7 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#78716C]">
+        <div className="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-text-subtle">
           <p>&copy; 2026 Aurovia. Seluruh hak cipta dilindungi.</p>
           <p className="font-mono text-[10px]">AUROVIA &bull; ELEGANT DIGITAL INVITATION PLATFORM</p>
         </div>

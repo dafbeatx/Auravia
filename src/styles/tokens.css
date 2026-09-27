@@ -1,29 +1,39 @@
 :root {
-  /* Surface & Background (Warm Editorial Palette) */
-  --color-bg: #FAF9F6;               /* Warm Alabaster */
-  --color-surface: #FFFFFF;          /* Pure White */
-  --color-surface-elevated: #F5F4F0; /* Soft Stone */
+  /* Core Brand Tokens (Aurovia Palette) */
+  --color-primary: #006A71;
+  --color-primary-hover: #00565C;
+  --color-primary-soft: #E6F3F4;
+  --color-primary-foreground: #FFFFFF;
+
+  --color-secondary: #48A6A7;
+  --color-secondary-hover: #3D9192;
+  --color-secondary-foreground: #FFFFFF;
+
+  --color-accent-light: #9ACBD0;
+  --color-accent-soft: #EBF5F6;
+
+  /* Global Surface & Background */
+  --color-background: #F2EFE7;
+  --color-bg: #F2EFE7;               /* Alias for backward compatibility */
+  --color-surface: #FFFFFF;          /* Pure White Card Surface */
+  --color-surface-muted: #F8F6F0;    /* Soft Warm Surface */
+  --color-surface-elevated: #F8F6F0;
 
   /* Borders */
-  --color-border: #E7E5E0;           /* Subtle Warm Gray */
-  --color-border-strong: #D1CFC7;    /* Distinct Divider */
+  --color-border: #DFDCD3;           /* Warm Neutral Border */
+  --color-border-strong: #9ACBD0;    /* Accent Border */
 
-  /* Typography / Text Colors (WCAG AA Compliant) */
-  --color-text-primary: #1C1917;     /* Deep Warm Charcoal */
-  --color-text-muted: #57534E;       /* Muted Stone */
-  --color-text-subtle: #78716C;      /* Secondary Stone */
+  /* Typography / Text (WCAG AA Compliant) */
+  --color-text: #1C2826;             /* Deep Charcoal-Teal Neutral */
+  --color-text-primary: #1C2826;
+  --color-text-muted: #4B5E5B;       /* Muted Dark Sage Neutral */
+  --color-text-subtle: #687D7A;      /* Secondary Sage Neutral */
 
-  /* Brand / Semantic Accents */
-  --color-primary: #292524;          /* Editorial Dark Bronze/Charcoal */
-  --color-primary-hover: #44403C;
-  --color-primary-foreground: #FAFAF9;
-
-  --color-danger: #991B1B;           /* Deep Crimson */
+  /* Focus & Functional States */
+  --color-focus: #006A71;
+  --color-focus-ring: #006A71;
+  --color-danger: #991B1B;
   --color-danger-foreground: #FEF2F2;
-
-  --color-success: #166534;          /* Deep Forest */
+  --color-success: #166534;
   --color-success-foreground: #F0FDF4;
-
-  /* Focus Indicator for Accessibility */
-  --color-focus-ring: #0284C7;
 }

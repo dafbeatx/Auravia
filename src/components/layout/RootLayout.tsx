@@ -320,7 +320,7 @@ function LayoutContent() {
 
   if (isPublicChromeFree) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-[#1C1917]">
+      <div className="min-h-screen flex flex-col bg-background text-text-primary">
         <Outlet />
       </div>
     );

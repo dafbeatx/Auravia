@@ -120,32 +120,32 @@ export function Register() {
     : '/login';
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#1C1917] flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-[#D4AF37]/25">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 selection:bg-accent-light/30">
       <div className="w-full max-w-[420px]">
         {/* Brand Header */}
         <div className="text-center mb-8">
           <Link
             to="/"
-            className="inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917] rounded-lg p-1 mb-4 hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1 mb-4 hover:opacity-90 transition-opacity"
             aria-label="Kembali ke Beranda Aurovia"
           >
             <img src="/logo.svg" alt="Aurovia" className="h-9 sm:h-10 w-auto object-contain" />
           </Link>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-tight">
             Buat Undangan Anda
           </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] mt-1.5">
+          <p className="text-xs sm:text-sm text-text-muted mt-1.5">
             Daftar untuk mulai merancang dan membagikan undangan digital Anda.
           </p>
         </div>
 
         {/* Card Container */}
-        <div className="bg-[#FFFFFF] border border-[#E7E5E0] rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-sm">
           {errorMessage && (
             <div
               role="alert"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-xl text-xs text-danger font-medium leading-relaxed"
             >
               {errorMessage}
             </div>
@@ -155,7 +155,7 @@ export function Register() {
             <div
               role="status"
               aria-live="polite"
-              className="mb-5 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium leading-relaxed"
+              className="mb-5 p-3.5 bg-success/10 border border-success/30 rounded-xl text-xs text-success font-medium leading-relaxed"
             >
               {successNotice}
             </div>
@@ -165,7 +165,7 @@ export function Register() {
             <div>
               <label
                 htmlFor="register-email"
-                className="block text-xs font-semibold text-[#1C1917] mb-1.5"
+                className="block text-xs font-semibold text-text-primary mb-1.5"
               >
                 Email
               </label>
@@ -178,14 +178,14 @@ export function Register() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting || isGoogleSubmitting}
                 placeholder="nama@domain.com"
-                className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="register-password"
-                className="block text-xs font-semibold text-[#1C1917] mb-1.5"
+                className="block text-xs font-semibold text-text-primary mb-1.5"
               >
                 Kata Sandi
               </label>
@@ -198,14 +198,14 @@ export function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isSubmitting || isGoogleSubmitting}
                 placeholder="Minimal 6 karakter"
-                className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="register-confirm-password"
-                className="block text-xs font-semibold text-[#1C1917] mb-1.5"
+                className="block text-xs font-semibold text-text-primary mb-1.5"
               >
                 Konfirmasi Kata Sandi
               </label>
@@ -218,14 +218,14 @@ export function Register() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isSubmitting || isGoogleSubmitting}
                 placeholder="Ulangi kata sandi"
-                className="w-full px-3.5 py-2.5 bg-[#FAF9F6] border border-[#E7E5E0] rounded-xl text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:bg-[#FFFFFF] focus:border-[#1C1917] focus:ring-1 focus:ring-[#1C1917] focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
+                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-sm text-text-primary placeholder:text-text-subtle/60 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all disabled:opacity-60 min-h-[44px]"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting || isGoogleSubmitting}
-              className="w-full mt-2 py-3 px-4 bg-[#1C1917] hover:bg-[#292524] text-[#FAF9F6] text-sm font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
+              className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px]"
             >
               {isSubmitting ? 'Mendaftarkan...' : 'Daftar'}
             </button>
@@ -234,10 +234,10 @@ export function Register() {
           {/* Divider 'atau' */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-[#E7E5E0]" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-[#FFFFFF] px-3 text-[#A8A29E] font-medium lowercase">
+              <span className="bg-surface px-3 text-text-subtle font-medium lowercase">
                 atau
               </span>
             </div>
@@ -248,7 +248,7 @@ export function Register() {
             type="button"
             onClick={handleGoogleSignUp}
             disabled={isGoogleSubmitting || isSubmitting}
-            className="w-full py-2.5 px-4 rounded-xl border border-[#E7E5E0] bg-[#FFFFFF] hover:bg-[#F5F4F0] text-[#1C1917] text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+            className="w-full py-2.5 px-4 rounded-xl border border-border bg-surface hover:bg-surface-elevated text-text-primary text-xs font-semibold tracking-wide transition-all min-h-[44px] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
           >
             <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -273,11 +273,11 @@ export function Register() {
         </div>
 
         {/* Link Footer Akun */}
-        <div className="mt-8 text-center text-xs text-[#78716C]">
+        <div className="mt-8 text-center text-xs text-text-muted">
           Sudah punya akun?{' '}
           <Link
             to={loginLink}
-            className="text-[#1C1917] font-semibold hover:underline"
+            className="text-primary font-semibold hover:underline"
           >
             Masuk
           </Link>
