@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { DecorativeDivider, MonogramFrame } from '@/components/template/ornaments';
+import { MonogramFrame } from '@/components/template/ornaments';
+import { TemplateCarousel } from '@/components/landing/TemplateCarousel';
 
 export function LandingPage() {
   const { user } = useAuth();
@@ -36,10 +37,10 @@ export function LandingPage() {
 
   const navLinks = [
     { label: 'Beranda', href: '#hero' },
-    { label: 'Fitur', href: '#fitur' },
     { label: 'Template', href: '#template' },
+    { label: 'Fitur', href: '#fitur' },
     { label: 'Cara Kerja', href: '#cara-kerja' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'Bantuan', href: '#faq' },
   ];
 
   // URL aman untuk aksi yang membutuhkan autentikasi
@@ -295,18 +296,26 @@ export function LandingPage() {
         {/* ================================================================== */}
         {/* SECTION 2: TRUST / VALUE STRIP                                     */}
         {/* ================================================================== */}
-        <section className="border-y border-border bg-surface py-10 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <p className="text-center text-xs font-semibold tracking-widest uppercase text-text-muted">
-              Dirancang untuk membuat proses undangan terasa lebih sederhana
-            </p>
+        <section className="border-y border-border bg-surface py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto space-y-10">
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <span className="text-xs font-semibold tracking-widest uppercase text-primary">
+                Nilai &amp; Manfaat Nyata
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-normal text-text-primary">
+                Segala yang Dibutuhkan untuk Momen Berharga Anda
+              </h2>
+              <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+                Dirancang untuk membuat proses undangan terasa lebih sederhana
+              </p>
+            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center pb-8 border-b border-border/60">
               <div className="space-y-1.5 p-2">
                 <span className="text-xl sm:text-2xl text-primary">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
+                <h3 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Desain Elegan
-                </h2>
+                </h3>
                 <p className="text-xs text-text-muted leading-relaxed">
                   Tipografi berkelas dan harmoni warna yang disusun oleh desainer.
                 </p>
@@ -314,9 +323,9 @@ export function LandingPage() {
 
               <div className="space-y-1.5 p-2">
                 <span className="text-xl sm:text-2xl text-primary">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
+                <h3 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Mudah Dipersonalisasi
-                </h2>
+                </h3>
                 <p className="text-xs text-text-muted leading-relaxed">
                   Sesuaikan kisah, foto, agenda acara, dan musik latar Anda.
                 </p>
@@ -324,9 +333,9 @@ export function LandingPage() {
 
               <div className="space-y-1.5 p-2">
                 <span className="text-xl sm:text-2xl text-primary">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
+                <h3 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Dibagikan Secara Digital
-                </h2>
+                </h3>
                 <p className="text-xs text-text-muted leading-relaxed">
                   Tautan unik per tamu yang siap dikirim lewat pesan instan.
                 </p>
@@ -334,13 +343,69 @@ export function LandingPage() {
 
               <div className="space-y-1.5 p-2">
                 <span className="text-xl sm:text-2xl text-primary">✦</span>
-                <h2 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
+                <h3 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
                   Terintegrasi RSVP
-                </h2>
+                </h3>
                 <p className="text-xs text-text-muted leading-relaxed">
                   Konfirmasi kehadiran dan ucapan doa tercatat rapi di dashboard.
                 </p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {[
+                {
+                  title: 'Template Responsif',
+                  desc: 'Tampilan tetap presisi dan proporsional di layar ponsel, tablet, maupun desktop.',
+                },
+                {
+                  title: 'Bisa Dikustomisasi',
+                  desc: 'Ubah teks, urutan seksi, foto, hingga palet aksen sesuai kepribadian perayaan Anda.',
+                },
+                {
+                  title: 'RSVP Digital',
+                  desc: 'Konfirmasi kehadiran dan jumlah tamu tercatat instan di dashboard tanpa tercecer.',
+                },
+                {
+                  title: 'Galeri Foto',
+                  desc: 'Tampilkan dokumentasi prewedding dalam susunan grid visual yang ringan diakses.',
+                },
+                {
+                  title: 'Kisah Pasangan',
+                  desc: 'Bagikan narasi perjalanan cinta dan tanggal penting menuju ikatan pernikahan.',
+                },
+                {
+                  title: 'Informasi Acara',
+                  desc: 'Rincian waktu, lokasi, dan integrasi penunjuk arah peta Google Maps yang akurat.',
+                },
+                {
+                  title: 'Amplop Digital',
+                  desc: 'Tanda kasih virtual via nomor rekening atau dompet digital yang praktis dan aman.',
+                },
+                {
+                  title: 'Musik Latar',
+                  desc: 'Iringan nada romantis yang dapat diputar secara santun dengan kendali volume tamu.',
+                },
+                {
+                  title: 'Tautan Undangan Personal',
+                  desc: 'Satu tautan khusus dengan nama penerima tertera langsung pada sampul pembuka.',
+                },
+              ].map((val, idx) => (
+                <div
+                  key={idx}
+                  className="p-5 sm:p-6 rounded-2xl border border-border bg-background/60 hover:bg-surface hover:border-secondary/40 transition-all space-y-2 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <h4 className="font-serif text-base sm:text-lg font-semibold text-text-primary">
+                      {val.title}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    {val.desc}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -488,120 +553,22 @@ export function LandingPage() {
         </section>
 
         {/* ================================================================== */}
-        {/* SECTION 5: TEMPLATE SHOWCASE ("PILIH GAYA UNDANGANMU")             */}
+        {/* SECTION 5: TEMPLATE SHOWCASE ("PILIHAN TEMA UNDANGAN")             */}
         {/* ================================================================== */}
         <section id="template" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <span className="text-xs uppercase tracking-widest text-primary font-semibold">
-              Koleksi Desain
+              Pilih Gaya Undanganmu &bull; Koleksi Desain Terkurasi
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-text-primary font-normal">
-              Pilih Gaya Undanganmu
+              Pilihan Tema Undangan yang Siap Dipakai
             </h2>
             <p className="text-sm text-text-muted leading-relaxed">
-              Temukan desain kurasi yang selaras dengan tema perayaan Anda. Setiap template siap disesuaikan dengan cerita cinta Anda.
+              Temukan gaya yang paling sesuai untuk cerita Anda.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
-            {/* Template Card 1: Classic Elegance */}
-            <div className="rounded-3xl border border-border bg-surface overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-              <div className="p-8 space-y-6">
-                <div className="flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-secondary/15 text-primary">
-                    Editorial Warm
-                  </span>
-                  <div className="flex items-center gap-1.5 text-xs text-text-subtle font-mono">
-                    <span className="w-3 h-3 rounded-full bg-[#FAF9F6] border border-border inline-block" />
-                    <span>Alabaster &amp; Charcoal</span>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl border border-border bg-background space-y-4 text-center">
-                  <div className="text-xs tracking-widest uppercase text-text-subtle font-sans">
-                    The Wedding Of
-                  </div>
-                  <h3 className="font-serif text-3xl text-text-primary font-normal">
-                    Sarah &amp; Dimas
-                  </h3>
-                  <DecorativeDivider variant="diamond" />
-                  <p className="text-xs text-text-muted">
-                    Minggu, 20 September 2026 &bull; Ballroom Jakarta
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="font-serif text-xl font-semibold text-text-primary">
-                    Classic Elegance
-                  </h4>
-                  <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
-                    Pendekatan minimalis editorial dengan ruang bernapas yang luas, tipografi anggun, dan sentuhan ornamen diamond klasik.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-6 bg-surface-elevated border-t border-border flex items-center justify-between gap-4">
-                <span className="text-xs font-medium text-text-muted">
-                  Tersedia di Katalog
-                </span>
-                <Link
-                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-                  className="px-5 py-2.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold tracking-wide transition-colors min-h-[44px] flex items-center justify-center cursor-pointer"
-                >
-                  Lihat Demo
-                </Link>
-              </div>
-            </div>
-
-            {/* Template Card 2: Royal Navy & Gold */}
-            <div className="rounded-3xl border border-border bg-surface overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-              <div className="p-8 space-y-6">
-                <div className="flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-[#D4AF37]/15 text-[#996515] border border-[#D4AF37]/30">
-                    Royal &amp; Islamic Accent
-                  </span>
-                  <div className="flex items-center gap-1.5 text-xs text-text-subtle font-mono">
-                    <span className="w-3 h-3 rounded-full bg-[#0B132B] inline-block" />
-                    <span>Navy &amp; Gold</span>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl border border-[#D4AF37]/30 bg-[#0B132B] space-y-4 text-center text-[#FAF9F6]">
-                  <div className="text-xs tracking-widest uppercase text-[#D4AF37] font-mono">
-                    Walimatul Ursy
-                  </div>
-                  <h3 className="font-serif text-3xl text-[#D4AF37] font-normal">
-                    Rika &amp; Dani
-                  </h3>
-                  <DecorativeDivider variant="royal" />
-                  <p className="text-xs text-[#FAF9F6]/80">
-                    Sabtu, 15 Oktober 2026 &bull; Grand Mosque Jakarta
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="font-serif text-xl font-semibold text-text-primary">
-                    Royal Navy &amp; Gold
-                  </h4>
-                  <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
-                    Kemewahan warna midnight navy berpadu aksen keemasan editorial. Dilengkapi monogram personal dan kartu acara bergaya royal glass.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-6 bg-surface-elevated border-t border-border flex items-center justify-between gap-4">
-                <span className="text-xs font-medium text-text-muted">
-                  Tersedia di Katalog
-                </span>
-                <Link
-                  to="/login?redirect=%2Fdashboard%2Finvitations%2Fnew"
-                  className="px-5 py-2.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold tracking-wide transition-colors min-h-[44px] flex items-center justify-center cursor-pointer"
-                >
-                  Lihat Demo
-                </Link>
-              </div>
-            </div>
-          </div>
+          <TemplateCarousel />
         </section>
 
         {/* ================================================================== */}

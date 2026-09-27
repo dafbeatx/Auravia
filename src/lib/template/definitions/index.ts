@@ -1,8 +1,15 @@
 import type { TemplateDefinition } from '../types';
 import { classicEleganceTemplate } from './classicElegance';
 import { royalNavyGoldTemplate } from './royalNavyGold';
+import { botanicalGardenTemplate } from './botanicalGarden';
+import { modernMinimalTemplate } from './modernMinimal';
 
-export { classicEleganceTemplate, royalNavyGoldTemplate };
+export {
+  classicEleganceTemplate,
+  royalNavyGoldTemplate,
+  botanicalGardenTemplate,
+  modernMinimalTemplate,
+};
 
 /**
  * Peta seluruh definisi template terdaftar di platform Aurovia
@@ -10,6 +17,8 @@ export { classicEleganceTemplate, royalNavyGoldTemplate };
 export const TEMPLATE_DEFINITIONS: Record<string, TemplateDefinition> = {
   'classic-elegance': classicEleganceTemplate,
   'royal-navy-gold': royalNavyGoldTemplate,
+  'botanical-garden': botanicalGardenTemplate,
+  'modern-minimal': modernMinimalTemplate,
 };
 
 /**

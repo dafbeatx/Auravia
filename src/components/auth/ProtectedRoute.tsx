@@ -1,12 +1,13 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * ProtectedRoute: Menjaga rute dari akses pengguna yang belum terautentikasi.
- * Mengalihkan ke /login jika sesi tidak ditemukan setelah pemuatan selesai.
+ * Mengalihkan ke /login jika sesi tidak ditemukan dengan mempertahankan target URL tujuan.
  */
 export function ProtectedRoute() {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -19,7 +20,8 @@ export function ProtectedRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const redirectUrl = location.pathname + location.search;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(redirectUrl)}`} replace />;
   }
 
   return <Outlet />;

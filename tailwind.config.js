@@ -32,6 +32,7 @@ export default {
           foreground: 'var(--color-secondary-foreground)',
         },
         accent: {
+          DEFAULT: 'var(--color-accent)',
           light: 'var(--color-accent-light)',
           'light-soft': 'var(--color-accent-light-soft)',
           'light-foreground': 'var(--color-accent-light-foreground)',

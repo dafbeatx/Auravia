@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RootLayout } from '@/components/layout/RootLayout';
 import { LandingPage } from '@/app/routes/LandingPage';
 import { Login } from '@/app/routes/Login';
@@ -8,11 +8,12 @@ import { Dashboard } from '@/app/routes/Dashboard';
 import { CreateInvitation } from '@/app/routes/CreateInvitation';
 import { InvitationDetail } from '@/app/routes/InvitationDetail';
 import { PublicInvitation } from '@/app/routes/PublicInvitation';
+import { TemplateDemo } from '@/app/routes/TemplateDemo';
 
 /**
  * Konfigurasi rute Aurovia.
  * Mendaftarkan rute publik (landing, login, register, public invitation) dan
- * rute terproteksi (dashboard, flow pembuatan undangan, editor) melalui ProtectedRoute.
+ * rute terproteksi (dashboard, flow pembuatan undangan, editor, template demo) melalui ProtectedRoute.
  */
 export const router = createBrowserRouter([
   {
@@ -32,8 +33,16 @@ export const router = createBrowserRouter([
         element: <Register />,
       },
       {
+        path: 'templates',
+        element: <Navigate to="/#template" replace />,
+      },
+      {
         element: <ProtectedRoute />,
         children: [
+          {
+            path: 'templates/:slug/demo',
+            element: <TemplateDemo />,
+          },
           {
             path: 'dashboard',
             element: <Dashboard />,

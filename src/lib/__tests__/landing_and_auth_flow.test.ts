@@ -32,10 +32,11 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(getSafeRedirectUrl('invalid-path', '/custom-fallback')).toBe('/custom-fallback');
     });
   });
-
   describe('Verifikasi Integritas Source Code Landing Page', () => {
     const landingPath = path.resolve(__dirname, '../../app/routes/LandingPage.tsx');
     const landingSource = fs.readFileSync(landingPath, 'utf-8');
+    const carouselPath = path.resolve(__dirname, '../../components/landing/TemplateCarousel.tsx');
+    const carouselSource = fs.readFileSync(carouselPath, 'utf-8');
 
     it('LandingPage.tsx memiliki seluruh section yang diwajibkan', () => {
       // Section 1: Navbar
@@ -54,11 +55,16 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(landingSource).toContain('Dibagikan Secara Digital');
       expect(landingSource).toContain('Terintegrasi RSVP');
 
-      // Section 4: Template Showcase
-      expect(landingSource).toContain('Pilih Gaya Undanganmu');
+      // Section 4: Template Showcase & Carousel
+      expect(landingSource).toContain('Pilihan Tema Undangan yang Siap Dipakai');
+      expect(landingSource).toContain('TemplateCarousel');
       expect(landingSource).toContain('Classic Elegance');
       expect(landingSource).toContain('Royal Navy & Gold');
-      expect(landingSource).toContain('Lihat Demo');
+      expect(carouselSource).toContain('classic-elegance');
+      expect(carouselSource).toContain('royal-navy-gold');
+      expect(carouselSource).toContain('botanical-garden');
+      expect(carouselSource).toContain('modern-minimal');
+      expect(carouselSource).toContain('Lihat Demo');
 
       // Section 5: Fitur Utama
       expect(landingSource).toContain('Semua yang Dibutuhkan untuk Satu Undangan');
@@ -199,8 +205,10 @@ describe('Aurovia Landing Page & Authenticated Entry Flow', () => {
       expect(routerSource).not.toContain('FoundationStatus');
     });
 
-    it('dashboard dan editor tetap berada di bawah ProtectedRoute', () => {
+    it('dashboard, editor, dan demo template berada di bawah ProtectedRoute', () => {
       expect(routerSource).toContain('ProtectedRoute');
+      expect(routerSource).toContain('templates/:slug/demo');
+      expect(routerSource).toContain('TemplateDemo');
       expect(routerSource).toContain('dashboard/invitations/new');
       expect(routerSource).toContain('dashboard/invitations/:id');
     });
