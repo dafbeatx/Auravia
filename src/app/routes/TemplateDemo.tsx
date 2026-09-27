@@ -5,6 +5,7 @@ import { getTemplateBySlug, type TemplateDetail } from '@/lib/templates';
 import { getTemplateDefinition } from '@/lib/template/definitions';
 import { InvitationRenderer } from '@/components/template/InvitationRenderer';
 import type { InvitationContent } from '@/lib/template/types';
+import { trackDemoView } from '@/lib/analytics';
 
 function getCategoryBadge(slug: string, rawCategory?: string): string {
   switch (slug) {
@@ -95,6 +96,12 @@ export function TemplateDemo() {
           default_theme: definition.defaultTheme as unknown as import('@/types/database').Json,
           default_sections: definition.sections as unknown as import('@/types/database').Json,
           is_active: true,
+          status: 'active',
+          display_order: 0,
+          is_featured: false,
+          preview_desktop_path: null,
+          preview_mobile_path: null,
+          preview_thumbnail_path: null,
         });
       })
       .finally(() => {
@@ -105,6 +112,13 @@ export function TemplateDemo() {
       isMounted = false;
     };
   }, [slug]);
+
+  // Catat event analytics demo template view secara efisien
+  useEffect(() => {
+    if (template?.id && template?.slug) {
+      trackDemoView(template.id, template.slug, user?.id);
+    }
+  }, [template?.id, template?.slug, user?.id]);
 
   // Bangun galeri foto demo SVG yang selaras dengan palet tema template
   const demoGallery = useMemo(() => {

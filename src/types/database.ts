@@ -282,12 +282,77 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_type: 'desktop' | 'tablet' | 'mobile' | 'unknown'
+          event_name: string
+          id: string
+          invitation_id: string | null
+          path: string
+          referrer: string | null
+          session_id: string
+          template_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_type?: 'desktop' | 'tablet' | 'mobile' | 'unknown'
+          event_name: string
+          id?: string
+          invitation_id?: string | null
+          path: string
+          referrer?: string | null
+          session_id: string
+          template_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_type?: 'desktop' | 'tablet' | 'mobile' | 'unknown'
+          event_name?: string
+          id?: string
+          invitation_id?: string | null
+          path?: string
+          referrer?: string | null
+          session_id?: string
+          template_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_events_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
           full_name: string
           id: string
           phone: string | null
+          role: 'user' | 'admin'
           updated_at: string
         }
         Insert: {
@@ -295,6 +360,7 @@ export type Database = {
           full_name: string
           id: string
           phone?: string | null
+          role?: 'user' | 'admin'
           updated_at?: string
         }
         Update: {
@@ -302,6 +368,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          role?: 'user' | 'admin'
           updated_at?: string
         }
         Relationships: []
@@ -364,11 +431,18 @@ export type Database = {
           default_sections: Json
           default_theme: Json
           description: string
+          display_order: number
           id: string
           is_active: boolean
+          is_featured: boolean
           name: string
+          preview_desktop_path: string | null
+          preview_mobile_path: string | null
+          preview_thumbnail_path: string | null
           slug: string
+          status: 'draft' | 'active' | 'archived'
           thumbnail_url: string
+          updated_at: string
         }
         Insert: {
           category: string
@@ -376,11 +450,18 @@ export type Database = {
           default_sections?: Json
           default_theme?: Json
           description: string
+          display_order?: number
           id?: string
           is_active?: boolean
+          is_featured?: boolean
           name: string
+          preview_desktop_path?: string | null
+          preview_mobile_path?: string | null
+          preview_thumbnail_path?: string | null
           slug: string
+          status?: 'draft' | 'active' | 'archived'
           thumbnail_url: string
+          updated_at?: string
         }
         Update: {
           category?: string
@@ -388,11 +469,18 @@ export type Database = {
           default_sections?: Json
           default_theme?: Json
           description?: string
+          display_order?: number
           id?: string
           is_active?: boolean
+          is_featured?: boolean
           name?: string
+          preview_desktop_path?: string | null
+          preview_mobile_path?: string | null
+          preview_thumbnail_path?: string | null
           slug?: string
+          status?: 'draft' | 'active' | 'archived'
           thumbnail_url?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -401,7 +489,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_admin_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users: number
+          total_invitations: number
+          total_templates: number
+          active_templates: number
+          draft_templates: number
+          total_demo_views: number
+          total_visitors: number
+          total_invitation_views: number
+        }
+      }
+      get_admin_traffic_stats: {
+        Args: {
+          period_days?: number
+        }
+        Returns: {
+          day_date: string
+          visitors: number
+          page_views: number
+          demo_views: number
+          login_success: number
+          register_success: number
+          invitation_create: number
+          invitation_publish: number
+        }[]
+      }
+      get_admin_template_performance: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          template_id: string
+          name: string
+          slug: string
+          category: string
+          status: string
+          demo_views: number
+          unique_visitors: number
+          published_usage: number
+        }[]
+      }
+      get_admin_users_list: {
+        Args: {
+          search_term?: string | null
+          role_filter?: string | null
+        }
+        Returns: {
+          id: string
+          email: string
+          full_name: string
+          phone: string | null
+          role: string
+          created_at: string
+          last_sign_in_at: string | null
+          invitation_count: number
+          published_count: number
+        }[]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -4,6 +4,7 @@ import {
   createInvitation,
   suggestSlugFromTitle,
 } from '@/lib/invitations';
+import { trackEvent } from '@/lib/analytics';
 import { type TemplateListItem, getAllTemplates } from '@/lib/templates';
 import type { TemplateTheme } from '@/lib/template/types';
 
@@ -193,6 +194,13 @@ export function CreateInvitation() {
         slug: slug.trim().toLowerCase(),
         eventType,
         coupleNames: coupleNames.trim(),
+      });
+
+      trackEvent({
+        event_name: 'invitation_create',
+        path: '/dashboard/invitations/new',
+        invitation_id: created.id,
+        template_id: selectedTemplateId,
       });
 
       // Berhasil dibuat: arahkan ke editor undangan

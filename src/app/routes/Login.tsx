@@ -3,6 +3,7 @@ import { Link, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSafeRedirectUrl } from '@/lib/urls';
+import { trackEvent } from '@/lib/analytics';
 
 export function Login() {
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ export function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
 
+  React.useEffect(() => {
+    trackEvent({ event_name: 'login_view', path: '/login' });
+  }, []);
+
   // Jika pengguna sudah memiliki sesi aktif, alihkan langsung ke target tujuan yang aman
   if (!authLoading && user) {
     return <Navigate to={targetRedirect} replace />;
@@ -42,7 +47,7 @@ export function Login() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -60,6 +65,12 @@ export function Login() {
         }
         return;
       }
+
+      trackEvent({
+        event_name: 'login_success',
+        path: '/login',
+        user_id: data.user?.id,
+      });
 
       navigate(targetRedirect);
     } catch {

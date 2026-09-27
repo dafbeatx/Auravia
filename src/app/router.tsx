@@ -10,10 +10,22 @@ import { InvitationDetail } from '@/app/routes/InvitationDetail';
 import { PublicInvitation } from '@/app/routes/PublicInvitation';
 import { TemplateDemo } from '@/app/routes/TemplateDemo';
 
+import { lazy } from 'react';
+import { AdminRoute } from '@/components/auth/AdminRoute';
+import { AdminLayout } from '@/components/layout/AdminLayout';
+
+const AdminDashboard = lazy(() => import('@/app/routes/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const AdminTemplates = lazy(() => import('@/app/routes/admin/AdminTemplates').then((m) => ({ default: m.AdminTemplates })));
+const AdminTemplateDetail = lazy(() => import('@/app/routes/admin/AdminTemplateDetail').then((m) => ({ default: m.AdminTemplateDetail })));
+const AdminAnalytics = lazy(() => import('@/app/routes/admin/AdminAnalytics').then((m) => ({ default: m.AdminAnalytics })));
+const AdminUsers = lazy(() => import('@/app/routes/admin/AdminUsers').then((m) => ({ default: m.AdminUsers })));
+const AdminSettings = lazy(() => import('@/app/routes/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })));
+
 /**
  * Konfigurasi rute Aurovia.
- * Mendaftarkan rute publik (landing, login, register, public invitation) dan
- * rute terproteksi (dashboard, flow pembuatan undangan, editor, template demo) melalui ProtectedRoute.
+ * Mendaftarkan rute publik (landing, login, register, public invitation),
+ * rute pengguna terproteksi (dashboard, editor undangan, template demo),
+ * serta rute administrator terproteksi (/admin/*).
  */
 export const router = createBrowserRouter([
   {
@@ -54,6 +66,41 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard/invitations/:id',
             element: <InvitationDetail />,
+          },
+        ],
+      },
+      {
+        path: 'admin',
+        element: <AdminRoute />,
+        children: [
+          {
+            element: <AdminLayout />,
+            children: [
+              {
+                index: true,
+                element: <AdminDashboard />,
+              },
+              {
+                path: 'templates',
+                element: <AdminTemplates />,
+              },
+              {
+                path: 'templates/:id',
+                element: <AdminTemplateDetail />,
+              },
+              {
+                path: 'analytics',
+                element: <AdminAnalytics />,
+              },
+              {
+                path: 'users',
+                element: <AdminUsers />,
+              },
+              {
+                path: 'settings',
+                element: <AdminSettings />,
+              },
+            ],
           },
         ],
       },

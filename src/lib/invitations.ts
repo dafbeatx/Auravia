@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { AuthenticationError, AuthorizationError, DatabaseError, StorageError, ValidationError } from '@/lib/errors';
 import type { Tables, TablesUpdate } from '@/types/database';
 import type { InvitationContent } from '@/lib/template/types';
+import { trackEvent } from '@/lib/analytics';
 
 export type InvitationListItem = Pick<
   Tables<'invitations'>,
@@ -1625,6 +1626,13 @@ export async function publishInvitation(id: string): Promise<PublishResult> {
   if (!data) {
     throw new AuthorizationError('Undangan tidak ditemukan atau Anda tidak memiliki hak akses.');
   }
+
+  trackEvent({
+    event_name: 'invitation_publish',
+    path: `/dashboard/invitations/${id}`,
+    invitation_id: id,
+    user_id: user.id,
+  });
 
   return data;
 }

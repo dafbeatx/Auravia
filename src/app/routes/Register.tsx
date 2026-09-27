@@ -3,6 +3,7 @@ import { Link, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSafeRedirectUrl } from '@/lib/urls';
+import { trackEvent } from '@/lib/analytics';
 
 export function Register() {
   const navigate = useNavigate();
@@ -19,6 +20,10 @@ export function Register() {
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    trackEvent({ event_name: 'register_view', path: '/register' });
+  }, []);
 
   // Jika pengguna sudah memiliki sesi aktif, alihkan langsung ke target tujuan
   if (!authLoading && user) {
@@ -64,6 +69,12 @@ export function Register() {
         }
         return;
       }
+
+      trackEvent({
+        event_name: 'register_success',
+        path: '/register',
+        user_id: data.user?.id,
+      });
 
       // Jika Supabase mengharuskan konfirmasi email sebelum sesi aktif
       if (data.user && !data.session) {

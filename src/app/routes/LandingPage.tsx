@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { MonogramFrame } from '@/components/template/ornaments';
 import { TemplateCarousel } from '@/components/landing/TemplateCarousel';
+import { trackEvent } from '@/lib/analytics';
 
 export function LandingPage() {
   const { user } = useAuth();
@@ -19,6 +20,11 @@ export function LandingPage() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Catat event kunjungan halaman landing page publik
+  useEffect(() => {
+    trackEvent({ event_name: 'landing_view', path: '/', user_id: user?.id });
+  }, [user?.id]);
 
   // Tutup menu seluler saat tombol Escape ditekan
   useEffect(() => {

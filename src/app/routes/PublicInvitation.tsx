@@ -8,6 +8,7 @@ import {
 import { getGuestBySlug, type GuestItem } from '@/lib/guests';
 import { InvitationRenderer } from '@/components/template';
 import { DatabaseError } from '@/lib/errors';
+import { trackEvent } from '@/lib/analytics';
 
 /**
  * Halaman Publik Undangan (/i/:slug):
@@ -45,6 +46,12 @@ export function PublicInvitation() {
           setError('Undangan tidak ditemukan atau belum dipublikasikan.');
         } else {
           setInvitation(data);
+          trackEvent({
+            event_name: 'public_invitation_view',
+            path: `/i/${slug}`,
+            invitation_id: data.id,
+            template_id: data.template?.id || null,
+          });
 
           // Jika ada parameter ?to=:guest_slug, cari data tamu secara aman
           if (guestSlugParam) {

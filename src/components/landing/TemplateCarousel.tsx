@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getActiveTemplates, type TemplateListItem } from '@/lib/templates';
 import { getAllTemplateDefinitions } from '@/lib/template/definitions';
 import { MonogramFrame } from '@/components/template/ornaments';
+import { trackCatalogView } from '@/lib/analytics';
+import { getTemplateAssetPublicUrl } from '@/lib/admin';
 
 interface TemplateCarouselProps {
   className?: string;
@@ -54,6 +56,12 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
             default_theme: def.defaultTheme as unknown as import('@/types/database').Json,
             default_sections: def.sections as unknown as import('@/types/database').Json,
             is_active: true,
+            status: 'active' as const,
+            display_order: 0,
+            is_featured: false,
+            preview_desktop_path: null,
+            preview_mobile_path: null,
+            preview_thumbnail_path: null,
           }));
           setTemplates(fallback);
         }
@@ -70,17 +78,26 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
           default_theme: def.defaultTheme as unknown as import('@/types/database').Json,
           default_sections: def.sections as unknown as import('@/types/database').Json,
           is_active: true,
+          status: 'active' as const,
+          display_order: 0,
+          is_featured: false,
+          preview_desktop_path: null,
+          preview_mobile_path: null,
+          preview_thumbnail_path: null,
         }));
         setTemplates(fallback);
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          trackCatalogView(user?.id);
+        }
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.id]);
 
   const maxIndex = Math.max(0, templates.length - itemsPerView);
 
@@ -137,138 +154,157 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
   };
 
   // Render visual preview berbentuk smartphone frame realistis (seperti pada referensi Foto 2)
-  const renderPhoneMockup = (slug: string) => {
+  const renderPhoneMockup = (tmpl: TemplateListItem) => {
+    const uploadedImageUrl = tmpl.preview_mobile_path
+      ? getTemplateAssetPublicUrl(tmpl.preview_mobile_path)
+      : tmpl.thumbnail_url && !tmpl.thumbnail_url.endsWith('thumbnail.webp')
+      ? getTemplateAssetPublicUrl(tmpl.thumbnail_url)
+      : null;
+
     let screenContent;
 
-    switch (slug) {
-      case 'royal-navy-gold':
-        screenContent = (
-          <div className="w-full h-full bg-[#0A1324] text-[#F8FAFC] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
-            {/* Background Accent Shimmer */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14)_0%,transparent_75%)] pointer-events-none" />
-            <div className="space-y-1 relative z-10">
-              <span className="text-[7px] uppercase tracking-widest text-[#D4AF37] font-mono block">
-                Walimatul Ursy
-              </span>
-              <div className="py-0.5">
-                <MonogramFrame initials="R & D" variant="royal-circle" />
+    if (uploadedImageUrl) {
+      screenContent = (
+        <div className="w-full h-full bg-slate-900 relative overflow-hidden">
+          <img
+            src={uploadedImageUrl}
+            alt={`Preview template ${tmpl.name}`}
+            className="w-full h-full object-cover object-top"
+            loading="lazy"
+          />
+        </div>
+      );
+    } else {
+      switch (tmpl.slug) {
+        case 'royal-navy-gold':
+          screenContent = (
+            <div className="w-full h-full bg-[#0A1324] text-[#F8FAFC] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              {/* Background Accent Shimmer */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14)_0%,transparent_75%)] pointer-events-none" />
+              <div className="space-y-1 relative z-10">
+                <span className="text-[7px] uppercase tracking-widest text-[#D4AF37] font-mono block">
+                  Walimatul Ursy
+                </span>
+                <div className="py-0.5">
+                  <MonogramFrame initials="R & D" variant="royal-circle" />
+                </div>
+              </div>
+
+              <div className="space-y-1 my-auto relative z-10">
+                <h4 className="font-serif text-sm sm:text-base text-[#D4AF37] font-normal tracking-wide">
+                  Rika &amp; Dani
+                </h4>
+                <p className="text-[8px] text-[#F8FAFC]/80 font-sans">
+                  Sabtu, 24 Oktober 2026
+                </p>
+              </div>
+
+              <div className="w-full relative z-10 pb-2">
+                <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#132238] border border-[#D4AF37]/50 text-[#D4AF37] text-[8px] font-medium shadow-xs">
+                  <span>✉</span>
+                  <span>Buka Undangan</span>
+                </div>
               </div>
             </div>
+          );
+          break;
 
-            <div className="space-y-1 my-auto relative z-10">
-              <h4 className="font-serif text-sm sm:text-base text-[#D4AF37] font-normal tracking-wide">
-                Rika &amp; Dani
-              </h4>
-              <p className="text-[8px] text-[#F8FAFC]/80 font-sans">
-                Sabtu, 24 Oktober 2026
-              </p>
-            </div>
+        case 'botanical-garden':
+          screenContent = (
+            <div className="w-full h-full bg-[#F4F6F0] text-[#1E3A2F] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(122,154,123,0.18)_0%,transparent_70%)] pointer-events-none" />
+              <div className="space-y-1 relative z-10">
+                <span className="text-[7px] uppercase tracking-widest text-[#2D4F3F] font-sans font-semibold block">
+                  The Wedding Of
+                </span>
+                <div className="w-7 h-7 mx-auto rounded-full border border-[#7A9A7B] bg-[#E2ECE2] flex items-center justify-center text-[#2D4F3F] text-[9px] font-serif font-bold">
+                  A &amp; F
+                </div>
+              </div>
 
-            <div className="w-full relative z-10 pb-2">
-              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#132238] border border-[#D4AF37]/50 text-[#D4AF37] text-[8px] font-medium shadow-xs">
-                <span>✉</span>
-                <span>Buka Undangan</span>
+              <div className="space-y-1 my-auto relative z-10">
+                <h4 className="font-serif text-sm sm:text-base text-[#2D4F3F] font-normal tracking-wide">
+                  Amira &amp; Fajar
+                </h4>
+                <p className="text-[8px] text-[#526A5E] font-sans">
+                  Minggu, 12 Desember 2026
+                </p>
+              </div>
+
+              <div className="w-full relative z-10 pb-2">
+                <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#2D4F3F] text-white text-[8px] font-medium shadow-xs">
+                  <span>✉</span>
+                  <span>Buka Undangan</span>
+                </div>
               </div>
             </div>
-          </div>
-        );
-        break;
+          );
+          break;
 
-      case 'botanical-garden':
-        screenContent = (
-          <div className="w-full h-full bg-[#F4F6F0] text-[#1E3A2F] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(122,154,123,0.18)_0%,transparent_70%)] pointer-events-none" />
-            <div className="space-y-1 relative z-10">
-              <span className="text-[7px] uppercase tracking-widest text-[#2D4F3F] font-sans font-semibold block">
-                The Wedding Of
-              </span>
-              <div className="w-7 h-7 mx-auto rounded-full border border-[#7A9A7B] bg-[#E2ECE2] flex items-center justify-center text-[#2D4F3F] text-[9px] font-serif font-bold">
-                A &amp; F
+        case 'modern-minimal':
+          screenContent = (
+            <div className="w-full h-full bg-[#F8F9FA] text-[#0F172A] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <div className="space-y-1 relative z-10">
+                <span className="text-[7px] uppercase tracking-widest text-primary font-mono font-semibold block">
+                  Modern Union
+                </span>
+                <div className="w-6 h-6 mx-auto border border-primary text-primary flex items-center justify-center text-[9px] font-sans font-bold">
+                  N &amp; R
+                </div>
+              </div>
+
+              <div className="space-y-1 my-auto relative z-10">
+                <h4 className="font-sans text-xs sm:text-sm text-[#0F172A] font-bold tracking-tight">
+                  Nadia &amp; Reza
+                </h4>
+                <div className="w-8 h-0.5 bg-primary/40 mx-auto my-1" />
+                <p className="text-[8px] text-[#64748B] font-sans">
+                  Sabtu, 08 November 2026
+                </p>
+              </div>
+
+              <div className="w-full relative z-10 pb-2">
+                <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-primary text-white text-[8px] font-medium shadow-xs">
+                  <span>✉</span>
+                  <span>Buka Undangan</span>
+                </div>
               </div>
             </div>
+          );
+          break;
 
-            <div className="space-y-1 my-auto relative z-10">
-              <h4 className="font-serif text-sm sm:text-base text-[#2D4F3F] font-normal tracking-wide">
-                Amira &amp; Fajar
-              </h4>
-              <p className="text-[8px] text-[#526A5E] font-sans">
-                Minggu, 12 Desember 2026
-              </p>
-            </div>
+        case 'classic-elegance':
+        default:
+          screenContent = (
+            <div className="w-full h-full bg-[#FAF9F6] text-[#292524] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <div className="space-y-1 relative z-10">
+                <span className="text-[7px] uppercase tracking-widest text-[#78716C] font-sans block">
+                  The Wedding Of
+                </span>
+                <div className="py-0.5">
+                  <MonogramFrame initials="S & D" variant="classic-ring" />
+                </div>
+              </div>
 
-            <div className="w-full relative z-10 pb-2">
-              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#2D4F3F] text-white text-[8px] font-medium shadow-xs">
-                <span>✉</span>
-                <span>Buka Undangan</span>
+              <div className="space-y-1 my-auto relative z-10">
+                <h4 className="font-serif text-sm sm:text-base text-[#292524] font-normal tracking-wide">
+                  Sarah &amp; Dimas
+                </h4>
+                <p className="text-[8px] text-[#78716C] font-sans">
+                  Minggu, 20 September 2026
+                </p>
+              </div>
+
+              <div className="w-full relative z-10 pb-2">
+                <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#292524] text-white text-[8px] font-medium shadow-xs">
+                  <span>✉</span>
+                  <span>Buka Undangan</span>
+                </div>
               </div>
             </div>
-          </div>
-        );
-        break;
-
-      case 'modern-minimal':
-        screenContent = (
-          <div className="w-full h-full bg-[#F8F9FA] text-[#0F172A] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
-            <div className="space-y-1 relative z-10">
-              <span className="text-[7px] uppercase tracking-widest text-primary font-mono font-semibold block">
-                Modern Union
-              </span>
-              <div className="w-6 h-6 mx-auto border border-primary text-primary flex items-center justify-center text-[9px] font-sans font-bold">
-                N &amp; R
-              </div>
-            </div>
-
-            <div className="space-y-1 my-auto relative z-10">
-              <h4 className="font-sans text-xs sm:text-sm text-[#0F172A] font-bold tracking-tight">
-                Nadia &amp; Reza
-              </h4>
-              <div className="w-8 h-0.5 bg-primary/40 mx-auto my-1" />
-              <p className="text-[8px] text-[#64748B] font-sans">
-                Sabtu, 08 November 2026
-              </p>
-            </div>
-
-            <div className="w-full relative z-10 pb-2">
-              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-primary text-white text-[8px] font-medium shadow-xs">
-                <span>✉</span>
-                <span>Buka Undangan</span>
-              </div>
-            </div>
-          </div>
-        );
-        break;
-
-      case 'classic-elegance':
-      default:
-        screenContent = (
-          <div className="w-full h-full bg-[#FAF9F6] text-[#292524] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
-            <div className="space-y-1 relative z-10">
-              <span className="text-[7px] uppercase tracking-widest text-[#78716C] font-sans block">
-                The Wedding Of
-              </span>
-              <div className="py-0.5">
-                <MonogramFrame initials="S & D" variant="classic-ring" />
-              </div>
-            </div>
-
-            <div className="space-y-1 my-auto relative z-10">
-              <h4 className="font-serif text-sm sm:text-base text-[#292524] font-normal tracking-wide">
-                Sarah &amp; Dimas
-              </h4>
-              <p className="text-[8px] text-[#78716C] font-sans">
-                Minggu, 20 September 2026
-              </p>
-            </div>
-
-            <div className="w-full relative z-10 pb-2">
-              <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#292524] text-white text-[8px] font-medium shadow-xs">
-                <span>✉</span>
-                <span>Buka Undangan</span>
-              </div>
-            </div>
-          </div>
-        );
-        break;
+          );
+          break;
+      }
     }
 
     return (
@@ -343,7 +379,7 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
                 <div className="group bg-surface border border-border rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-secondary/40 transition-all flex flex-col h-full">
                   {/* Container Mockup Ponsel */}
                   <div className="relative w-full p-4 sm:p-5 bg-surface-elevated/40 flex items-center justify-center overflow-hidden border-b border-border/60">
-                    {renderPhoneMockup(tmpl.slug)}
+                    {renderPhoneMockup(tmpl)}
                   </div>
 
                   {/* Konten Card: Nama Template & Tombol Lihat Demo */}
