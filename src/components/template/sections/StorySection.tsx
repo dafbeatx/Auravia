@@ -10,7 +10,7 @@ export const StorySection: React.FC<SectionRendererProps> = ({ content }) => {
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
 
   return (
-    <section aria-labelledby="section-story-heading" className="py-16 px-6 max-w-2xl mx-auto space-y-10">
+    <section id="story" aria-labelledby="section-story-heading" className="py-16 sm:py-24 px-6 max-w-2xl mx-auto space-y-10">
       <div className="text-center space-y-2">
         <h2
           id="section-story-heading"
@@ -19,7 +19,12 @@ export const StorySection: React.FC<SectionRendererProps> = ({ content }) => {
         >
           Kisah Kami
         </h2>
-        <div className="w-10 h-px bg-[var(--theme-color-border)] mx-auto" />
+        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
+          <span>✦</span>
+          <span className="text-[8px] opacity-70">♦</span>
+          <span>✦</span>
+        </div>
+        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
       </div>
 
       {visibleStories.length === 0 ? (

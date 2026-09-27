@@ -114,6 +114,29 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
   const displaySubtitle = cover?.subtitle?.trim() || autoSubtitle;
   const buttonLabel = cover?.button_label?.trim() || 'Buka Undangan';
 
+  // Monogram inisial pasangan berdasarkan nama aktual
+  const coupleMonogram = useMemo(() => {
+    const firstHost = hostNames[0];
+    const secondHost = hostNames[1];
+    if (firstHost && secondHost) {
+      const i1 = firstHost.charAt(0).toUpperCase();
+      const i2 = secondHost.charAt(0).toUpperCase();
+      return `${i1} & ${i2}`;
+    }
+    if (firstHost && firstHost.length > 0) {
+      return firstHost.charAt(0).toUpperCase();
+    }
+    if (displayTitle) {
+      const words = displayTitle.split(/\s+&?\s*/).filter(Boolean);
+      const w0 = words[0];
+      const w1 = words[1];
+      if (w0 && w1) {
+        return `${w0.charAt(0).toUpperCase()} & ${w1.charAt(0).toUpperCase()}`;
+      }
+    }
+    return null;
+  }, [hostNames, displayTitle]);
+
   // Verifikasi keamanan URL gambar latar
   const validBackgroundUrl = useMemo(() => {
     const rawUrl = cover?.background_image_url?.trim();
@@ -167,6 +190,9 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
           : 'opacity-100 translate-y-0 scale-100'
       } bg-[var(--theme-color-background)] text-[var(--theme-color-primary)] select-none`}
     >
+      {/* Bingkai Garis Dekoratif (Decorative Inset Frame) */}
+      <div className="absolute inset-3 sm:inset-6 border border-[var(--theme-color-border)]/25 rounded-2xl pointer-events-none z-10" />
+
       {/* Background Image Layer (Hanya jika URL valid tersedia) */}
       {validBackgroundUrl && (
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
@@ -193,10 +219,16 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
         />
       )}
 
-      {/* Bagian Atas: Eyebrow Khidmat */}
-      <div className="relative z-10 w-full text-center pt-2 sm:pt-6">
+      {/* Bagian Atas: Eyebrow Khidmat & Ornamen */}
+      <div className="relative z-10 w-full text-center pt-2 sm:pt-6 space-y-2">
+        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
+          <span>✦</span>
+          <span className="text-[8px] opacity-70">♦</span>
+          <span>✦</span>
+        </div>
+
         <p
-          className="text-xs uppercase tracking-[0.25em] font-semibold text-[var(--theme-color-primary)]/80 inline-block px-4 py-1.5 rounded-full border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/70 backdrop-blur-xs"
+          className="text-xs uppercase tracking-[0.25em] font-semibold text-[var(--theme-color-primary)]/80 inline-block px-4 py-1.5 rounded-[var(--theme-radius-button)] border border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/70 backdrop-blur-xs"
         >
           {eyebrowText}
         </p>
@@ -204,6 +236,19 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
 
       {/* Bagian Tengah: Fokus Utama Nama Pasangan & Informasi */}
       <div className="relative z-10 w-full max-w-lg mx-auto text-center space-y-6 sm:space-y-8 my-auto py-6">
+        {/* Monogram Lingkaran Klasik jika tanpa background image */}
+        {!validBackgroundUrl && coupleMonogram && (
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full border-2 border-[var(--theme-color-border)] bg-[var(--theme-color-surface)]/80 flex items-center justify-center shadow-md select-none">
+            <div className="absolute inset-1 rounded-full border border-dashed border-[var(--theme-color-border)]/40 pointer-events-none" />
+            <span
+              className="text-xl sm:text-2xl font-light text-[var(--theme-color-accent)]"
+              style={{ fontFamily: 'var(--theme-font-heading)' }}
+            >
+              {coupleMonogram}
+            </span>
+          </div>
+        )}
+
         <div className="space-y-3">
           <h1
             className="text-3xl sm:text-5xl md:text-6xl font-normal leading-[1.15] tracking-tight drop-shadow-xs"
@@ -212,8 +257,10 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
             {displayTitle}
           </h1>
 
+          <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+
           {displaySubtitle && (
-            <p className="text-xs sm:text-sm font-medium tracking-wide text-[var(--theme-color-primary)]/85 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm font-medium tracking-wide text-[var(--theme-color-primary)]/85 max-w-md mx-auto leading-relaxed pt-1">
               {displaySubtitle}
             </p>
           )}

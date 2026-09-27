@@ -6,14 +6,22 @@ export const GallerySection: React.FC<SectionRendererProps> = ({ gallery }) => {
   const images = gallery && gallery.length > 0 ? gallery : [];
 
   return (
-    <section aria-labelledby="section-gallery-heading" className="py-16 px-6 max-w-3xl mx-auto space-y-6">
-      <h2
-        id="section-gallery-heading"
-        className="text-2xl sm:text-3xl font-normal text-center text-[var(--theme-color-primary)]"
-        style={{ fontFamily: 'var(--theme-font-heading)' }}
-      >
-        Galeri Foto
-      </h2>
+    <section id="gallery" aria-labelledby="section-gallery-heading" className="py-16 sm:py-24 px-6 max-w-3xl mx-auto space-y-8">
+      <div className="text-center space-y-2">
+        <h2
+          id="section-gallery-heading"
+          className="text-2xl sm:text-3xl font-normal text-[var(--theme-color-primary)]"
+          style={{ fontFamily: 'var(--theme-font-heading)' }}
+        >
+          Galeri Foto
+        </h2>
+        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
+          <span>✦</span>
+          <span className="text-[8px] opacity-70">♦</span>
+          <span>✦</span>
+        </div>
+        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+      </div>
 
       {images.length === 0 ? (
         <div className="p-6 border border-[var(--theme-color-border)] rounded bg-[var(--theme-color-surface)] text-center text-xs text-[var(--theme-color-primary)]/70">

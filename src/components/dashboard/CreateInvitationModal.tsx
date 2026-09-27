@@ -441,6 +441,15 @@ export function CreateInvitationModal({
                       const isSelected = selectedTemplateId === tpl.id;
                       const isActive = tpl.is_active;
 
+                      const tplTheme = (typeof tpl.default_theme === 'object' && tpl.default_theme !== null
+                        ? tpl.default_theme
+                        : {}) as Record<string, string>;
+                      const cardBg = tplTheme.color_background || '#FAF9F6';
+                      const cardText = tplTheme.color_primary || '#292524';
+                      const cardAccent = tplTheme.color_accent || cardText;
+                      const cardBorder = tplTheme.color_border || '#E7E5E0';
+                      const cardFont = tplTheme.font_heading ? `"${tplTheme.font_heading}", serif` : 'serif';
+
                       return (
                         <div
                           key={tpl.id}
@@ -458,12 +467,11 @@ export function CreateInvitationModal({
                         >
                           {/* Visual Preview Canvas */}
                           <div
-                            className="relative h-48 w-full border-b border-border flex flex-col items-center justify-between p-4 text-center select-none overflow-hidden transition-all duration-300"
+                            className="relative h-48 w-full border-b flex flex-col items-center justify-between p-4 text-center select-none overflow-hidden transition-all duration-300"
                             style={{
-                              backgroundColor:
-                                typeof tpl.default_theme === 'object' && tpl.default_theme !== null && 'color_background' in tpl.default_theme
-                                  ? String((tpl.default_theme as Record<string, unknown>).color_background || '#FAF9F6')
-                                  : '#FAF9F6',
+                              backgroundColor: cardBg,
+                              color: cardText,
+                              borderColor: cardBorder,
                             }}
                           >
                             {/* Selected Checkmark Badge */}
@@ -478,24 +486,39 @@ export function CreateInvitationModal({
 
                             {/* Header ornament */}
                             <div className="pt-1">
-                              <span className="text-[9px] uppercase tracking-widest font-medium text-stone-500 font-sans">
+                              <span
+                                className="text-[9px] uppercase tracking-widest font-medium opacity-75 font-sans"
+                                style={{ color: cardAccent }}
+                              >
                                 Koleksi Aurovia
                               </span>
                             </div>
 
                             {/* Center couple headline */}
                             <div className="space-y-1 my-auto">
-                              <p className="font-serif italic text-2xl text-stone-900 font-normal tracking-wide">
+                              <p
+                                className="text-2xl font-normal tracking-wide"
+                                style={{ fontFamily: cardFont, color: cardText }}
+                              >
                                 Sarah &amp; Rizky
                               </p>
-                              <div className="w-8 h-[1px] bg-stone-300 mx-auto" />
-                              <p className="text-[10px] text-stone-500 uppercase tracking-widest font-sans">
+                              <div
+                                className="w-8 h-[1px] mx-auto opacity-40"
+                                style={{ backgroundColor: cardBorder }}
+                              />
+                              <p
+                                className="text-[10px] uppercase tracking-widest font-sans opacity-70"
+                                style={{ color: cardText }}
+                              >
                                 The Wedding Celebration
                               </p>
                             </div>
 
                             {/* Bottom footer text */}
-                            <div className="w-full flex items-center justify-between text-[10px] text-stone-400 font-mono pt-1">
+                            <div
+                              className="w-full flex items-center justify-between text-[10px] font-mono pt-1 opacity-60"
+                              style={{ color: cardText }}
+                            >
                               <span>10.10.2026</span>
                               <span className="capitalize">{tpl.category}</span>
                             </div>

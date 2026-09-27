@@ -5,17 +5,25 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
   const eventList = events && events.length > 0 ? events : [];
 
   return (
-    <section aria-labelledby="section-event-heading" className="py-16 px-6 max-w-2xl mx-auto space-y-8">
-      <h2
-        id="section-event-heading"
-        className="text-2xl sm:text-3xl font-normal text-center text-[var(--theme-color-primary)]"
-        style={{ fontFamily: 'var(--theme-font-heading)' }}
-      >
-        Agenda Acara
-      </h2>
+    <section id="event" aria-labelledby="section-event-heading" className="py-16 sm:py-24 px-6 max-w-2xl mx-auto space-y-8">
+      <div className="text-center space-y-2">
+        <h2
+          id="section-event-heading"
+          className="text-2xl sm:text-3xl font-normal text-[var(--theme-color-primary)]"
+          style={{ fontFamily: 'var(--theme-font-heading)' }}
+        >
+          Agenda Acara
+        </h2>
+        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
+          <span>✦</span>
+          <span className="text-[8px] opacity-70">♦</span>
+          <span>✦</span>
+        </div>
+        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
+      </div>
 
       {eventList.length === 0 ? (
-        <div className="p-6 border border-[var(--theme-color-border)] rounded bg-[var(--theme-color-surface)] text-center text-xs text-[var(--theme-color-primary)]/70">
+        <div className="p-6 border border-[var(--theme-color-border)] rounded-[var(--theme-radius-card)] bg-[var(--theme-color-surface)] text-center text-xs text-[var(--theme-color-primary)]/70">
           Belum ada rangkaian acara.
         </div>
       ) : (
@@ -44,28 +52,41 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
             return (
               <div
                 key={evt.id}
-                className="p-6 border border-[var(--theme-color-border)] rounded bg-[var(--theme-color-surface)] space-y-3"
+                className="p-6 sm:p-8 border border-[var(--theme-color-border)] rounded-[var(--theme-radius-card)] bg-[var(--theme-color-surface)] space-y-4 shadow-xs"
               >
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 border-b border-[var(--theme-color-border)] pb-3">
-                  <h3 className="font-semibold text-base text-[var(--theme-color-primary)]">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 border-b border-[var(--theme-color-border)]/50 pb-3">
+                  <h3
+                    className="font-semibold text-lg text-[var(--theme-color-primary)]"
+                    style={{ fontFamily: 'var(--theme-font-heading)' }}
+                  >
                     {evt.title}
                   </h3>
                   {evt.is_primary && (
-                    <span className="self-start sm:self-auto text-[10px] tracking-wider uppercase font-semibold px-2 py-0.5 rounded border border-[var(--theme-color-border)] bg-[var(--theme-color-bg)] text-[var(--theme-color-primary)]/70">
+                    <span className="self-start sm:self-auto text-[10px] tracking-wider uppercase font-semibold px-2.5 py-0.5 rounded-[var(--theme-radius-button)] border border-[var(--theme-color-border)] bg-[var(--theme-color-bg)] text-[var(--theme-color-accent)]">
                       Acara Utama
                     </span>
                   )}
                 </div>
 
-                <div className="text-xs space-y-1 text-[var(--theme-color-primary)]/80">
-                  {dateStr && <p className="font-medium text-sm text-[var(--theme-color-primary)]">{dateStr}</p>}
+                <div className="text-xs space-y-1.5 text-[var(--theme-color-primary)]/80 leading-relaxed">
+                  {dateStr && (
+                    <p className="font-semibold text-sm text-[var(--theme-color-accent)]">
+                      {dateStr}
+                    </p>
+                  )}
                   {timeStr && (
-                    <p>
+                    <p className="text-[var(--theme-color-primary)]/90">
                       Waktu: {endTimeStr ? `${timeStr} - ${endTimeStr}` : `${timeStr} s.d. selesai`} {evt.timezone}
                     </p>
                   )}
-                  <p className="font-semibold pt-1">{evt.venue_name}</p>
-                  {evt.address && <p className="text-[var(--theme-color-primary)]/70">{evt.address}</p>}
+                  <p className="font-semibold pt-1 text-[var(--theme-color-primary)] text-sm">
+                    {evt.venue_name}
+                  </p>
+                  {evt.address && (
+                    <p className="text-[var(--theme-color-primary)]/70">
+                      {evt.address}
+                    </p>
+                  )}
                 </div>
 
                 {evt.maps_url ? (
@@ -74,9 +95,10 @@ export const EventSection: React.FC<SectionRendererProps> = ({ events }) => {
                       href={evt.maps_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--theme-color-primary)] hover:underline"
+                      className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-[var(--theme-radius-button)] text-xs font-semibold border border-[var(--theme-color-border)] bg-[var(--theme-color-bg)] hover:bg-[var(--theme-color-accent)] text-[var(--theme-color-primary)] hover:text-[var(--theme-color-bg)] transition-all cursor-pointer min-h-[44px] shadow-2xs"
                     >
-                      Buka Google Maps &rarr;
+                      <span>Buka Google Maps</span>
+                      <span aria-hidden="true">&rarr;</span>
                     </a>
                   </div>
                 ) : null}

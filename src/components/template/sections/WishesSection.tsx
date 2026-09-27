@@ -133,6 +133,7 @@ export const WishesSection: React.FC<SectionRendererProps> = ({ invitation, gues
 
   return (
     <section
+      id="wishes"
       aria-labelledby="section-wishes-heading"
       className="py-16 sm:py-24 px-6 max-w-xl mx-auto space-y-8 text-center"
     >
@@ -144,8 +145,14 @@ export const WishesSection: React.FC<SectionRendererProps> = ({ invitation, gues
         >
           Doa &amp; Ucapan
         </h2>
+        <div className="flex items-center justify-center gap-1.5 text-[var(--theme-color-accent)] text-xs select-none">
+          <span>✦</span>
+          <span className="text-[8px] opacity-70">♦</span>
+          <span>✦</span>
+        </div>
+        <div className="w-16 h-px bg-[var(--theme-color-border)]/50 mx-auto" />
 
-        <p className="text-xs sm:text-sm text-[var(--theme-color-primary)]/80 leading-relaxed max-w-md mx-auto">
+        <p className="text-xs sm:text-sm text-[var(--theme-color-primary)]/80 leading-relaxed max-w-md mx-auto pt-1">
           Untaian doa dan pesan hangat dari kerabat serta sahabat tercinta.
         </p>
       </div>
