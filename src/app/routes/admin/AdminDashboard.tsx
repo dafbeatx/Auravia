@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  getAdminDashboardStats,
+  getAdminDashboardStatsV2,
   getAdminTrafficStats,
-  type DashboardStats,
+  type DashboardStatsV2,
   type TrafficStatItem,
 } from '@/lib/admin';
 
 export function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStatsV2 | null>(null);
   const [trafficData, setTrafficData] = useState<TrafficStatItem[]>([]);
-  const [timeRange, setTimeRange] = useState<7 | 30 | 365>(30);
+  const [timeRange, setTimeRange] = useState<1 | 7 | 30>(7);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTraffic, setLoadingTraffic] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Ambil data agregat statistik
+  // Ambil data agregat statistik lengkap
   useEffect(() => {
     let isMounted = true;
     setLoadingStats(true);
-    getAdminDashboardStats()
+    getAdminDashboardStatsV2()
       .then((data) => {
         if (isMounted) {
           setStats(data);
@@ -28,7 +28,7 @@ export function AdminDashboard() {
       })
       .catch((err) => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Gagal memuat statistik.');
+          setError(err instanceof Error ? err.message : 'Gagal memuat statistik dashboard.');
         }
       })
       .finally(() => {
@@ -40,7 +40,7 @@ export function AdminDashboard() {
     };
   }, []);
 
-  // Ambil rincian data traffic berdasarkan rentang waktu yang dipilih
+  // Ambil rincian data traffic (1 hari, 7 hari, atau 30 hari)
   useEffect(() => {
     let isMounted = true;
     setLoadingTraffic(true);
@@ -62,32 +62,9 @@ export function AdminDashboard() {
     };
   }, [timeRange]);
 
-  // Hitung total kumulatif dari rincian traffic
-  const trafficBreakdown = trafficData.reduce(
-    (acc, curr) => ({
-      visitors: acc.visitors + Number(curr.visitors),
-      page_views: acc.page_views + Number(curr.page_views),
-      demo_views: acc.demo_views + Number(curr.demo_views),
-      login_success: acc.login_success + Number(curr.login_success),
-      register_success: acc.register_success + Number(curr.register_success),
-      invitation_create: acc.invitation_create + Number(curr.invitation_create),
-      invitation_publish: acc.invitation_publish + Number(curr.invitation_publish),
-    }),
-    {
-      visitors: 0,
-      page_views: 0,
-      demo_views: 0,
-      login_success: 0,
-      register_success: 0,
-      invitation_create: 0,
-      invitation_publish: 0,
-    }
-  );
-
-  // Cari nilai maksimum untuk visualisasi chart
   const maxTrafficVal = Math.max(
     1,
-    ...trafficData.map((d) => Math.max(Number(d.visitors), Number(d.page_views), Number(d.demo_views)))
+    ...trafficData.map((d) => Math.max(Number(d.visitors || 0), Number(d.page_views || 0)))
   );
 
   return (
@@ -95,370 +72,311 @@ export function AdminDashboard() {
       {/* Banner / Header Overview */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
         <div>
-          <h2 className="font-serif text-2xl font-bold text-[#006A71]">
+          <h2 className="font-serif text-2xl font-bold text-primary">
             Ringkasan Platform Aurovia
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Data operasional dan lalu lintas teragregasi secara langsung dari basis data.
+          <p className="text-xs text-text-muted mt-1">
+            Data aktual ringkasan metrik pengguna, undangan, template, dan interaksi pengunjung.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
-            to="/admin/templates"
-            className="py-2.5 px-4 bg-[#006A71] hover:bg-[#00575d] text-white text-xs font-semibold rounded-xl transition-all shadow-xs min-h-[44px] flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#006A71]"
+            to="/admin/traffic"
+            className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-surface-elevated hover:bg-border text-primary border border-border transition-colors min-h-[40px] flex items-center justify-center cursor-pointer"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Kelola Template</span>
+            Lihat Analitik Lalu Lintas
           </Link>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+        <div className="p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs">
           {error}
         </div>
       )}
 
-      {/* Grid Kartu Statistik Utama (8 Metrik Riil) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Pengguna */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Total Pengguna
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-[#006A71]">
-              {stats?.total_users ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Akun terdaftar di Aurovia</p>
-        </div>
-
-        {/* Total Undangan */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Total Undangan
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-[#006A71]">
-              {stats?.total_invitations ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Dibuat oleh pengguna</p>
-        </div>
-
-        {/* Total Template */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Total Template
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-serif font-bold text-[#006A71]">
-                {stats?.total_templates ?? 0}
-              </span>
-              <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                {stats?.active_templates ?? 0} Aktif
-              </span>
-            </div>
-          )}
-          <p className="text-[11px] text-gray-400">
-            {stats?.draft_templates ?? 0} template berstatus draft
+      {/* Grid 12 Statistik Utama */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {/* 1. Total User */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Total User
           </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+            {loadingStats ? '-' : stats?.total_users ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Pengguna terdaftar</p>
         </div>
 
-        {/* Total Demo Views */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Total Demo Views
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-[#48A6A7]">
-              {stats?.total_demo_views ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Interaksi preview demo template</p>
+        {/* 2. User Baru Hari Ini */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            User Baru Hari Ini
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-secondary">
+            {loadingStats ? '-' : stats?.users_today ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Registrasi sejak 00:00</p>
         </div>
 
-        {/* Total Visitor */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Total Pengunjung Unik
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-[#006A71]">
-              {stats?.total_visitors ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Sesi unik tercatat</p>
+        {/* 3. Total Undangan */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Total Undangan
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+            {loadingStats ? '-' : stats?.total_invitations ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Seluruh undangan dibuat</p>
         </div>
 
-        {/* Total Invitation Views */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Kunjungan Undangan
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-[#006A71]">
-              {stats?.total_invitation_views ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Tamu membuka undangan publik</p>
+        {/* 4. Undangan Draft */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Undangan Draf
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-warning">
+            {loadingStats ? '-' : stats?.invitations_draft ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Sedang disunting</p>
         </div>
 
-        {/* Template Aktif */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
+        {/* 5. Undangan Published */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Undangan Published
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-success">
+            {loadingStats ? '-' : stats?.invitations_published ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Sudah terbit publik</p>
+        </div>
+
+        {/* 6. Total Template */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Total Template
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+            {loadingStats ? '-' : stats?.total_templates ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Katalog terdaftar</p>
+        </div>
+
+        {/* 7. Template Aktif */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
             Template Aktif
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-emerald-700">
-              {stats?.active_templates ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Tampil di katalog publik</p>
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+            {loadingStats ? '-' : stats?.active_templates ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Tersedia untuk pengguna</p>
         </div>
 
-        {/* Template Draft */}
-        <div className="bg-white p-5 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-2">
-          <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
-            Template Draft
-          </span>
-          {loadingStats ? (
-            <div className="h-8 w-16 bg-gray-100 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-2xl font-serif font-bold text-amber-700">
-              {stats?.draft_templates ?? 0}
-            </p>
-          )}
-          <p className="text-[11px] text-gray-400">Hanya terlihat oleh admin</p>
+        {/* 8. Total Page Views */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Total Page Views
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+            {loadingStats ? '-' : stats?.total_page_views ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Kunjungan landing &amp; halaman</p>
+        </div>
+
+        {/* 9. Unique Visitors */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Unique Visitors
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-secondary">
+            {loadingStats ? '-' : stats?.total_visitors ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Sesi unik pengunjung</p>
+        </div>
+
+        {/* 10. Demo Template Views */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Demo Template Views
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-primary">
+            {loadingStats ? '-' : stats?.demo_views ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Pratinjau interaktif dibuka</p>
+        </div>
+
+        {/* 11. Login Attempts */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Percobaan Login
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-text-primary">
+            {loadingStats ? '-' : stats?.login_attempts ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Event sukses &amp; gagal</p>
+        </div>
+
+        {/* 12. Error Events */}
+        <div className="bg-surface p-4 sm:p-5 rounded-2xl border border-border shadow-2xs space-y-1">
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Peristiwa Error
+          </p>
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-danger">
+            {loadingStats ? '-' : stats?.error_events ?? 0}
+          </p>
+          <p className="text-[10px] text-text-subtle">Catatan kendala sistem</p>
         </div>
       </div>
 
-      {/* Bagian Chart Traffic Harian & Filter Periode */}
-      <div className="bg-white rounded-2xl border border-[#9ACBD0]/60 p-6 shadow-2xs space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#9ACBD0]/30 pb-4">
+      {/* Grafik Sederhana Lalu Lintas */}
+      <div className="bg-surface p-6 rounded-2xl border border-border shadow-2xs space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h3 className="font-serif text-lg font-bold text-[#006A71]">
-              Aktivitas Traffic Pengguna
+            <h3 className="font-serif text-base sm:text-lg font-bold text-primary">
+              Grafik Lalu Lintas Pengunjung
             </h3>
-            <p className="text-xs text-gray-500">
-              Perkembangan tren pengunjung unik dan tampilan halaman secara berkala.
+            <p className="text-xs text-text-muted mt-0.5">
+              Perbandingan Page Views dan Pengunjung Unik dalam periode terpilih.
             </p>
           </div>
 
-          {/* Filter Range: 7 hari, 30 hari, 12 bulan */}
-          <div className="inline-flex rounded-xl p-1 bg-[#F2FEF7] border border-[#9ACBD0]/60" role="group">
-            <button
-              type="button"
-              onClick={() => setTimeRange(7)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all min-h-[36px] cursor-pointer ${
-                timeRange === 7
-                  ? 'bg-[#006A71] text-white shadow-2xs'
-                  : 'text-gray-600 hover:text-[#006A71]'
-              }`}
-            >
-              7 Hari
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeRange(30)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all min-h-[36px] cursor-pointer ${
-                timeRange === 30
-                  ? 'bg-[#006A71] text-white shadow-2xs'
-                  : 'text-gray-600 hover:text-[#006A71]'
-              }`}
-            >
-              30 Hari
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeRange(365)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all min-h-[36px] cursor-pointer ${
-                timeRange === 365
-                  ? 'bg-[#006A71] text-white shadow-2xs'
-                  : 'text-gray-600 hover:text-[#006A71]'
-              }`}
-            >
-              12 Bulan
-            </button>
+          {/* Filter Rentang Hari Ini / 7 Hari / 30 Hari */}
+          <div className="inline-flex rounded-xl p-1 bg-surface-elevated border border-border">
+            {([
+              { value: 1, label: 'Hari Ini' },
+              { value: 7, label: '7 Hari' },
+              { value: 30, label: '30 Hari' },
+            ] as const).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setTimeRange(item.value)}
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all min-h-[36px] cursor-pointer ${
+                  timeRange === item.value
+                    ? 'bg-primary text-primary-foreground shadow-2xs'
+                    : 'text-text-muted hover:text-primary'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Visualisasi Grafik Batang / Bar Chart Responsif */}
         {loadingTraffic ? (
-          <div className="h-64 flex flex-col items-center justify-center space-y-3">
-            <div className="w-8 h-8 border-2 border-[#006A71] border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-gray-400">Memuat visualisasi traffic...</p>
+          <div className="h-48 flex flex-col items-center justify-center space-y-2">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-text-muted">Memuat grafik lalu lintas...</p>
           </div>
         ) : trafficData.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#9ACBD0] rounded-xl">
-            <p className="text-sm font-semibold text-gray-600">Belum ada data traffic</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Data analitik akan muncul secara otomatis saat pengunjung berinteraksi dengan website.
-            </p>
+          <div className="h-48 flex items-center justify-center text-xs text-text-muted">
+            Belum ada catatan aktivitas pada rentang waktu ini.
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Chart Area */}
-            <div className="h-56 flex items-end gap-1 sm:gap-2 pt-6 pb-2 border-b border-gray-100 overflow-x-auto">
-              {trafficData.map((d, index) => {
-                const visitors = Number(d.visitors);
-                const pageViews = Number(d.page_views);
-                const demoViews = Number(d.demo_views);
-
-                const visitorHeight = Math.round((visitors / maxTrafficVal) * 100);
-                const pageViewsHeight = Math.round((pageViews / maxTrafficVal) * 100);
-
-                // Format label tanggal ringkas
-                const dateParts = d.day_date.split('-');
-                const label = `${dateParts[2]}/${dateParts[1]}`;
+            {/* Visualisasi Bar Chart Sederhana */}
+            <div className="h-48 flex items-end gap-2 pt-6 pb-2 border-b border-border overflow-x-auto">
+              {trafficData.map((d, i) => {
+                const heightPV = Math.round((Number(d.page_views || 0) / maxTrafficVal) * 100);
+                const heightVis = Math.round((Number(d.visitors || 0) / maxTrafficVal) * 100);
 
                 return (
-                  <div
-                    key={d.day_date || index}
-                    className="flex-1 min-w-[18px] sm:min-w-[28px] h-full flex flex-col justify-end items-center group relative cursor-pointer"
-                  >
-                    {/* Tooltip Hover */}
-                    <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col bg-gray-900 text-white text-[10px] p-2 rounded-lg shadow-lg z-30 whitespace-nowrap pointer-events-none">
-                      <span className="font-semibold text-[#9ACBD0]">{d.day_date}</span>
-                      <span>Pengunjung: {visitors}</span>
-                      <span>Page Views: {pageViews}</span>
-                      <span>Demo Views: {demoViews}</span>
-                    </div>
-
-                    {/* Batang Grafis */}
-                    <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1 h-full">
-                      {/* Bar Visitors */}
-                      <div
-                        style={{ height: `${Math.max(4, visitorHeight)}%` }}
-                        className="w-1.5 sm:w-2.5 bg-[#006A71] rounded-t-sm transition-all duration-300 group-hover:bg-[#48A6A7]"
-                      />
+                  <div key={d.day_date || i} className="flex-1 min-w-[20px] max-w-[48px] flex flex-col items-center gap-1 group">
+                    <div className="w-full flex items-end justify-center gap-0.5 h-36">
                       {/* Bar Page Views */}
                       <div
-                        style={{ height: `${Math.max(4, pageViewsHeight)}%` }}
-                        className="w-1.5 sm:w-2.5 bg-[#9ACBD0] rounded-t-sm transition-all duration-300 group-hover:bg-[#006A71]"
+                        style={{ height: `${Math.max(4, heightPV)}%` }}
+                        className="w-1/2 bg-primary rounded-t-sm group-hover:brightness-110 transition-all relative"
+                        title={`Page Views: ${d.page_views}`}
+                      />
+                      {/* Bar Visitors */}
+                      <div
+                        style={{ height: `${Math.max(4, heightVis)}%` }}
+                        className="w-1/2 bg-secondary rounded-t-sm group-hover:brightness-110 transition-all relative"
+                        title={`Visitors: ${d.visitors}`}
                       />
                     </div>
-
-                    {/* Label Sumbu X */}
-                    {(index % (timeRange > 30 ? 30 : timeRange > 7 ? 4 : 1) === 0 ||
-                      index === trafficData.length - 1) && (
-                      <span className="text-[9px] text-gray-400 mt-2 rotate-0">
-                        {label}
-                      </span>
-                    )}
+                    <span className="text-[9px] text-text-subtle truncate max-w-full font-mono">
+                      {d.day_date ? d.day_date.slice(5) : ''}
+                    </span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Legenda Chart */}
-            <div className="flex items-center justify-center gap-6 pt-2 text-xs text-gray-600">
+            {/* Legenda Grafik */}
+            <div className="flex items-center justify-end gap-6 text-xs pt-1">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-xs bg-[#006A71]" />
-                <span>Pengunjung Unik (Visitors)</span>
+                <span className="w-3 h-3 rounded-sm bg-primary" />
+                <span className="text-text-muted font-medium">Page Views</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-xs bg-[#9ACBD0]" />
-                <span>Tampilan Halaman (Page Views)</span>
+                <span className="w-3 h-3 rounded-sm bg-secondary" />
+                <span className="text-text-muted font-medium">Unique Visitors</span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Rincian Breakdown Event Riil */}
-      <div className="bg-white rounded-2xl border border-[#9ACBD0]/60 p-6 shadow-2xs space-y-4">
-        <h3 className="font-serif text-lg font-bold text-[#006A71]">
-          Rincian Konversi Periode Ini
-        </h3>
-        <p className="text-xs text-gray-500">
-          Akumulasi aksi pengguna selama rentang waktu {timeRange} hari terakhir.
-        </p>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Visitor
-            </span>
-            <p className="text-lg font-bold text-[#006A71] mt-1">
-              {trafficBreakdown.visitors}
+      {/* Navigasi Tautan Cepat */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link
+          to="/admin/invitations"
+          className="p-4 rounded-xl bg-surface border border-border hover:border-primary/40 shadow-2xs transition-all group flex items-center justify-between"
+        >
+          <div>
+            <p className="text-xs font-bold text-text-primary group-hover:text-primary">
+              Kelola Undangan
+            </p>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              Buka daftar draf dan terbit
             </p>
           </div>
+          <svg className="w-4 h-4 text-text-muted group-hover:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
 
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Page View
-            </span>
-            <p className="text-lg font-bold text-[#006A71] mt-1">
-              {trafficBreakdown.page_views}
+        <Link
+          to="/admin/templates"
+          className="p-4 rounded-xl bg-surface border border-border hover:border-primary/40 shadow-2xs transition-all group flex items-center justify-between"
+        >
+          <div>
+            <p className="text-xs font-bold text-text-primary group-hover:text-primary">
+              Katalog Template
+            </p>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              Atur status aktif &amp; urutan display
             </p>
           </div>
+          <svg className="w-4 h-4 text-text-muted group-hover:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
 
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Demo View
-            </span>
-            <p className="text-lg font-bold text-[#48A6A7] mt-1">
-              {trafficBreakdown.demo_views}
+        <Link
+          to="/admin/demo"
+          className="p-4 rounded-xl bg-surface border border-border hover:border-primary/40 shadow-2xs transition-all group flex items-center justify-between"
+        >
+          <div>
+            <p className="text-xs font-bold text-text-primary group-hover:text-primary">
+              Media Demo Template
+            </p>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              Kelola konten foto &amp; pratinjau publik
             </p>
           </div>
-
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Login
-            </span>
-            <p className="text-lg font-bold text-[#006A71] mt-1">
-              {trafficBreakdown.login_success}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Register
-            </span>
-            <p className="text-lg font-bold text-[#006A71] mt-1">
-              {trafficBreakdown.register_success}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Create Undangan
-            </span>
-            <p className="text-lg font-bold text-[#006A71] mt-1">
-              {trafficBreakdown.invitation_create}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40">
-            <span className="text-[10px] uppercase font-semibold text-gray-500 block">
-              Published
-            </span>
-            <p className="text-lg font-bold text-emerald-700 mt-1">
-              {trafficBreakdown.invitation_publish}
-            </p>
-          </div>
-        </div>
+          <svg className="w-4 h-4 text-text-muted group-hover:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
       </div>
     </div>
   );
 }
+
+export default AdminDashboard;

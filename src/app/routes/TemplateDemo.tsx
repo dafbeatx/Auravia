@@ -6,6 +6,7 @@ import { getTemplateDefinition } from '@/lib/template/definitions';
 import { InvitationRenderer } from '@/components/template/InvitationRenderer';
 import type { InvitationContent } from '@/lib/template/types';
 import { trackDemoView } from '@/lib/analytics';
+import { getTemplateDemoData, type TemplateDemoData } from '@/lib/admin';
 
 function getCategoryBadge(slug: string, rawCategory?: string): string {
   switch (slug) {
@@ -50,7 +51,7 @@ function createDemoPhotoSvg(
 /**
  * Halaman Demo Template (/templates/:slug/demo):
  * Menampilkan pratinjau interaktif sesungguhnya dari template undangan menggunakan InvitationRenderer.
- * Dilengkapi sticky top bar bernuansa Aurovia dan data representatif natural.
+ * Dilengkapi sticky top bar bernuansa Aurovia dan data representatif natural yang dikelola admin.
  */
 export function TemplateDemo() {
   const { slug } = useParams<{ slug: string }>();
@@ -59,6 +60,7 @@ export function TemplateDemo() {
   const { user, loading: authLoading } = useAuth();
 
   const [template, setTemplate] = useState<TemplateDetail | null>(null);
+  const [demoData, setDemoData] = useState<TemplateDemoData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Jika pengunjung belum login, arahkan ke login dan simpan URL tujuan demo
@@ -69,7 +71,7 @@ export function TemplateDemo() {
     }
   }, [user, authLoading, location, navigate]);
 
-  // Muat detail template dari database atau fallback ke definisi kode
+  // Muat detail template dan konfigurasi data demo dari admin
   useEffect(() => {
     let isMounted = true;
     if (!slug) {
@@ -78,31 +80,37 @@ export function TemplateDemo() {
     }
 
     setLoading(true);
-    getTemplateBySlug(slug)
-      .then((data) => {
+    Promise.all([
+      getTemplateBySlug(slug).catch(() => null),
+      getTemplateDemoData(slug).catch(() => null),
+    ])
+      .then(([tplData, customDemo]) => {
         if (!isMounted) return;
-        setTemplate(data);
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        const definition = getTemplateDefinition(slug);
-        setTemplate({
-          id: definition.id,
-          slug: definition.slug,
-          name: definition.name,
-          category: definition.category,
-          description: definition.description,
-          thumbnail_url: definition.identity?.thumbnailUrl || '',
-          default_theme: definition.defaultTheme as unknown as import('@/types/database').Json,
-          default_sections: definition.sections as unknown as import('@/types/database').Json,
-          is_active: true,
-          status: 'active',
-          display_order: 0,
-          is_featured: false,
-          preview_desktop_path: null,
-          preview_mobile_path: null,
-          preview_thumbnail_path: null,
-        });
+        if (tplData) {
+          setTemplate(tplData);
+        } else {
+          const definition = getTemplateDefinition(slug);
+          setTemplate({
+            id: definition.id,
+            slug: definition.slug,
+            name: definition.name,
+            category: definition.category,
+            description: definition.description,
+            thumbnail_url: definition.identity?.thumbnailUrl || '',
+            default_theme: definition.defaultTheme as unknown as import('@/types/database').Json,
+            default_sections: definition.sections as unknown as import('@/types/database').Json,
+            is_active: true,
+            status: 'active',
+            display_order: 0,
+            is_featured: false,
+            preview_desktop_path: null,
+            preview_mobile_path: null,
+            preview_thumbnail_path: null,
+          });
+        }
+        if (customDemo) {
+          setDemoData(customDemo);
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -120,8 +128,20 @@ export function TemplateDemo() {
     }
   }, [template?.id, template?.slug, user?.id]);
 
-  // Bangun galeri foto demo SVG yang selaras dengan palet tema template
+  // Bangun galeri foto demo dari data admin atau fallback SVG yang selaras dengan palet tema template
   const demoGallery = useMemo(() => {
+    if (demoData?.gallery && Array.isArray(demoData.gallery) && demoData.gallery.length > 0) {
+      return (demoData.gallery as Array<Record<string, unknown>>).map((item, idx) => ({
+        id: (item.id as string) || `photo-${idx + 1}`,
+        storage_path: (item.image_url as string) || (item.storage_path as string) || '',
+        thumbnail_path: null,
+        caption: (item.caption as string) || null,
+        display_order: typeof item.display_order === 'number' ? item.display_order : idx,
+        width: 600,
+        height: 750,
+      }));
+    }
+
     let bgStart = '#FAF9F6';
     let bgEnd = '#E7E5E0';
     let accent = '#292524';
@@ -178,7 +198,7 @@ export function TemplateDemo() {
         height: 750,
       },
     ];
-  }, [slug]);
+  }, [slug, demoData]);
 
   if (authLoading || loading) {
     return (
@@ -214,18 +234,21 @@ export function TemplateDemo() {
     );
   }
 
+  const rsvpConfig = (demoData?.rsvp || {}) as Record<string, unknown>;
+  const wishesConfig = (demoData?.wishes || {}) as Record<string, unknown>;
+
   // Data representatif natural untuk pengalaman demo undangan yang sesungguhnya
   const demoInvitation = {
     id: `demo-${template.slug}`,
-    title: `Pernikahan Raka & Aulia (${template.name})`,
+    title: `Pernikahan ${((demoData?.hero || {}) as Record<string, unknown>).couple_names || 'Raka & Aulia'} (${template.name})`,
     slug: template.slug,
     event_type: 'wedding',
     eventType: 'wedding',
     status: 'published',
-    allow_rsvp: true,
-    allowRsvp: true,
-    show_wishes: true,
-    showWishes: true,
+    allow_rsvp: rsvpConfig.enabled !== false,
+    allowRsvp: rsvpConfig.enabled !== false,
+    show_wishes: wishesConfig.enabled !== false,
+    showWishes: wishesConfig.enabled !== false,
     theme_override: null,
     themeOverride: null,
   };
@@ -234,119 +257,137 @@ export function TemplateDemo() {
     cover: {
       enabled: true,
       eyebrow: 'THE WEDDING OF',
-      title: 'Raka & Aulia',
-      subtitle: 'Sabtu, 24 Oktober 2026 • Grand Ballroom Hotel Aryaduta Bandung',
+      title: (((demoData?.hero || {}) as Record<string, unknown>).couple_names as string) || 'Raka & Aulia',
+      subtitle: `${(((demoData?.hero || {}) as Record<string, unknown>).opening_text as string) || 'Sabtu, 24 Oktober 2026'} • ${(((demoData?.hero || {}) as Record<string, unknown>).location as string) || 'Grand Ballroom Hotel Aryaduta Bandung'}`,
       button_label: 'Buka Undangan',
+      background_image_url:
+        (((demoData?.hero || {}) as Record<string, unknown>).cover_image as string) ||
+        (((demoData?.hero || {}) as Record<string, unknown>).background_image as string) ||
+        undefined,
     },
     hero: {
-      headline: 'Walimatul Ursy',
-      couple_names: 'Raka & Aulia',
-      opening_text: 'Sabtu, 24 Oktober 2026',
-      location_short: 'Grand Ballroom Hotel Aryaduta, Bandung',
+      headline: (((demoData?.hero || {}) as Record<string, unknown>).headline as string) || 'Walimatul Ursy',
+      couple_names: (((demoData?.hero || {}) as Record<string, unknown>).couple_names as string) || 'Raka & Aulia',
+      opening_text: (((demoData?.hero || {}) as Record<string, unknown>).opening_text as string) || 'Sabtu, 24 Oktober 2026',
+      location_short: (((demoData?.hero || {}) as Record<string, unknown>).location as string) || 'Grand Ballroom Hotel Aryaduta, Bandung',
     },
     quote: {
-      enabled: true,
-      arabic: 'وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً',
-      translation: 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.',
-      source: 'QS. Ar-Rum: 21',
+      enabled: ((demoData?.quote || {}) as Record<string, unknown>).enabled !== false,
+      arabic: (((demoData?.quote || {}) as Record<string, unknown>).arabic as string) || 'وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً',
+      translation: (((demoData?.quote || {}) as Record<string, unknown>).quote_text as string) || 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.',
+      source: (((demoData?.quote || {}) as Record<string, unknown>).source as string) || 'QS. Ar-Rum: 21',
     },
     hosts: [
       {
         id: 'groom',
-        name: 'Raka Pratama, S.T.',
+        name: (((demoData?.couple || {}) as Record<string, unknown>).groom_name as string) || 'Raka Pratama, S.T.',
         role: 'Mempelai Pria',
-        parents: 'Putra pertama dari Bpk. Ir. H. Hendra Pratama & Ibu Hj. Ratna Juwita',
-        bio: 'Putra pertama yang berdedikasi dan penuh kehangatan dalam membina keluarga.',
+        parents: (((demoData?.couple || {}) as Record<string, unknown>).groom_parents as string) || 'Putra pertama dari Bpk. Ir. H. Hendra Pratama & Ibu Hj. Ratna Juwita',
+        bio: (((demoData?.couple || {}) as Record<string, unknown>).groom_bio as string) || 'Putra pertama yang berdedikasi dan penuh kehangatan dalam membina keluarga.',
+        photo_url: (((demoData?.couple || {}) as Record<string, unknown>).groom_photo as string) || undefined,
       },
       {
         id: 'bride',
-        name: 'Aulia Nurfadilah, S.Farm.',
+        name: (((demoData?.couple || {}) as Record<string, unknown>).bride_name as string) || 'Aulia Nurfadilah, S.Farm.',
         role: 'Mempelai Wanita',
-        parents: 'Putri bungsu dari Bpk. Drs. H. Achmad Fauzan & Ibu Hj. Dewi Sartika',
-        bio: 'Putri bungsu yang santun dan gemar menebarkan keceriaan bagi orang-orang terdekat.',
+        parents: (((demoData?.couple || {}) as Record<string, unknown>).bride_parents as string) || 'Putri bungsu dari Bpk. Drs. H. Achmad Fauzan & Ibu Hj. Dewi Sartika',
+        bio: (((demoData?.couple || {}) as Record<string, unknown>).bride_bio as string) || 'Putri bungsu yang santun dan gemar menebarkan keceriaan bagi orang-orang terdekat.',
+        photo_url: (((demoData?.couple || {}) as Record<string, unknown>).bride_photo as string) || undefined,
       },
     ],
-    story: [
-      {
-        id: 'story-1',
-        title: 'Awal Pertemuan',
-        date: '2021',
-        description: 'Pertama kali bertukar sapa di ruang seminar kampus, mengawali obrolan hangat tentang karya dan cita-cita masa depan.',
-        display_order: 0,
-        is_enabled: true,
-      },
-      {
-        id: 'story-2',
-        title: 'Komitmen Bersama',
-        date: '2024',
-        description: 'Dengan restu penuh kedua keluarga besar, kami membulatkan niat untuk melangkah bersama dalam ikatan suci yang penuh berkah.',
-        display_order: 1,
-        is_enabled: true,
-      },
-      {
-        id: 'story-3',
-        title: 'Menuju Hari Bahagia',
-        date: '2026',
-        description: 'Mempersiapkan hari istimewa kami dengan rasa syukur mendalam, menyambut keluarga dan sahabat tercinta.',
-        display_order: 2,
-        is_enabled: true,
-      },
-    ],
+    story: (demoData?.story && Array.isArray(demoData.story) && demoData.story.length > 0)
+      ? (demoData.story as Array<Record<string, unknown>>).map((item, idx) => ({
+          id: (item.id as string) || `story-${idx + 1}`,
+          title: (item.title as string) || '',
+          date: (item.year_date as string) || (item.date as string) || '',
+          description: (item.description as string) || '',
+          display_order: typeof item.display_order === 'number' ? item.display_order : idx,
+          is_enabled: item.is_enabled !== false,
+        }))
+      : [
+          {
+            id: 'story-1',
+            title: 'Awal Pertemuan',
+            date: '2021',
+            description: 'Pertama kali bertukar sapa di ruang seminar kampus, mengawali obrolan hangat tentang karya dan cita-cita masa depan.',
+            display_order: 0,
+            is_enabled: true,
+          },
+          {
+            id: 'story-2',
+            title: 'Komitmen Bersama',
+            date: '2024',
+            description: 'Dengan restu penuh kedua keluarga besar, kami membulatkan niat untuk melangkah bersama dalam ikatan suci yang penuh berkah.',
+            display_order: 1,
+            is_enabled: true,
+          },
+          {
+            id: 'story-3',
+            title: 'Menuju Hari Bahagia',
+            date: '2026',
+            description: 'Mempersiapkan hari istimewa kami dengan rasa syukur mendalam, menyambut keluarga dan sahabat tercinta.',
+            display_order: 2,
+            is_enabled: true,
+          },
+        ],
     gift: {
-      is_enabled: true,
+      is_enabled: ((demoData?.gift || {}) as Record<string, unknown>).enabled !== false,
       accounts: [
         {
           id: 'acc-1',
           type: 'bank',
-          provider: 'Bank Central Asia (BCA)',
-          account_number: '7820194821',
-          holder_name: 'Raka Pratama',
+          provider: (((demoData?.gift || {}) as Record<string, unknown>).bank as string) || 'Bank Central Asia (BCA)',
+          account_number: (((demoData?.gift || {}) as Record<string, unknown>).account_number as string) || '7820194821',
+          holder_name: (((demoData?.gift || {}) as Record<string, unknown>).account_name as string) || 'Raka Pratama',
           display_order: 0,
-          is_enabled: true,
-        },
-        {
-          id: 'acc-2',
-          type: 'bank',
-          provider: 'Bank Mandiri',
-          account_number: '1310029482012',
-          holder_name: 'Aulia Nurfadilah',
-          display_order: 1,
           is_enabled: true,
         },
       ],
       physical_address: {
-        recipient_name: 'Raka & Aulia',
-        address: 'Jl. Riau No. 45, Citarum, Kec. Bandung Wetan, Kota Bandung, Jawa Barat 40115',
+        recipient_name: (((demoData?.hero || {}) as Record<string, unknown>).couple_names as string) || 'Raka & Aulia',
+        address: (((demoData?.hero || {}) as Record<string, unknown>).location as string) || 'Jl. Riau No. 45, Citarum, Kec. Bandung Wetan, Kota Bandung, Jawa Barat 40115',
         is_enabled: true,
       },
     },
-    closing_notes: 'Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir serta memberikan doa restu bagi lembaran baru kehidupan kami.',
+    closing_notes: (((demoData?.closing || {}) as Record<string, unknown>).closing_message as string) || 'Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir serta memberikan doa restu bagi lembaran baru kehidupan kami.',
   };
 
-  const demoEvents = [
-    {
-      id: 'demo-event-1',
-      title: 'Akad Nikah',
-      start_time: '2026-10-24T08:00:00+07:00',
-      end_time: '2026-10-24T10:00:00+07:00',
-      timezone: 'WIB',
-      venue_name: 'Masjid Agung Al-Ukhuwah Bandung',
-      address: 'Jl. Wastukencana No. 27, Babakan Ciamis, Kec. Sumur Bandung, Kota Bandung',
-      maps_url: 'https://maps.google.com',
-      is_primary: false,
-    },
-    {
-      id: 'demo-event-2',
-      title: 'Resepsi Pernikahan',
-      start_time: '2026-10-24T11:00:00+07:00',
-      end_time: '2026-10-24T14:00:00+07:00',
-      timezone: 'WIB',
-      venue_name: 'Grand Ballroom Hotel Aryaduta Bandung',
-      address: 'Jl. Sumatera No. 51, Citarum, Kec. Bandung Wetan, Kota Bandung',
-      maps_url: 'https://maps.google.com',
-      is_primary: true,
-    },
-  ];
+  const demoEvents = (demoData?.events && Array.isArray(demoData.events) && demoData.events.length > 0)
+    ? (demoData.events as Array<Record<string, unknown>>).map((ev, idx) => ({
+        id: (ev.id as string) || `demo-event-${idx + 1}`,
+        title: (ev.title as string) || 'Acara',
+        start_time: ev.date && ev.time ? `${ev.date}T${ev.time}:00+07:00` : (ev.date ? `${ev.date}T08:00:00+07:00` : '2026-10-24T08:00:00+07:00'),
+        end_time: null,
+        timezone: 'WIB',
+        venue_name: (ev.venue as string) || '',
+        address: (ev.address as string) || null,
+        maps_url: (ev.maps_url as string) || null,
+        is_primary: idx === 1 || !!ev.is_primary,
+      }))
+    : [
+        {
+          id: 'demo-event-1',
+          title: 'Akad Nikah',
+          start_time: '2026-10-24T08:00:00+07:00',
+          end_time: '2026-10-24T10:00:00+07:00',
+          timezone: 'WIB',
+          venue_name: 'Masjid Agung Al-Ukhuwah Bandung',
+          address: 'Jl. Wastukencana No. 27, Babakan Ciamis, Kec. Sumur Bandung, Kota Bandung',
+          maps_url: 'https://maps.google.com',
+          is_primary: false,
+        },
+        {
+          id: 'demo-event-2',
+          title: 'Resepsi Pernikahan',
+          start_time: '2026-10-24T11:00:00+07:00',
+          end_time: '2026-10-24T14:00:00+07:00',
+          timezone: 'WIB',
+          venue_name: 'Grand Ballroom Hotel Aryaduta Bandung',
+          address: 'Jl. Sumatera No. 51, Citarum, Kec. Bandung Wetan, Kota Bandung',
+          maps_url: 'https://maps.google.com',
+          is_primary: true,
+        },
+      ];
 
   const handleUseTemplate = () => {
     navigate(`/dashboard/invitations/new?templateId=${encodeURIComponent(template.id || template.slug)}`);

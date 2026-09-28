@@ -39,6 +39,8 @@
   --color-danger-foreground: #FEF2F2;
   --color-success: #166534;
   --color-success-foreground: #F0FDF4;
+  --color-warning: #B45309;
+  --color-warning-foreground: #FFFBEB;
 
   /* Focus Indicator for Accessibility */
   --color-focus: #006A71;

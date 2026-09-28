@@ -45,6 +45,10 @@ export default {
           DEFAULT: 'var(--color-success)',
           foreground: 'var(--color-success-foreground)',
         },
+        warning: {
+          DEFAULT: 'var(--color-warning)',
+          foreground: 'var(--color-warning-foreground)',
+        },
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Outfit', 'Inter', 'system-ui', 'sans-serif'],

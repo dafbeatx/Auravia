@@ -15,12 +15,15 @@ import { AdminRoute } from '@/components/auth/AdminRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 
 const AdminDashboard = lazy(() => import('@/app/routes/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const AdminTraffic = lazy(() => import('@/app/routes/admin/AdminTraffic').then((m) => ({ default: m.AdminTraffic })));
+const AdminInvitations = lazy(() => import('@/app/routes/admin/AdminInvitations').then((m) => ({ default: m.AdminInvitations })));
 const AdminTemplates = lazy(() => import('@/app/routes/admin/AdminTemplates').then((m) => ({ default: m.AdminTemplates })));
 const AdminTemplateDetail = lazy(() => import('@/app/routes/admin/AdminTemplateDetail').then((m) => ({ default: m.AdminTemplateDetail })));
-const AdminAnalytics = lazy(() => import('@/app/routes/admin/AdminAnalytics').then((m) => ({ default: m.AdminAnalytics })));
+const AdminDemo = lazy(() => import('@/app/routes/admin/AdminDemo').then((m) => ({ default: m.AdminDemo })));
 const AdminUsers = lazy(() => import('@/app/routes/admin/AdminUsers').then((m) => ({ default: m.AdminUsers })));
 const AdminSettings = lazy(() => import('@/app/routes/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })));
 const AdminSecuritySettings = lazy(() => import('@/app/routes/admin/AdminSecuritySettings').then((m) => ({ default: m.AdminSecuritySettings })));
+const AdminAccounts = lazy(() => import('@/app/routes/admin/AdminAccounts').then((m) => ({ default: m.AdminAccounts })));
 const AdminLogin = lazy(() => import('@/app/routes/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })));
 
 /**
@@ -90,6 +93,22 @@ export const router = createBrowserRouter([
                 element: <AdminDashboard />,
               },
               {
+                path: 'traffic',
+                element: <AdminTraffic />,
+              },
+              {
+                path: 'analytics',
+                element: <Navigate to="/admin/traffic" replace />,
+              },
+              {
+                path: 'users',
+                element: <AdminUsers />,
+              },
+              {
+                path: 'invitations',
+                element: <AdminInvitations />,
+              },
+              {
                 path: 'templates',
                 element: <AdminTemplates />,
               },
@@ -98,12 +117,8 @@ export const router = createBrowserRouter([
                 element: <AdminTemplateDetail />,
               },
               {
-                path: 'analytics',
-                element: <AdminAnalytics />,
-              },
-              {
-                path: 'users',
-                element: <AdminUsers />,
+                path: 'demo',
+                element: <AdminDemo />,
               },
               {
                 path: 'settings',
@@ -112,6 +127,10 @@ export const router = createBrowserRouter([
               {
                 path: 'settings/security',
                 element: <AdminSecuritySettings />,
+              },
+              {
+                path: 'accounts',
+                element: <AdminAccounts />,
               },
             ],
           },

@@ -284,12 +284,14 @@ export type Database = {
       }
       analytics_events: {
         Row: {
+          anonymous_id: string | null
           browser: string | null
           created_at: string
           device_type: 'desktop' | 'tablet' | 'mobile' | 'unknown'
           event_name: string
           id: string
           invitation_id: string | null
+          metadata: Json | null
           path: string
           referrer: string | null
           session_id: string
@@ -297,12 +299,14 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          anonymous_id?: string | null
           browser?: string | null
           created_at?: string
           device_type?: 'desktop' | 'tablet' | 'mobile' | 'unknown'
           event_name: string
           id?: string
           invitation_id?: string | null
+          metadata?: Json | null
           path: string
           referrer?: string | null
           session_id: string
@@ -310,12 +314,14 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          anonymous_id?: string | null
           browser?: string | null
           created_at?: string
           device_type?: 'desktop' | 'tablet' | 'mobile' | 'unknown'
           event_name?: string
           id?: string
           invitation_id?: string | null
+          metadata?: Json | null
           path?: string
           referrer?: string | null
           session_id?: string
@@ -353,6 +359,7 @@ export type Database = {
           id: string
           phone: string | null
           role: 'user' | 'admin'
+          status: 'active' | 'inactive' | 'suspended'
           updated_at: string
         }
         Insert: {
@@ -361,6 +368,7 @@ export type Database = {
           id: string
           phone?: string | null
           role?: 'user' | 'admin'
+          status?: 'active' | 'inactive' | 'suspended'
           updated_at?: string
         }
         Update: {
@@ -369,6 +377,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: 'user' | 'admin'
+          status?: 'active' | 'inactive' | 'suspended'
           updated_at?: string
         }
         Relationships: []
@@ -511,11 +520,370 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          locked_until: string | null
+          password_hash: string
+          role: 'super_admin' | 'admin'
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash: string
+          role?: 'super_admin' | 'admin'
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash?: string
+          role?: 'super_admin' | 'admin'
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          admin_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          last_activity: string
+          session_token: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_activity?: string
+          session_token: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_activity?: string
+          session_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_sessions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_settings: {
+        Row: {
+          analytics_enabled: boolean
+          catalog_enabled: boolean
+          default_seo_description: string
+          default_seo_title: string
+          favicon_url: string | null
+          id: string
+          logo_url: string | null
+          maintenance_mode: boolean
+          registration_enabled: boolean
+          site_name: string
+          updated_at: string
+        }
+        Insert: {
+          analytics_enabled?: boolean
+          catalog_enabled?: boolean
+          default_seo_description?: string
+          default_seo_title?: string
+          favicon_url?: string | null
+          id?: string
+          logo_url?: string | null
+          maintenance_mode?: boolean
+          registration_enabled?: boolean
+          site_name?: string
+          updated_at?: string
+        }
+        Update: {
+          analytics_enabled?: boolean
+          catalog_enabled?: boolean
+          default_seo_description?: string
+          default_seo_title?: string
+          favicon_url?: string | null
+          id?: string
+          logo_url?: string | null
+          maintenance_mode?: boolean
+          registration_enabled?: boolean
+          site_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      template_demos: {
+        Row: {
+          closing: Json
+          couple: Json
+          created_at: string
+          events: Json
+          gallery: Json
+          gift: Json
+          hero: Json
+          id: string
+          quote: Json
+          rsvp: Json
+          story: Json
+          template_id: string
+          updated_at: string
+          wishes: Json
+        }
+        Insert: {
+          closing?: Json
+          couple?: Json
+          created_at?: string
+          events?: Json
+          gallery?: Json
+          gift?: Json
+          hero?: Json
+          id?: string
+          quote?: Json
+          rsvp?: Json
+          story?: Json
+          template_id: string
+          updated_at?: string
+          wishes?: Json
+        }
+        Update: {
+          closing?: Json
+          couple?: Json
+          created_at?: string
+          events?: Json
+          gallery?: Json
+          gift?: Json
+          hero?: Json
+          id?: string
+          quote?: Json
+          rsvp?: Json
+          story?: Json
+          template_id?: string
+          updated_at?: string
+          wishes?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_demos_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: true
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_login: {
+        Args: {
+          p_username: string
+          p_password: string
+          p_client_ip?: string | null
+          p_user_agent?: string | null
+        }
+        Returns: Json
+      }
+      admin_verify_session: {
+        Args: {
+          p_token: string
+        }
+        Returns: Json
+      }
+      admin_logout: {
+        Args: {
+          p_token: string
+        }
+        Returns: Json
+      }
+      admin_list_accounts: {
+        Args: {
+          p_token: string
+        }
+        Returns: {
+          id: string
+          username: string
+          role: string
+          is_active: boolean
+          last_login_at: string | null
+          created_at: string
+          updated_at: string
+        }[]
+      }
+      admin_create_account: {
+        Args: {
+          p_token: string
+          p_new_username: string
+          p_new_password: string
+          p_new_role?: string
+        }
+        Returns: Json
+      }
+      admin_update_account: {
+        Args: {
+          p_token: string
+          p_target_id: string
+          p_username?: string | null
+          p_role?: string | null
+          p_is_active?: boolean | null
+        }
+        Returns: boolean
+      }
+      admin_reset_account_password: {
+        Args: {
+          p_token: string
+          p_target_id: string
+          p_new_password: string
+        }
+        Returns: boolean
+      }
+      admin_change_own_password: {
+        Args: {
+          p_token: string
+          p_old_password: string
+          p_new_password: string
+        }
+        Returns: boolean
+      }
+      admin_set_user_status: {
+        Args: {
+          p_token: string
+          p_user_id: string
+          p_status: string
+        }
+        Returns: boolean
+      }
+      admin_delete_user: {
+        Args: {
+          p_token: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      get_admin_invitations_list: {
+        Args: {
+          p_token: string
+          p_search?: string | null
+          p_status?: string | null
+          p_template?: string | null
+        }
+        Returns: {
+          id: string
+          title: string
+          slug: string
+          status: string
+          created_at: string
+          updated_at: string
+          published_at: string | null
+          user_id: string
+          owner_name: string | null
+          owner_email: string
+          template_id: string | null
+          template_name: string | null
+          template_slug: string | null
+        }[]
+      }
+      get_template_demo_data: {
+        Args: {
+          p_slug: string
+        }
+        Returns: Json
+      }
+      admin_save_template_demo: {
+        Args: {
+          p_token: string
+          p_template_id: string
+          p_demo_data: Json
+        }
+        Returns: Json
+      }
+      get_system_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          site_name: string
+          logo_url: string | null
+          favicon_url: string | null
+          default_seo_title: string
+          default_seo_description: string
+          maintenance_mode: boolean
+          registration_enabled: boolean
+          catalog_enabled: boolean
+          analytics_enabled: boolean
+        }
+      }
+      admin_update_system_settings: {
+        Args: {
+          p_token: string
+          p_settings: Json
+        }
+        Returns: boolean
+      }
+      get_admin_dashboard_stats_v2: {
+        Args: {
+          p_token?: string | null
+        }
+        Returns: {
+          total_users: number
+          users_today: number
+          total_invitations: number
+          invitations_draft: number
+          invitations_published: number
+          total_templates: number
+          active_templates: number
+          total_page_views: number
+          unique_visitors: number
+          demo_template_views: number
+          login_attempts: number
+          error_events: number
+        }
+      }
+      get_admin_traffic_logs: {
+        Args: {
+          p_token?: string | null
+          p_days?: number
+          p_limit?: number
+        }
+        Returns: {
+          id: string
+          event_name: string
+          path: string
+          session_id: string
+          user_id: string | null
+          template_id: string | null
+          template_name: string | null
+          invitation_id: string | null
+          invitation_slug: string | null
+          referrer: string | null
+          device_type: string
+          browser: string | null
+          created_at: string
+        }[]
+      }
       get_admin_login_email: {
         Args: {
           p_username: string

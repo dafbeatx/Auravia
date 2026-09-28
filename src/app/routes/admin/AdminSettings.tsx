@@ -1,142 +1,313 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import {
+  getSystemSettings,
+  updateSystemSettings,
+  type SystemSettingsData,
+} from '@/lib/admin';
+
 export function AdminSettings() {
+  const { isSuperAdmin } = useAdminAuth();
+  const [settings, setSettings] = useState<SystemSettingsData>({
+    site_name: 'Aurovia',
+    logo_url: null,
+    favicon_url: null,
+    default_seo_title: 'Aurovia - Undangan Pernikahan Digital Elegan',
+    default_seo_description: 'Platform undangan digital pernikahan eksklusif dengan desain kurasi modern, RSVP interaktif, dan sentuhan visual premium.',
+    maintenance_mode: false,
+    registration_enabled: true,
+    catalog_enabled: true,
+    analytics_enabled: true,
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    getSystemSettings()
+      .then((data) => {
+        if (isMounted) setSettings(data);
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setFeedback({
+            type: 'error',
+            message: err instanceof Error ? err.message : 'Gagal memuat pengaturan sistem.',
+          });
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuperAdmin) {
+      setFeedback({ type: 'error', message: 'Hanya Super Admin yang berhak mengubah pengaturan sistem.' });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setFeedback(null);
+      await updateSystemSettings(settings);
+      setFeedback({ type: 'success', message: 'Pengaturan sistem platform berhasil disimpan.' });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Gagal menyimpan pengaturan.',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12 max-w-4xl">
-      <div>
-        <h2 className="font-serif text-2xl font-bold text-[#006A71]">
-          Pengaturan Sistem &amp; Lingkungan
-        </h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Informasi konfigurasi arsitektur platform, penyimpanan aset, dan token desain Aurovia.
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="font-serif text-2xl font-bold text-primary">
+            Pengaturan Sistem &amp; Platform
+          </h2>
+          <p className="text-xs text-text-muted mt-1">
+            Konfigurasi global berbasis database untuk nama situs, identitas visual, SEO default, dan kontrol operasional.
+          </p>
+        </div>
+
+        <Link
+          to="/admin/settings/security"
+          className="px-4 py-2 bg-surface-elevated hover:bg-border text-primary text-xs font-semibold rounded-xl border border-border transition-colors min-h-[40px] inline-flex items-center gap-1.5 cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <span>Keamanan Kredensial Pribadi</span>
+        </Link>
       </div>
 
-      {/* Kartu Keamanan Akun Admin */}
-      <div className="bg-white p-6 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="font-serif text-base font-bold text-[#006A71]">
-              Keamanan Kredensial Administrator
-            </h3>
-            <p className="text-xs text-gray-600 leading-relaxed max-w-xl">
-              Atur username khusus dan perbarui password autentikasi admin. Password dikelola dan dienkripsi secara aman oleh Supabase Auth.
-            </p>
-          </div>
-          <a
-            href="/admin/settings/security"
-            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-[#006A71] hover:bg-[#00575d] text-white text-xs font-semibold shadow-xs min-h-[44px] transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-[#006A71]"
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl text-xs flex items-center justify-between ${
+            feedback.type === 'success'
+              ? 'bg-success/10 border border-success/30 text-success'
+              : 'bg-danger/10 border border-danger/30 text-danger'
+          }`}
+        >
+          <span>{feedback.message}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-xs font-bold hover:underline ml-4 cursor-pointer"
           >
-            Kelola Username &amp; Password
-          </a>
+            Tutup
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* Kartu Status Sistem */}
-      <div className="bg-white p-6 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-4">
-        <h3 className="font-serif text-base font-bold text-[#006A71] border-b border-[#9ACBD0]/30 pb-3">
-          Status Layanan
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40 flex items-center justify-between">
-            <div>
-              <span className="font-semibold text-gray-800 block">Supabase Database</span>
-              <span className="text-[11px] text-gray-500">PostgreSQL + RLS v1.4</span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              TERHUBUNG
-            </span>
-          </div>
-
-          <div className="p-4 rounded-xl bg-[#F2FEF7] border border-[#9ACBD0]/40 flex items-center justify-between">
-            <div>
-              <span className="font-semibold text-gray-800 block">Supabase Storage</span>
-              <span className="text-[11px] text-gray-500">Bucket: template-assets</span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              AKTIF (PUBLIC)
-            </span>
-          </div>
+      {loading ? (
+        <div className="bg-surface p-12 rounded-2xl border border-border flex flex-col items-center justify-center space-y-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-text-muted">Memuat konfigurasi sistem...</p>
         </div>
-      </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Identitas Situs & Branding */}
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-2xs space-y-4">
+            <h3 className="font-serif text-base font-bold text-primary border-b border-border pb-3">
+              Identitas Situs &amp; Branding
+            </h3>
 
-      {/* Kartu Token Warna Global Website */}
-      <div className="bg-white p-6 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-4">
-        <h3 className="font-serif text-base font-bold text-[#006A71] border-b border-[#9ACBD0]/30 pb-3">
-          Design Token &amp; Sistem Warna
-        </h3>
-        <p className="text-xs text-gray-600 leading-relaxed">
-          Seluruh halaman Aurovia menggunakan standar palet berikut sebagai fondasi visual editorial modern:
-        </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-text-primary mb-1">
+                  Nama Platform / Situs
+                </label>
+                <input
+                  type="text"
+                  required
+                  disabled={!isSuperAdmin}
+                  value={settings.site_name}
+                  onChange={(e) => setSettings({ ...settings, site_name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border rounded-xl text-xs text-text-primary focus:ring-2 focus:ring-primary min-h-[40px] disabled:opacity-60"
+                />
+              </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-          {/* Primary Dark */}
-          <div className="space-y-2">
-            <div className="h-16 rounded-xl bg-[#006A71] shadow-2xs border border-black/10 flex items-end p-2">
-              <span className="text-[10px] font-mono text-white font-bold">#006A71</span>
+              <div>
+                <label className="block text-xs font-semibold text-text-primary mb-1">
+                  URL Logo Publik
+                </label>
+                <input
+                  type="text"
+                  disabled={!isSuperAdmin}
+                  value={settings.logo_url || ''}
+                  onChange={(e) => setSettings({ ...settings, logo_url: e.target.value || null })}
+                  placeholder="/logo.svg"
+                  className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border rounded-xl text-xs text-text-primary focus:ring-2 focus:ring-primary min-h-[40px] disabled:opacity-60"
+                />
+              </div>
             </div>
+
             <div>
-              <p className="text-xs font-bold text-gray-800">Primary Dark</p>
-              <p className="text-[10px] text-gray-500">Heading, CTA utama, navigasi aktif</p>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                URL Favicon
+              </label>
+              <input
+                type="text"
+                disabled={!isSuperAdmin}
+                value={settings.favicon_url || ''}
+                onChange={(e) => setSettings({ ...settings, favicon_url: e.target.value || null })}
+                placeholder="/favicon.ico"
+                className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border rounded-xl text-xs text-text-primary focus:ring-2 focus:ring-primary min-h-[40px] disabled:opacity-60"
+              />
             </div>
           </div>
 
-          {/* Primary */}
-          <div className="space-y-2">
-            <div className="h-16 rounded-xl bg-[#48A6A7] shadow-2xs border border-black/10 flex items-end p-2">
-              <span className="text-[10px] font-mono text-white font-bold">#48A6A7</span>
-            </div>
+          {/* Pengaturan SEO Bawaan */}
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-2xs space-y-4">
+            <h3 className="font-serif text-base font-bold text-primary border-b border-border pb-3">
+              Pengaturan Mesin Pencari (Default SEO)
+            </h3>
+
             <div>
-              <p className="text-xs font-bold text-gray-800">Primary</p>
-              <p className="text-[10px] text-gray-500">Tombol sekunder, ikon, highlight</p>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Default SEO Title
+              </label>
+              <input
+                type="text"
+                disabled={!isSuperAdmin}
+                value={settings.default_seo_title}
+                onChange={(e) => setSettings({ ...settings, default_seo_title: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-surface-elevated border border-border rounded-xl text-xs text-text-primary focus:ring-2 focus:ring-primary min-h-[40px] disabled:opacity-60"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Default SEO Meta Description
+              </label>
+              <textarea
+                rows={3}
+                disabled={!isSuperAdmin}
+                value={settings.default_seo_description}
+                onChange={(e) => setSettings({ ...settings, default_seo_description: e.target.value })}
+                className="w-full px-3.5 py-2 bg-surface-elevated border border-border rounded-xl text-xs text-text-primary focus:ring-2 focus:ring-primary disabled:opacity-60"
+              />
             </div>
           </div>
 
-          {/* Light */}
-          <div className="space-y-2">
-            <div className="h-16 rounded-xl bg-[#9ACBD0] shadow-2xs border border-black/10 flex items-end p-2">
-              <span className="text-[10px] font-mono text-gray-900 font-bold">#9ACBD0</span>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-800">Light</p>
-              <p className="text-[10px] text-gray-500">Border, soft card, aksen lembut</p>
+          {/* Kontrol Layanan & Operasional Platform */}
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-2xs space-y-4">
+            <h3 className="font-serif text-base font-bold text-primary border-b border-border pb-3">
+              Kontrol Layanan &amp; Operasional
+            </h3>
+
+            <div className="space-y-4">
+              {/* Maintenance Mode */}
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-elevated">
+                <div>
+                  <span className="text-xs font-bold text-text-primary block">
+                    Mode Pemeliharaan (Maintenance Mode)
+                  </span>
+                  <span className="text-[11px] text-text-muted">
+                    Jika aktif, pengunjung situs publik akan melihat pemberitahuan pemeliharaan sistem.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  disabled={!isSuperAdmin}
+                  checked={settings.maintenance_mode}
+                  onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
+                  className="w-4 h-4 text-primary rounded border-border focus:ring-primary cursor-pointer disabled:opacity-60"
+                />
+              </div>
+
+              {/* Registration Toggle */}
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-elevated">
+                <div>
+                  <span className="text-xs font-bold text-text-primary block">
+                    Pendaftaran Pengguna Baru (Registration Enabled)
+                  </span>
+                  <span className="text-[11px] text-text-muted">
+                    Mengizinkan atau menutup pendaftaran akun baru bagi pengunjung umum.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  disabled={!isSuperAdmin}
+                  checked={settings.registration_enabled}
+                  onChange={(e) => setSettings({ ...settings, registration_enabled: e.target.checked })}
+                  className="w-4 h-4 text-primary rounded border-border focus:ring-primary cursor-pointer disabled:opacity-60"
+                />
+              </div>
+
+              {/* Catalog Enabled */}
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-elevated">
+                <div>
+                  <span className="text-xs font-bold text-text-primary block">
+                    Katalog Template Publik (Template Catalog Enabled)
+                  </span>
+                  <span className="text-[11px] text-text-muted">
+                    Tampilkan seksi etalase katalog template di halaman beranda publik.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  disabled={!isSuperAdmin}
+                  checked={settings.catalog_enabled}
+                  onChange={(e) => setSettings({ ...settings, catalog_enabled: e.target.checked })}
+                  className="w-4 h-4 text-primary rounded border-border focus:ring-primary cursor-pointer disabled:opacity-60"
+                />
+              </div>
+
+              {/* Analytics Enabled */}
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-elevated">
+                <div>
+                  <span className="text-xs font-bold text-text-primary block">
+                    Pelacakan Analitik Internal (Analytics Tracking Enabled)
+                  </span>
+                  <span className="text-[11px] text-text-muted">
+                    Mencatat data page views, pengunjung unik, dan konversi demo secara privacy-friendly.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  disabled={!isSuperAdmin}
+                  checked={settings.analytics_enabled}
+                  onChange={(e) => setSettings({ ...settings, analytics_enabled: e.target.checked })}
+                  className="w-4 h-4 text-primary rounded border-border focus:ring-primary cursor-pointer disabled:opacity-60"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Background */}
-          <div className="space-y-2">
-            <div className="h-16 rounded-xl bg-[#F2FEF7] shadow-2xs border border-gray-200 flex items-end p-2">
-              <span className="text-[10px] font-mono text-gray-700 font-bold">#F2FEF7</span>
+          {/* Tombol Simpan */}
+          {isSuperAdmin ? (
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold shadow-xs min-h-[44px] transition-all cursor-pointer disabled:opacity-50"
+              >
+                {saving ? 'Menyimpan Pengaturan...' : 'Simpan Pengaturan Platform'}
+              </button>
             </div>
-            <div>
-              <p className="text-xs font-bold text-gray-800">Background</p>
-              <p className="text-[10px] text-gray-500">Latar halaman &amp; seksi konten</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Kartu Informasi Aplikasi */}
-      <div className="bg-white p-6 rounded-2xl border border-[#9ACBD0]/60 shadow-2xs space-y-3">
-        <h3 className="font-serif text-base font-bold text-[#006A71]">
-          Informasi Platform
-        </h3>
-        <div className="text-xs text-gray-600 space-y-2">
-          <p>
-            <strong>Aplikasi:</strong> Aurovia Platform
-          </p>
-          <p>
-            <strong>Versi Admin Panel:</strong> v1
-          </p>
-          <p>
-            <strong>Deployment:</strong> Vercel Production + Supabase
-          </p>
-          <p>
-            <strong>Arsitektur Keamanan:</strong> Server-enforced PostgreSQL Row Level Security (RLS) &amp; Security Definer authorization.
-          </p>
-        </div>
-      </div>
+          ) : (
+            <p className="text-[11px] text-text-muted text-right">
+              Anda masuk sebagai Admin (read-only). Hanya Super Admin yang dapat menyimpan perubahan pengaturan sistem.
+            </p>
+          )}
+        </form>
+      )}
     </div>
   );
 }
+
+export default AdminSettings;
