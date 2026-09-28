@@ -435,7 +435,7 @@ export function AdminSettings() {
 
               <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
                 <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Status Sesi</span>
-                <span className="font-semibold text-emerald-700 mt-1 block flex items-center gap-1.5">
+                <span className="font-semibold text-emerald-700 mt-1 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   Aktif (Session Storage)
                 </span>
