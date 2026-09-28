@@ -203,7 +203,7 @@ CREATE OR REPLACE FUNCTION public.admin_login(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_user public.admin_users;
@@ -355,7 +355,7 @@ CREATE OR REPLACE FUNCTION public.admin_create_account(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_caller public.admin_users;
@@ -475,7 +475,7 @@ CREATE OR REPLACE FUNCTION public.admin_reset_account_password(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_caller public.admin_users;
@@ -511,7 +511,7 @@ CREATE OR REPLACE FUNCTION public.admin_change_own_password(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_caller public.admin_users;
