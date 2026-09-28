@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MonogramFrame } from '@/components/template/ornaments';
 import { TemplateCarousel } from '@/components/landing/TemplateCarousel';
 import { trackEvent } from '@/lib/analytics';
+import { getSystemSettings, type SystemSettingsData } from '@/lib/admin';
 
 export function LandingPage() {
   const { user } = useAuth();
@@ -11,6 +12,24 @@ export function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState<'cover' | 'couple' | 'event' | 'gallery' | 'rsvp'>('cover');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [dynamicContent, setDynamicContent] = useState<SystemSettingsData['landing_content'] | null>(null);
+
+  // Ambil konten kustomisasi beranda dari pengaturan database
+  useEffect(() => {
+    let isMounted = true;
+    getSystemSettings()
+      .then((settings) => {
+        if (isMounted && settings.landing_content) {
+          setDynamicContent(settings.landing_content);
+        }
+      })
+      .catch(() => {
+        // Fallback aman ke teks bawaan jika gagal memuat
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Monitor scroll untuk efek visual halus pada sticky navbar
   useEffect(() => {
@@ -53,6 +72,17 @@ export function LandingPage() {
   const createInvitationUrl = user
     ? '/dashboard/invitations/new'
     : '/login?redirect=%2Fdashboard%2Finvitations%2Fnew';
+
+  const heroHeadline = dynamicContent?.hero_headline || 'Undangan Digital yang Dibuat untuk Cerita yang Berarti.';
+  const heroSubheadline = dynamicContent?.hero_subheadline || 'Bagikan momen pernikahan Anda melalui undangan digital yang elegan, personal, dan mudah dibagikan.';
+  const heroCtaText = dynamicContent?.hero_cta_text || 'Buat Undangan';
+  const heroCtaLink = dynamicContent?.hero_cta_link || createInvitationUrl;
+  const secondaryCtaText = dynamicContent?.secondary_cta_text || 'Lihat Template';
+  const secondaryCtaLink = dynamicContent?.secondary_cta_link || '#template';
+  const isSectionVisible = (key: string) => {
+    if (!dynamicContent?.section_visibility) return true;
+    return dynamicContent.section_visibility[key] !== false;
+  };
 
   return (
     <div className="min-h-screen bg-background text-text-primary selection:bg-accent-light/40 antialiased font-sans flex flex-col">
@@ -190,37 +220,56 @@ export function LandingPage() {
         {/* ================================================================== */}
         {/* SECTION 1: HERO                                                    */}
         {/* ================================================================== */}
-        <section id="hero" className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Kolom Teks Hero */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-secondary/30 bg-secondary/10 text-primary text-xs font-semibold tracking-wide">
-                <span>Platform Undangan Digital Terstruktur</span>
-              </div>
+        {isSectionVisible('hero') && (
+          <section id="hero" className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+              {/* Kolom Teks Hero */}
+              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-secondary/30 bg-secondary/10 text-primary text-xs font-semibold tracking-wide">
+                  <span>Platform Undangan Digital Terstruktur</span>
+                </div>
 
-              <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-text-primary font-normal leading-tight tracking-tight">
-                Undangan Digital yang Dibuat untuk Cerita yang Berarti.
-              </h1>
+                <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-text-primary font-normal leading-tight tracking-tight">
+                  {heroHeadline}
+                </h1>
 
-              <p className="text-sm sm:text-base text-text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Bagikan momen pernikahan Anda melalui undangan digital yang elegan, personal, dan mudah dibagikan.
-              </p>
+                <p className="text-sm sm:text-base text-text-muted leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                  {heroSubheadline}
+                </p>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
-                <a
-                  href="#template"
-                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-border bg-surface hover:bg-surface-elevated text-text-primary text-sm font-semibold tracking-wide transition-all min-h-[48px] cursor-pointer"
-                >
-                  Lihat Template
-                </a>
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
+                  {secondaryCtaLink.startsWith('#') || secondaryCtaLink.startsWith('http') ? (
+                    <a
+                      href={secondaryCtaLink}
+                      className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-border bg-surface hover:bg-surface-elevated text-text-primary text-sm font-semibold tracking-wide transition-all min-h-[48px] cursor-pointer"
+                    >
+                      {secondaryCtaText}
+                    </a>
+                  ) : (
+                    <Link
+                      to={secondaryCtaLink}
+                      className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-border bg-surface hover:bg-surface-elevated text-text-primary text-sm font-semibold tracking-wide transition-all min-h-[48px] cursor-pointer"
+                    >
+                      {secondaryCtaText}
+                    </Link>
+                  )}
 
-                <Link
-                  to={createInvitationUrl}
-                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px] cursor-pointer"
-                >
-                  Buat Undangan
-                </Link>
-              </div>
+                  {heroCtaLink.startsWith('http') ? (
+                    <a
+                      href={heroCtaLink}
+                      className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px] cursor-pointer"
+                    >
+                      {heroCtaText}
+                    </a>
+                  ) : (
+                    <Link
+                      to={heroCtaLink}
+                      className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold tracking-wide transition-all shadow-sm active:scale-98 min-h-[48px] cursor-pointer"
+                    >
+                      {heroCtaText}
+                    </Link>
+                  )}
+                </div>
 
               <p className="text-xs text-text-subtle pt-1">
                 Gratis untuk mulai membuat undangan pertama Anda
@@ -298,6 +347,7 @@ export function LandingPage() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ================================================================== */}
         {/* SECTION 2: TRUST / VALUE STRIP                                     */}

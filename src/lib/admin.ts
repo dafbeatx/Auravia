@@ -115,6 +115,36 @@ export interface SystemSettingsData {
   site_name: string;
   logo_url: string | null;
   favicon_url: string | null;
+  brand_color?: string | null;
+  contact_email?: string | null;
+  social_links?: {
+    instagram?: string;
+    whatsapp?: string;
+    tiktok?: string;
+    [key: string]: string | undefined;
+  } | null;
+  landing_content?: {
+    hero_headline?: string;
+    hero_subheadline?: string;
+    hero_cta_text?: string;
+    hero_cta_link?: string;
+    secondary_cta_text?: string;
+    secondary_cta_link?: string;
+    hero_image_url?: string;
+    section_visibility?: {
+      hero?: boolean;
+      features?: boolean;
+      template_showcase?: boolean;
+      invitation_preview?: boolean;
+      process?: boolean;
+      faq?: boolean;
+      cta_banner?: boolean;
+      [key: string]: boolean | undefined;
+    };
+    features?: Array<{ id: string; title: string; description: string }>;
+    faq_items?: Array<{ question: string; answer: string }>;
+    [key: string]: unknown;
+  } | null;
   default_seo_title: string;
   default_seo_description: string;
   maintenance_mode: boolean;
@@ -573,34 +603,54 @@ export function getTemplateAssetPublicUrl(path: string | null | undefined): stri
  * Mengambil pengaturan sistem platform dari database.
  */
 export async function getSystemSettings(): Promise<SystemSettingsData> {
+  const defaultSettings: SystemSettingsData = {
+    site_name: 'Aurovia',
+    logo_url: null,
+    favicon_url: null,
+    brand_color: '#006A71',
+    contact_email: 'support@aurovia.id',
+    social_links: {
+      instagram: 'https://instagram.com/aurovia.id',
+      whatsapp: 'https://wa.me/6281234567890',
+      tiktok: 'https://tiktok.com/@aurovia.id',
+    },
+    landing_content: {
+      hero_headline: 'Abadikan Momen Sakral dalam Lembaran Digital Abadi',
+      hero_subheadline: 'Desain kurasi eksklusif, RSVP terkonfirmasi, dan tata visual anggun untuk pernikahan impian Anda.',
+      hero_cta_text: 'Mulai Buat Undangan',
+      hero_cta_link: '/register',
+      secondary_cta_text: 'Lihat Katalog Template',
+      secondary_cta_link: '/#template',
+      hero_image_url: '',
+      section_visibility: {
+        hero: true,
+        features: true,
+        template_showcase: true,
+        invitation_preview: true,
+        process: true,
+        faq: true,
+        cta_banner: true,
+      },
+    },
+    default_seo_title: 'Aurovia - Undangan Pernikahan Digital Elegan',
+    default_seo_description: 'Platform undangan digital pernikahan eksklusif dengan desain kurasi modern, RSVP interaktif, dan sentuhan visual premium.',
+    maintenance_mode: false,
+    registration_enabled: true,
+    catalog_enabled: true,
+    analytics_enabled: true,
+  };
+
   try {
     const { data, error } = await supabase.rpc('get_system_settings');
     if (error || !data) {
-      return {
-        site_name: 'Aurovia',
-        logo_url: null,
-        favicon_url: null,
-        default_seo_title: 'Aurovia - Undangan Pernikahan Digital Elegan',
-        default_seo_description: 'Platform undangan digital pernikahan eksklusif dengan desain kurasi modern, RSVP interaktif, dan sentuhan visual premium.',
-        maintenance_mode: false,
-        registration_enabled: true,
-        catalog_enabled: true,
-        analytics_enabled: true,
-      };
+      return defaultSettings;
     }
-    return data as unknown as SystemSettingsData;
-  } catch {
     return {
-      site_name: 'Aurovia',
-      logo_url: null,
-      favicon_url: null,
-      default_seo_title: 'Aurovia - Undangan Pernikahan Digital Elegan',
-      default_seo_description: 'Platform undangan digital pernikahan eksklusif dengan desain kurasi modern, RSVP interaktif, dan sentuhan visual premium.',
-      maintenance_mode: false,
-      registration_enabled: true,
-      catalog_enabled: true,
-      analytics_enabled: true,
+      ...defaultSettings,
+      ...(data as unknown as SystemSettingsData),
     };
+  } catch {
+    return defaultSettings;
   }
 }
 
@@ -615,7 +665,7 @@ export async function updateSystemSettings(
 
   const { error } = await supabase.rpc('admin_update_system_settings', {
     p_token: token,
-    p_settings: settings,
+    p_settings: settings as unknown as import('@/types/database').Json,
   });
 
   if (error) {
@@ -820,4 +870,145 @@ export async function duplicateAdminTemplate(templateId: string): Promise<string
 
   return data as string;
 }
+
+export interface PlatformMediaItem {
+  id: string;
+  url: string;
+  name: string;
+  type: 'hero' | 'couple' | 'gallery' | 'preview' | 'cover' | 'other';
+  template_id?: string;
+  template_name?: string;
+  storage_path?: string;
+}
+
+/**
+ * Mengumpulkan semua aset media template dan foto demo dari database platform.
+ */
+export async function listAllPlatformMedia(): Promise<PlatformMediaItem[]> {
+  const mediaItems: PlatformMediaItem[] = [];
+  const seenUrls = new Set<string>();
+
+  try {
+    const templates = await getAdminTemplates();
+    for (const t of templates) {
+      if (t.thumbnail_url && !seenUrls.has(t.thumbnail_url)) {
+        seenUrls.add(t.thumbnail_url);
+        mediaItems.push({
+          id: `thumb-${t.id}`,
+          url: t.thumbnail_url,
+          name: `${t.name} Thumbnail`,
+          type: 'preview',
+          template_id: t.id,
+          template_name: t.name,
+        });
+      }
+
+      if (t.preview_desktop_path && !seenUrls.has(t.preview_desktop_path)) {
+        seenUrls.add(t.preview_desktop_path);
+        const url = getTemplateAssetPublicUrl(t.preview_desktop_path);
+        mediaItems.push({
+          id: `prev-desk-${t.id}`,
+          url,
+          name: `${t.name} Desktop Preview`,
+          type: 'preview',
+          template_id: t.id,
+          template_name: t.name,
+          storage_path: t.preview_desktop_path,
+        });
+      }
+
+      if (t.preview_mobile_path && !seenUrls.has(t.preview_mobile_path)) {
+        seenUrls.add(t.preview_mobile_path);
+        const url = getTemplateAssetPublicUrl(t.preview_mobile_path);
+        mediaItems.push({
+          id: `prev-mob-${t.id}`,
+          url,
+          name: `${t.name} Mobile Preview`,
+          type: 'preview',
+          template_id: t.id,
+          template_name: t.name,
+          storage_path: t.preview_mobile_path,
+        });
+      }
+
+      // Ambil demo media
+      try {
+        const demo = await getTemplateDemoData(t.id);
+        if (demo) {
+          const hero = demo.hero as Record<string, unknown> | undefined;
+          if (hero?.background_image && typeof hero.background_image === 'string' && !seenUrls.has(hero.background_image)) {
+            seenUrls.add(hero.background_image);
+            mediaItems.push({
+              id: `hero-bg-${t.id}`,
+              url: hero.background_image,
+              name: `${t.name} Hero Background`,
+              type: 'hero',
+              template_id: t.id,
+              template_name: t.name,
+            });
+          }
+          if (hero?.cover_image && typeof hero.cover_image === 'string' && !seenUrls.has(hero.cover_image)) {
+            seenUrls.add(hero.cover_image);
+            mediaItems.push({
+              id: `hero-cov-${t.id}`,
+              url: hero.cover_image,
+              name: `${t.name} Hero Cover`,
+              type: 'cover',
+              template_id: t.id,
+              template_name: t.name,
+            });
+          }
+
+          const couple = demo.couple as Record<string, unknown> | undefined;
+          if (couple?.groom_photo && typeof couple.groom_photo === 'string' && !seenUrls.has(couple.groom_photo)) {
+            seenUrls.add(couple.groom_photo);
+            mediaItems.push({
+              id: `cpl-g-${t.id}`,
+              url: couple.groom_photo,
+              name: `${t.name} Foto Mempelai Pria`,
+              type: 'couple',
+              template_id: t.id,
+              template_name: t.name,
+            });
+          }
+          if (couple?.bride_photo && typeof couple.bride_photo === 'string' && !seenUrls.has(couple.bride_photo)) {
+            seenUrls.add(couple.bride_photo);
+            mediaItems.push({
+              id: `cpl-b-${t.id}`,
+              url: couple.bride_photo,
+              name: `${t.name} Foto Mempelai Wanita`,
+              type: 'couple',
+              template_id: t.id,
+              template_name: t.name,
+            });
+          }
+
+          if (Array.isArray(demo.gallery)) {
+            demo.gallery.forEach((item: unknown, idx: number) => {
+              const gItem = item as { image_url?: string; caption?: string };
+              if (gItem?.image_url && !seenUrls.has(gItem.image_url)) {
+                seenUrls.add(gItem.image_url);
+                mediaItems.push({
+                  id: `gal-${t.id}-${idx}`,
+                  url: gItem.image_url,
+                  name: gItem.caption || `${t.name} Galeri ${idx + 1}`,
+                  type: 'gallery',
+                  template_id: t.id,
+                  template_name: t.name,
+                });
+              }
+            });
+          }
+        }
+      } catch {
+        // Abaikan kesalahan pembacaan demo spesifik per template
+      }
+    }
+  } catch (err) {
+    console.error('Gagal mengambil daftar media:', err);
+  }
+
+  return mediaItems;
+}
+
 

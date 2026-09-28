@@ -25,6 +25,8 @@ const AdminSettings = lazy(() => import('@/app/routes/admin/AdminSettings').then
 const AdminSecuritySettings = lazy(() => import('@/app/routes/admin/AdminSecuritySettings').then((m) => ({ default: m.AdminSecuritySettings })));
 const AdminAccounts = lazy(() => import('@/app/routes/admin/AdminAccounts').then((m) => ({ default: m.AdminAccounts })));
 const AdminActivity = lazy(() => import('@/app/routes/admin/AdminActivity').then((m) => ({ default: m.AdminActivity })));
+const AdminContent = lazy(() => import('@/app/routes/admin/AdminContent').then((m) => ({ default: m.AdminContent })));
+const AdminMedia = lazy(() => import('@/app/routes/admin/AdminMedia').then((m) => ({ default: m.AdminMedia })));
 const AdminLogin = lazy(() => import('@/app/routes/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })));
 
 /**
@@ -98,12 +100,24 @@ export const router = createBrowserRouter([
                 element: <AdminDashboard />,
               },
               {
+                path: 'dashboard',
+                element: <AdminDashboard />,
+              },
+              {
                 path: 'traffic',
                 element: <AdminTraffic />,
               },
               {
                 path: 'analytics',
                 element: <Navigate to="/admin/traffic" replace />,
+              },
+              {
+                path: 'content',
+                element: <AdminContent />,
+              },
+              {
+                path: 'media',
+                element: <AdminMedia />,
               },
               {
                 path: 'users',
@@ -120,6 +134,10 @@ export const router = createBrowserRouter([
               {
                 path: 'templates/:id',
                 element: <AdminTemplateDetail />,
+              },
+              {
+                path: 'templates/:id/media',
+                element: <AdminTemplateDetail defaultTab="media" />,
               },
               {
                 path: 'demo',

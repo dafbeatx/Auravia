@@ -521,6 +521,42 @@ export function AdminSettings() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-gray-700 block">
+                      Warna Brand Utama (Primary Color)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={settings.brand_color || '#006A71'}
+                        onChange={(e) => setSettings({ ...settings, brand_color: e.target.value })}
+                        className="w-10 h-10 rounded-lg border border-[#9ACBD0]/60 cursor-pointer p-0.5 bg-white"
+                      />
+                      <input
+                        type="text"
+                        value={settings.brand_color || '#006A71'}
+                        onChange={(e) => setSettings({ ...settings, brand_color: e.target.value })}
+                        placeholder="#006A71"
+                        className="flex-1 px-3.5 py-2.5 bg-[#F2FEF7]/60 border border-[#9ACBD0]/60 rounded-xl text-xs font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#006A71] min-h-[44px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-700 block">
+                      Email Kontak Platform
+                    </label>
+                    <input
+                      type="email"
+                      value={settings.contact_email || ''}
+                      onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
+                      placeholder="support@aurovia.id"
+                      className="w-full px-3.5 py-2.5 bg-[#F2FEF7]/60 border border-[#9ACBD0]/60 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#006A71] min-h-[44px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-700 block">
                       URL Logo
                     </label>
                     <input
@@ -543,6 +579,71 @@ export function AdminSettings() {
                       placeholder="/favicon.ico"
                       className="w-full px-3.5 py-2.5 bg-[#F2FEF7]/60 border border-[#9ACBD0]/60 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#006A71] min-h-[44px]"
                     />
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                <div className="space-y-3 pt-2 border-t border-[#9ACBD0]/30">
+                  <label className="text-xs font-semibold text-gray-700 block">
+                    Tautan Media Sosial Resmi
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-semibold text-gray-500 uppercase">Instagram</span>
+                      <input
+                        type="text"
+                        value={settings.social_links?.instagram || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            social_links: {
+                              ...settings.social_links,
+                              instagram: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="https://instagram.com/..."
+                        className="w-full px-3 py-2 bg-[#F2FEF7]/60 border border-[#9ACBD0]/60 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#006A71] min-h-[40px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-semibold text-gray-500 uppercase">WhatsApp</span>
+                      <input
+                        type="text"
+                        value={settings.social_links?.whatsapp || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            social_links: {
+                              ...settings.social_links,
+                              whatsapp: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="https://wa.me/..."
+                        className="w-full px-3 py-2 bg-[#F2FEF7]/60 border border-[#9ACBD0]/60 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#006A71] min-h-[40px]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-semibold text-gray-500 uppercase">TikTok</span>
+                      <input
+                        type="text"
+                        value={settings.social_links?.tiktok || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            social_links: {
+                              ...settings.social_links,
+                              tiktok: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="https://tiktok.com/@..."
+                        className="w-full px-3 py-2 bg-[#F2FEF7]/60 border border-[#9ACBD0]/60 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#006A71] min-h-[40px]"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -630,18 +731,24 @@ export function AdminSettings() {
                     />
                   </label>
 
-                  <label className="flex items-center justify-between p-3 rounded-xl bg-amber-50/60 border border-amber-200/60 cursor-pointer">
-                    <div>
-                      <span className="text-xs font-semibold text-amber-900 block">Mode Pemeliharaan (Maintenance Mode)</span>
-                      <span className="text-[11px] text-amber-700">Tampilkan halaman pemeliharaan kepada pengunjung biasa</span>
+                  <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 space-y-2">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <div>
+                        <span className="text-xs font-semibold text-amber-900 block">Mode Pemeliharaan (Maintenance Mode)</span>
+                        <span className="text-[11px] text-amber-700">Tampilkan halaman pemeliharaan kepada pengunjung publik biasa</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.maintenance_mode}
+                        onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
+                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-amber-300"
+                      />
+                    </label>
+                    <div className="pt-2 border-t border-amber-200/40 text-[11px] text-amber-800 flex items-start gap-1.5">
+                      <span className="font-semibold text-amber-900">Emergency Bypass Super Admin:</span>
+                      <span>Sesi login Super Admin aktif memiliki izin akses darurat untuk tetap mengelola database, konten, dan konfigurasi tanpa diblokir oleh halaman pemeliharaan.</span>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={settings.maintenance_mode}
-                      onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
-                      className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-amber-300"
-                    />
-                  </label>
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-3">

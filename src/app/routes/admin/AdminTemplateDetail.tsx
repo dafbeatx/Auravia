@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   getAdminTemplateById,
   createAdminTemplate,
@@ -55,12 +55,18 @@ interface BankItem {
   is_enabled: boolean;
 }
 
-export function AdminTemplateDetail() {
+interface AdminTemplateDetailProps {
+  defaultTab?: 'identity' | 'theme' | 'demo' | 'media';
+}
+
+export function AdminTemplateDetail({ defaultTab }: AdminTemplateDetailProps = {}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const isNew = id === 'new';
 
-  const [activeTab, setActiveTab] = useState<'identity' | 'theme' | 'demo' | 'media'>('identity');
+  const initialTab = defaultTab || (location.pathname.endsWith('/media') ? 'media' : 'identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'theme' | 'demo' | 'media'>(initialTab);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
