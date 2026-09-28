@@ -115,7 +115,10 @@ export async function trackEvent({
   };
 
   try {
-    await supabase.from('analytics_events').insert(payload);
+    // Timeout safeguard agar tracking tidak pernah blocking atau menggantung
+    const insertPromise = supabase.from('analytics_events').insert(payload);
+    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500));
+    await Promise.race([insertPromise, timeoutPromise]);
   } catch {
     // Fail silently untuk analytics tanpa melempar runtime exception ke UI
   }

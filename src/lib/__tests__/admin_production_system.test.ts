@@ -205,7 +205,7 @@ describe('Admin Production System & Security Tests', () => {
   describe('5. Admin Navigation & Structural Integrity', () => {
     const layoutPath = path.resolve(__dirname, '../../components/layout/AdminLayout.tsx');
 
-    it('AdminLayout memiliki seluruh 8 menu navigasi utama', () => {
+    it('AdminLayout memiliki seluruh menu navigasi utama termasuk Activity', () => {
       const content = fs.readFileSync(layoutPath, 'utf-8');
       expect(content).toContain('to: \'/admin\'');
       expect(content).toContain('to: \'/admin/traffic\'');
@@ -213,8 +213,9 @@ describe('Admin Production System & Security Tests', () => {
       expect(content).toContain('to: \'/admin/invitations\'');
       expect(content).toContain('to: \'/admin/templates\'');
       expect(content).toContain('to: \'/admin/demo\'');
+      expect(content).toContain('to: \'/admin/activity\'');
       expect(content).toContain('to: \'/admin/settings\'');
-      expect(content).toContain('to: \'/admin/accounts\'');
+      expect(content).toContain('/admin/accounts');
     });
 
     it('AdminLayout menyajikan drawer mobile responsif tanpa horizontal overflow', () => {
@@ -224,4 +225,41 @@ describe('Admin Production System & Security Tests', () => {
       expect(content).toContain('min-w-0');
     });
   });
+
+  describe('6. Activity Logs & Extended Admin Management Migration', () => {
+    const extMigrationPath = path.resolve(
+      __dirname,
+      '../../../supabase/migrations/20260928030000_admin_activity_and_extended_management.sql'
+    );
+
+    it('berkas migrasi 20260928030000_admin_activity_and_extended_management.sql tersedia', () => {
+      expect(fs.existsSync(extMigrationPath)).toBe(true);
+    });
+
+    it('membuat tabel admin_activity_logs dengan RLS', () => {
+      const sql = fs.readFileSync(extMigrationPath, 'utf-8');
+      expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.admin_activity_logs');
+      expect(sql).toContain('admin_username TEXT NOT NULL');
+      expect(sql).toContain('action TEXT NOT NULL');
+      expect(sql).toContain('metadata JSONB');
+      expect(sql).toContain('ALTER TABLE public.admin_activity_logs ENABLE ROW LEVEL SECURITY');
+    });
+
+    it('mendefinisikan RPCs log aktivitas, update profile, dan duplicate template', () => {
+      const sql = fs.readFileSync(extMigrationPath, 'utf-8');
+      expect(sql).toContain('CREATE OR REPLACE FUNCTION public.log_admin_action');
+      expect(sql).toContain('CREATE OR REPLACE FUNCTION public.get_admin_activity_logs');
+      expect(sql).toContain('CREATE OR REPLACE FUNCTION public.admin_record_activity');
+      expect(sql).toContain('CREATE OR REPLACE FUNCTION public.admin_update_profile');
+      expect(sql).toContain('CREATE OR REPLACE FUNCTION public.admin_duplicate_template');
+    });
+
+    it('memperbarui RPC login, logout, dan password change untuk mencatat log otomatis', () => {
+      const sql = fs.readFileSync(extMigrationPath, 'utf-8');
+      expect(sql).toContain('public.log_admin_action');
+      expect(sql).toContain('admin_password_changed');
+      expect(sql).toContain('display_name');
+    });
+  });
 });
+

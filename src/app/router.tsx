@@ -24,6 +24,7 @@ const AdminUsers = lazy(() => import('@/app/routes/admin/AdminUsers').then((m) =
 const AdminSettings = lazy(() => import('@/app/routes/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })));
 const AdminSecuritySettings = lazy(() => import('@/app/routes/admin/AdminSecuritySettings').then((m) => ({ default: m.AdminSecuritySettings })));
 const AdminAccounts = lazy(() => import('@/app/routes/admin/AdminAccounts').then((m) => ({ default: m.AdminAccounts })));
+const AdminActivity = lazy(() => import('@/app/routes/admin/AdminActivity').then((m) => ({ default: m.AdminActivity })));
 const AdminLogin = lazy(() => import('@/app/routes/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })));
 
 /**
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
         children: [
           {
             path: 'templates/:slug/demo',
+            element: <TemplateDemo />,
+          },
+          {
+            path: 'demo/:slug',
             element: <TemplateDemo />,
           },
           {
@@ -119,6 +124,10 @@ export const router = createBrowserRouter([
               {
                 path: 'demo',
                 element: <AdminDemo />,
+              },
+              {
+                path: 'activity',
+                element: <AdminActivity />,
               },
               {
                 path: 'settings',

@@ -6,6 +6,7 @@ const ADMIN_USER_KEY = 'aurovia_admin_session_user';
 export interface AdminUserSession {
   id: string;
   username: string;
+  display_name?: string;
   role: 'super_admin' | 'admin';
   last_login_at?: string | null;
   is_active?: boolean;
@@ -295,4 +296,39 @@ export async function changeAdminOwnPassword(
   if (error) {
     throw new Error(error.message || 'Gagal memperbarui kata sandi admin.');
   }
+}
+
+/**
+ * Memperbarui profil akun admin sendiri (username dan display name).
+ */
+export async function updateAdminProfile(
+  newUsername: string,
+  displayName: string
+): Promise<{ success: boolean; username: string; display_name: string }> {
+  const token = getAdminToken();
+  if (!token) {
+    throw new Error('Sesi admin tidak ditemukan.');
+  }
+
+  const { data, error } = await supabase.rpc('admin_update_profile', {
+    p_token: token,
+    p_new_username: newUsername,
+    p_display_name: displayName,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Gagal memperbarui profil admin.');
+  }
+
+  const res = data as unknown as { success: boolean; username: string; display_name: string };
+
+  // Update session user di sessionStorage
+  const currentUser = getAdminUser();
+  if (currentUser) {
+    currentUser.username = res.username;
+    currentUser.display_name = res.display_name;
+    setAdminToken(token, currentUser);
+  }
+
+  return res;
 }

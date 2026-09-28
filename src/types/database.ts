@@ -523,6 +523,7 @@ export type Database = {
       admin_users: {
         Row: {
           created_at: string
+          display_name: string | null
           failed_attempts: number
           id: string
           is_active: boolean
@@ -535,6 +536,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           failed_attempts?: number
           id?: string
           is_active?: boolean
@@ -547,6 +549,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           failed_attempts?: number
           id?: string
           is_active?: boolean
@@ -695,6 +698,47 @@ export type Database = {
           },
         ]
       }
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          admin_username: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          admin_username: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          admin_username?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -720,6 +764,49 @@ export type Database = {
           p_token: string
         }
         Returns: Json
+      }
+      get_admin_activity_logs: {
+        Args: {
+          p_token: string
+          p_action_filter?: string | null
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          id: string
+          admin_id: string | null
+          admin_username: string
+          action: string
+          target_type: string | null
+          target_id: string | null
+          metadata: Json | null
+          created_at: string
+        }[]
+      }
+      admin_record_activity: {
+        Args: {
+          p_token: string
+          p_action: string
+          p_target_type?: string | null
+          p_target_id?: string | null
+          p_metadata?: Json | null
+        }
+        Returns: boolean
+      }
+      admin_update_profile: {
+        Args: {
+          p_token: string
+          p_new_username: string
+          p_display_name: string
+        }
+        Returns: Json
+      }
+      admin_duplicate_template: {
+        Args: {
+          p_token: string
+          p_template_id: string
+        }
+        Returns: string
       }
       admin_list_accounts: {
         Args: {

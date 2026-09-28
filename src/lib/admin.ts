@@ -1,11 +1,22 @@
 import { supabase } from '@/lib/supabase';
 import { DatabaseError } from '@/lib/errors';
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database';
-import { getAdminToken } from '@/lib/adminAuth';
+import { getAdminToken, changeAdminOwnPassword } from '@/lib/adminAuth';
 
 export type TemplateRow = Tables<'templates'>;
 export type TemplateInsert = TablesInsert<'templates'>;
 export type TemplateUpdate = TablesUpdate<'templates'>;
+
+export interface AdminActivityLogItem {
+  id: string;
+  admin_id: string | null;
+  admin_username: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
 
 export interface DashboardStats {
   total_users: number;
@@ -725,28 +736,88 @@ export async function updateAdminPassword(
     return { success: false, error: 'Password baru dan konfirmasi password tidak cocok.' };
   }
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData?.user?.email) {
-    return { success: false, error: 'Sesi admin tidak ditemukan. Silakan login kembali.' };
+  try {
+    await changeAdminOwnPassword(oldPassword, newPassword);
+    return { success: true };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Gagal memperbarui password.',
+    };
   }
-
-  const { error: reauthError } = await supabase.auth.signInWithPassword({
-    email: userData.user.email,
-    password: oldPassword,
-  });
-
-  if (reauthError) {
-    return { success: false, error: 'Password lama tidak sesuai.' };
-  }
-
-  const { error: updateError } = await supabase.auth.updateUser({
-    password: newPassword,
-  });
-
-  if (updateError) {
-    return { success: false, error: updateError.message || 'Gagal memperbarui password.' };
-  }
-
-  await supabase.auth.signOut();
-  return { success: true };
 }
+
+/**
+ * Mengambil log aktivitas administrator dengan pagination dan filter aksi.
+ */
+export async function getAdminActivityLogs(
+  actionFilter?: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<AdminActivityLogItem[]> {
+  const token = getAdminToken();
+  if (!token) {
+    throw new Error('Sesi admin tidak ditemukan.');
+  }
+
+  const { data, error } = await supabase.rpc('get_admin_activity_logs', {
+    p_token: token,
+    p_action_filter: actionFilter || null,
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) {
+    throw new DatabaseError(error.message || 'Gagal memuat log aktivitas admin.', error);
+  }
+
+  return (data ?? []) as unknown as AdminActivityLogItem[];
+}
+
+/**
+ * Mencatat log aktivitas admin ke server PostgreSQL.
+ */
+export async function recordAdminActivity(
+  action: string,
+  targetType?: string,
+  targetId?: string,
+  metadata?: Record<string, unknown>
+): Promise<boolean> {
+  const token = getAdminToken();
+  if (!token) return false;
+
+  try {
+    const { data, error } = await supabase.rpc('admin_record_activity', {
+      p_token: token,
+      p_action: action,
+      p_target_type: targetType || null,
+      p_target_id: targetId || null,
+      p_metadata: (metadata || {}) as unknown as import('@/types/database').Json,
+    });
+    return !error && !!data;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Menduplikasi template dan demo datanya.
+ */
+export async function duplicateAdminTemplate(templateId: string): Promise<string> {
+  const token = getAdminToken();
+  if (!token) {
+    throw new Error('Sesi admin tidak ditemukan.');
+  }
+
+  const { data, error } = await supabase.rpc('admin_duplicate_template', {
+    p_token: token,
+    p_template_id: templateId,
+  });
+
+  if (error) {
+    throw new DatabaseError(error.message || 'Gagal menduplikasi template.', error);
+  }
+
+  return data as string;
+}
+

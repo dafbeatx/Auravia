@@ -5,6 +5,7 @@ import {
   getAdminTemplatePerformance,
   updateAdminTemplate,
   deleteAdminTemplate,
+  duplicateAdminTemplate,
   getTemplateAssetPublicUrl,
   type TemplateRow,
   type TemplatePerformanceItem,
@@ -17,6 +18,7 @@ export function AdminTemplates() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   // State untuk modal konfirmasi penghapusan
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -93,6 +95,26 @@ export function AdminTemplates() {
         type: 'error',
         message: err instanceof Error ? err.message : 'Gagal mengubah status template.',
       });
+    }
+  };
+
+  // Duplikasi template beserta demo datanya
+  const handleDuplicate = async (tmpl: TemplateRow) => {
+    setDuplicatingId(tmpl.id);
+    try {
+      await duplicateAdminTemplate(tmpl.id);
+      setFeedback({
+        type: 'success',
+        message: `Template "${tmpl.name}" berhasil diduplikasi menjadi salinan draft baru!`,
+      });
+      await loadData();
+    } catch (err: unknown) {
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Gagal menduplikasi template.',
+      });
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -359,6 +381,20 @@ export function AdminTemplates() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </Link>
+
+                          {/* Tombol Duplikasi */}
+                          <button
+                            type="button"
+                            disabled={duplicatingId === t.id}
+                            onClick={() => handleDuplicate(t)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer disabled:opacity-40"
+                            title="Duplikasi Template & Demo"
+                            aria-label={`Duplikasi ${t.name}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
 
                           {/* Tombol Toggle Status */}
                           <button
