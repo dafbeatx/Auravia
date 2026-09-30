@@ -163,7 +163,7 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
 
     let screenContent;
 
-    const demoCoverPhoto = `/images/demo/${tmpl.slug}/cover.jpg`;
+    const demoCoverPhoto = `/images/demo/${tmpl.slug}/cover.webp`;
 
     if (uploadedImageUrl) {
       screenContent = (

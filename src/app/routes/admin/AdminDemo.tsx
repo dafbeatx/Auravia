@@ -574,7 +574,7 @@ export function AdminDemo() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           {templates.map((tmpl) => {
             const defaults = getTemplateDemoDefaults(tmpl.slug);
-            const coverPreview = defaults.hero.cover_image || tmpl.thumbnail_url || '/images/demo/classic-elegance/cover.jpg';
+            const coverPreview = defaults.hero.cover_image || tmpl.thumbnail_url || '/images/demo/classic-elegance/cover.webp';
             const mediaCount = defaults.gallery.length + 4; // gallery + cover + groom + bride + closing
 
             return (

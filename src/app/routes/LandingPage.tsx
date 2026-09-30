@@ -298,7 +298,7 @@ export function LandingPage() {
                 {/* Kartu 1: Royal Navy & Gold Inset Preview */}
                 <div className="relative rounded-3xl border border-[#D4AF37]/40 bg-[#0A1324] text-[#FAF9F6] p-6 shadow-2xl space-y-4 transform transition-transform hover:scale-[1.01] overflow-hidden">
                   <img
-                    src="/images/demo/royal-navy-gold/cover.jpg"
+                    src="/images/demo/royal-navy-gold/cover.webp"
                     alt="Royal Navy & Gold Background"
                     className="absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none"
                   />
@@ -336,7 +336,7 @@ export function LandingPage() {
                 <div className="mt-4 p-4 sm:p-5 rounded-2xl border border-border bg-surface text-text-primary shadow-md flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src="/images/demo/classic-elegance/couple.jpg"
+                      src="/images/demo/classic-elegance/couple.webp"
                       alt="Sarah & Dimas"
                       className="w-12 h-12 rounded-full object-cover border-2 border-secondary/40 shadow-xs"
                     />
