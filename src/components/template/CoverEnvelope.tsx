@@ -141,8 +141,13 @@ export const CoverEnvelope: React.FC<CoverEnvelopeProps> = ({
   // Verifikasi keamanan URL gambar latar
   const validBackgroundUrl = useMemo(() => {
     const rawUrl = cover?.background_image_url?.trim();
-    if (rawUrl && isValidWebUrl(rawUrl)) {
-      return rawUrl;
+    if (rawUrl) {
+      if (rawUrl.startsWith('/') && !rawUrl.startsWith('//')) {
+        return rawUrl;
+      }
+      if (isValidWebUrl(rawUrl)) {
+        return rawUrl;
+      }
     }
     return null;
   }, [cover?.background_image_url]);

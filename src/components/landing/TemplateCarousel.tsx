@@ -163,6 +163,8 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
 
     let screenContent;
 
+    const demoCoverPhoto = `/images/demo/${tmpl.slug}/cover.jpg`;
+
     if (uploadedImageUrl) {
       screenContent = (
         <div className="w-full h-full bg-slate-900 relative overflow-hidden">
@@ -178,21 +180,26 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
       switch (tmpl.slug) {
         case 'royal-navy-gold':
           screenContent = (
-            <div className="w-full h-full bg-[#0A1324] text-[#F8FAFC] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
-              {/* Background Accent Shimmer */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14)_0%,transparent_75%)] pointer-events-none" />
+            <div className="w-full h-full text-[#F8FAFC] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <img
+                src={demoCoverPhoto}
+                alt="Royal Navy & Gold Preview"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0A1324] via-[#0A1324]/60 to-[#0A1324]/70" />
               <div className="space-y-1 relative z-10">
                 <span className="text-[7px] uppercase tracking-widest text-[#D4AF37] font-mono block">
                   Walimatul Ursy
                 </span>
                 <div className="py-0.5">
-                  <MonogramFrame initials="R & D" variant="royal-circle" />
+                  <MonogramFrame initials="R & A" variant="royal-circle" />
                 </div>
               </div>
 
-              <div className="space-y-1 my-auto relative z-10">
+              <div className="space-y-0.5 my-auto relative z-10">
                 <h4 className="font-serif text-sm sm:text-base text-[#D4AF37] font-normal tracking-wide">
-                  Rika &amp; Dani
+                  Raka &amp; Aulia
                 </h4>
                 <p className="text-[8px] text-[#F8FAFC]/80 font-sans">
                   Sabtu, 24 Oktober 2026
@@ -200,7 +207,7 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
               </div>
 
               <div className="w-full relative z-10 pb-2">
-                <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#132238] border border-[#D4AF37]/50 text-[#D4AF37] text-[8px] font-medium shadow-xs">
+                <div className="inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full bg-[#132238]/90 border border-[#D4AF37]/50 text-[#D4AF37] text-[8px] font-medium shadow-xs">
                   <span>✉</span>
                   <span>Buka Undangan</span>
                 </div>
@@ -211,8 +218,14 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
 
         case 'botanical-garden':
           screenContent = (
-            <div className="w-full h-full bg-[#F4F6F0] text-[#1E3A2F] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(122,154,123,0.18)_0%,transparent_70%)] pointer-events-none" />
+            <div className="w-full h-full text-[#1E3A2F] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <img
+                src={demoCoverPhoto}
+                alt="Botanical Garden Preview"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#F4F6F0] via-[#F4F6F0]/70 to-[#F4F6F0]/80" />
               <div className="space-y-1 relative z-10">
                 <span className="text-[7px] uppercase tracking-widest text-[#2D4F3F] font-sans font-semibold block">
                   The Wedding Of
@@ -222,7 +235,7 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
                 </div>
               </div>
 
-              <div className="space-y-1 my-auto relative z-10">
+              <div className="space-y-0.5 my-auto relative z-10">
                 <h4 className="font-serif text-sm sm:text-base text-[#2D4F3F] font-normal tracking-wide">
                   Amira &amp; Fajar
                 </h4>
@@ -243,7 +256,14 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
 
         case 'modern-minimal':
           screenContent = (
-            <div className="w-full h-full bg-[#F8F9FA] text-[#0F172A] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+            <div className="w-full h-full text-[#0F172A] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <img
+                src={demoCoverPhoto}
+                alt="Modern Minimal Preview"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA]/70 to-[#F8F9FA]/80" />
               <div className="space-y-1 relative z-10">
                 <span className="text-[7px] uppercase tracking-widest text-primary font-mono font-semibold block">
                   Modern Union
@@ -253,7 +273,7 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
                 </div>
               </div>
 
-              <div className="space-y-1 my-auto relative z-10">
+              <div className="space-y-0.5 my-auto relative z-10">
                 <h4 className="font-sans text-xs sm:text-sm text-[#0F172A] font-bold tracking-tight">
                   Nadia &amp; Reza
                 </h4>
@@ -276,7 +296,14 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
         case 'classic-elegance':
         default:
           screenContent = (
-            <div className="w-full h-full bg-[#FAF9F6] text-[#292524] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+            <div className="w-full h-full text-[#292524] p-3 pt-6 flex flex-col justify-between items-center text-center relative overflow-hidden">
+              <img
+                src={demoCoverPhoto}
+                alt="Classic Elegance Preview"
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#FAF9F6] via-[#FAF9F6]/70 to-[#FAF9F6]/80" />
               <div className="space-y-1 relative z-10">
                 <span className="text-[7px] uppercase tracking-widest text-[#78716C] font-sans block">
                   The Wedding Of
@@ -286,7 +313,7 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
                 </div>
               </div>
 
-              <div className="space-y-1 my-auto relative z-10">
+              <div className="space-y-0.5 my-auto relative z-10">
                 <h4 className="font-serif text-sm sm:text-base text-[#292524] font-normal tracking-wide">
                   Sarah &amp; Dimas
                 </h4>
@@ -388,9 +415,14 @@ export function TemplateCarousel({ className = '' }: TemplateCarouselProps) {
                       <h3 className="font-serif text-base sm:text-lg font-bold text-text-primary group-hover:text-primary transition-colors">
                         {tmpl.name}
                       </h3>
-                      <p className="text-xs text-text-muted font-medium">
+                      <p className="text-[11px] font-semibold text-secondary uppercase tracking-wider">
                         {categoryLabel}
                       </p>
+                      {tmpl.description && (
+                        <p className="text-xs text-text-muted font-normal line-clamp-2 pt-1 px-1">
+                          {tmpl.description}
+                        </p>
+                      )}
                     </div>
 
                     <div className="w-full pt-1">

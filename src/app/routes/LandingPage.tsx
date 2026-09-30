@@ -71,10 +71,11 @@ export function LandingPage() {
   // URL aman untuk aksi yang membutuhkan autentikasi
   const createInvitationUrl = user
     ? '/dashboard/invitations/new'
-    : '/login?redirect=%2Fdashboard%2Finvitations%2Fnew';
+    : '/register';
 
-  const heroHeadline = dynamicContent?.hero_headline || 'Undangan Digital yang Dibuat untuk Cerita yang Berarti.';
-  const heroSubheadline = dynamicContent?.hero_subheadline || 'Bagikan momen pernikahan Anda melalui undangan digital yang elegan, personal, dan mudah dibagikan.';
+  const heroHeadline = dynamicContent?.hero_headline || 'Undangan Digital yang Dirancang untuk Momen yang Berarti';
+  // Tagline alternatif: Undangan Digital yang Dibuat untuk Cerita yang Berarti
+  const heroSubheadline = dynamicContent?.hero_subheadline || 'Aurovia membantu membuat undangan digital yang elegan, personal, responsif, dan mudah dibagikan.';
   const heroCtaText = dynamicContent?.hero_cta_text || 'Buat Undangan';
   const heroCtaLink = dynamicContent?.hero_cta_link || createInvitationUrl;
   const secondaryCtaText = dynamicContent?.secondary_cta_text || 'Lihat Template';
@@ -295,29 +296,36 @@ export function LandingPage() {
             <div className="lg:col-span-5 flex justify-center">
               <div className="relative w-full max-w-[360px] sm:max-w-[400px]">
                 {/* Kartu 1: Royal Navy & Gold Inset Preview */}
-                <div className="rounded-3xl border border-[#D4AF37]/40 bg-[#0B132B] text-[#FAF9F6] p-6 shadow-xl space-y-4 transform transition-transform hover:scale-[1.01]">
-                  <div className="flex items-center justify-between border-b border-[#D4AF37]/20 pb-3">
+                <div className="relative rounded-3xl border border-[#D4AF37]/40 bg-[#0A1324] text-[#FAF9F6] p-6 shadow-2xl space-y-4 transform transition-transform hover:scale-[1.01] overflow-hidden">
+                  <img
+                    src="/images/demo/royal-navy-gold/cover.jpg"
+                    alt="Royal Navy & Gold Background"
+                    className="absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1324] via-[#0A1324]/85 to-[#0A1324]/90 pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between border-b border-[#D4AF37]/20 pb-3">
                     <span className="text-[10px] uppercase font-mono tracking-widest text-[#D4AF37]">
                       Royal Navy &amp; Gold
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 font-semibold">
                       Master Design
                     </span>
                   </div>
 
-                  <div className="text-center space-y-2 py-2">
-                    <MonogramFrame initials="R & D" variant="royal-circle" />
+                  <div className="relative z-10 text-center space-y-2 py-2">
+                    <MonogramFrame initials="R & A" variant="royal-circle" />
                     <h2 className="font-serif text-2xl font-normal text-[#D4AF37] pt-1">
-                      Rika &amp; Dani
+                      Raka &amp; Aulia
                     </h2>
                     <p className="text-xs text-[#F8FAFC]/80">
-                      Sabtu, 15 Oktober 2026 &bull; Jakarta
+                      Sabtu, 24 Oktober 2026 &bull; Hotel Aryaduta Bandung
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2 text-center pt-1">
-                    {['32 Hari', '08 Jam', '45 Mnt', '12 Dtk'].map((t, i) => (
-                      <div key={i} className="p-2 rounded-lg border border-[#D4AF37]/30 bg-[#1E3A5F]/60 text-[10px] text-[#D4AF37]">
+                  <div className="relative z-10 grid grid-cols-4 gap-2 text-center pt-1">
+                    {['24 Hari', '08 Jam', '45 Mnt', '12 Dtk'].map((t, i) => (
+                      <div key={i} className="p-2 rounded-xl border border-[#D4AF37]/30 bg-[#132238]/80 text-[10px] font-semibold text-[#D4AF37]">
                         {t}
                       </div>
                     ))}
@@ -325,13 +333,15 @@ export function LandingPage() {
                 </div>
 
                 {/* Kartu 2: Classic Elegance Inset Strip */}
-                <div className="mt-4 p-5 rounded-2xl border border-border bg-surface text-text-primary shadow-md flex items-center justify-between gap-4">
+                <div className="mt-4 p-4 sm:p-5 rounded-2xl border border-border bg-surface text-text-primary shadow-md flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full border border-secondary/40 bg-secondary/10 flex items-center justify-center font-serif text-sm font-semibold text-primary">
-                      S &amp; D
-                    </div>
+                    <img
+                      src="/images/demo/classic-elegance/couple.jpg"
+                      alt="Sarah & Dimas"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-secondary/40 shadow-xs"
+                    />
                     <div>
-                      <p className="font-serif text-base font-medium text-text-primary">
+                      <p className="font-serif text-base font-semibold text-text-primary">
                         Sarah &amp; Dimas
                       </p>
                       <p className="text-[11px] text-text-muted">

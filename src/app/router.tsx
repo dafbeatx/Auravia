@@ -144,6 +144,10 @@ export const router = createBrowserRouter([
                 element: <AdminDemo />,
               },
               {
+                path: 'demo/:templateId',
+                element: <AdminDemo />,
+              },
+              {
                 path: 'activity',
                 element: <AdminActivity />,
               },

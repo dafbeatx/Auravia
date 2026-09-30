@@ -494,8 +494,12 @@ export async function uploadDemoMedia(
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase() || 'webp';
+  if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+    throw new Error('Ekstensi berkas tidak didukung. Hanya JPEG, PNG, dan WebP yang diizinkan.');
+  }
   const timestamp = Date.now();
-  const filePath = `demo/${templateId}/${section}/${timestamp}.${ext}`;
+  const uuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10);
+  const filePath = `demo/${templateId}/${section}/${timestamp}_${uuid}.${ext}`;
 
   const { error: uploadErr } = await supabase.storage
     .from('template-demo-media')

@@ -981,7 +981,8 @@ export function getGalleryPublicUrl(storagePath: string | null | undefined): str
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
     trimmed.startsWith('blob:') ||
-    trimmed.startsWith('data:')
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('/')
   ) {
     return trimmed;
   }
